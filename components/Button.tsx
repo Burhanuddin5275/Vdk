@@ -1,7 +1,8 @@
-import React, { useEffect } from 'react';
-import { TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { colors } from '@/theme/colors';
 import { useFonts } from 'expo-font';
+import React, { useEffect } from 'react';
+import { StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 
 type ButtonProps = {
   variant?: 'primary' | 'secondary';
@@ -13,14 +14,14 @@ type ButtonProps = {
 const styles = StyleSheet.create({
   button: {
      backgroundColor: '#fff',
-    paddingHorizontal: 25,
-    paddingVertical: 6,
-    borderRadius: 10,
-    marginTop: 10,
+    paddingHorizontal: scale(25),
+    paddingVertical: verticalScale(6),
+    borderRadius: moderateScale(10),
+    marginTop: verticalScale(10),
     shadowColor: colors.primaryDark,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: moderateScale(2) },
     shadowOpacity: 0.3,
-    shadowRadius: 4,
+    shadowRadius: moderateScale(4),
   },
   primary: {
     backgroundColor: colors.white, // You can replace with your primary color
@@ -30,12 +31,12 @@ const styles = StyleSheet.create({
   },
   primaryText: {
     color: colors.textPrimary,
-    fontSize: 18,
+    fontSize: moderateScale(18),
     fontFamily: 'SemiBold',
   },
   secondaryText: {
     color: colors.white,
-    fontSize: 17,
+    fontSize: moderateScale(17),
     fontFamily: 'Medium',
   },
 });

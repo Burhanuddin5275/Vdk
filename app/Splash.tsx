@@ -1,10 +1,11 @@
-import React, { useEffect } from 'react';
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, Image, TouchableOpacity, Dimensions, ImageBackground } from 'react-native';
+import { Button } from '@/components/Button';
+import { colors } from '@/theme/colors';
 import { useFonts } from 'expo-font';
 import { useRouter } from 'expo-router';
-import { colors } from '@/theme/colors';
-import { Button } from '@/components/Button';
+import { StatusBar } from 'expo-status-bar';
+import React, { useEffect } from 'react';
+import { Dimensions, Image, ImageBackground, StyleSheet, Text, View } from 'react-native';
+import { moderateScale, verticalScale } from 'react-native-size-matters';
 const { width } = Dimensions.get('window');
 
 export default function Splash() {
@@ -61,62 +62,43 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-  
   },
   mandalaBackground: {
     backgroundColor: 'transparent',
- 
     // You can add SVG or ImageBackground for mandala pattern here
   },
   illustrationContainer: {
     alignItems: 'center',
-    marginTop: 80,
+    marginTop: verticalScale(50),
     zIndex: 1,
   },
   illustration: {
-    width: width * 20,
-    height: 350,
-    borderRadius: 20,
-    marginTop:20
+    width: width,
+    height: verticalScale(300),
+    borderRadius: moderateScale(20),
+    marginTop: verticalScale(20)
   },
   textContainer: {
     width: '100%',
     alignItems: 'center',
-    paddingTop: 40,
-    paddingBottom: 60,
-    borderTopLeftRadius: 40,
-    borderTopRightRadius: 40,
+    paddingTop: verticalScale(20),
+    paddingBottom: verticalScale(60),
+    borderTopLeftRadius: moderateScale(40),
+    borderTopRightRadius: moderateScale(40),
     zIndex: 2,
   },
   welcome: {
-    fontSize: 50,
+    fontSize: moderateScale(50),
     color: colors.white,
     fontFamily: 'Sacramento',
-    height:50,
-    textAlign:"center"
+    height: verticalScale(50),
+    textAlign: "center"
   },
   startJourney: {
-    fontSize: 30,
+    fontSize: moderateScale(30),
     color: colors.white,
-    textShadowColor: '#B71C1C',
-    textShadowOffset: { width: 2, height: 2 },
-    textShadowRadius: 4,
-    fontFamily: "Sigmar",
-  },
-  button: {
-    backgroundColor: '#fff',
-    paddingHorizontal: 25,
-    paddingVertical: 6,
-    borderRadius: 10,
-    marginTop: 10,
-    shadowColor: '#B71C1C',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-  },
-  buttonText: {
-    color: '#E53935',
-    fontSize: 18,
-    fontFamily: 'Poppins',
+    fontFamily: 'Sigmar',
+    marginBottom: verticalScale(10),
+    textAlign: "center"
   },
 });

@@ -1,5 +1,5 @@
+import { useAuth } from '@/hooks/useAuth';
 import { colors } from '@/theme/colors';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFonts } from 'expo-font';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -15,11 +15,12 @@ const Login = () => {
       Sigmar: require("../assets/fonts/Sigmar-Regular.ttf"),
     })
   const router = useRouter();
+  const { login } = useAuth();
   const allowedPhones = ['3239339045', '30012345673', '3123456789']; // Example numbers
 
   const handleLogin = async () => {
     if (allowedPhones.includes(phone)) {
-      await AsyncStorage.setItem('phone', phone);
+      login(phone, { name: 'User' });
       router.replace('/(tabs)/Profile');
     } else {
       alert('Invalid phone number');

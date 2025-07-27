@@ -1,3 +1,5 @@
+import { selectPhone } from '@/store/authSlice';
+import { useAppSelector } from '@/store/hooks';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
@@ -29,14 +31,16 @@ export const useWishlistStore = create<WishlistState>((set, get) => ({
   phone: '',
   setPhone: (phone: string) => set({ phone }),
   loadWishlist: async () => {
-    const phone = get().phone || (await AsyncStorage.getItem('phone')) || '';
+    const phone = get().phone || '';
+    if (!phone) return;
     set({ phone });
     const stored = await AsyncStorage.getItem(`wishlistItems_${phone}`);
     if (stored) set({ items: JSON.parse(stored) });
     else set({ items: [] });
   },
   addToWishlist: async (item) => {
-    const phone = get().phone || (await AsyncStorage.getItem('phone')) || '';
+    const phone = get().phone || '';
+    if (!phone) return;
     set({ phone });
     const current = get().items;
     const updated = current.some(i => i.id === item.id) ? current : [...current, item];
@@ -44,7 +48,8 @@ export const useWishlistStore = create<WishlistState>((set, get) => ({
     await AsyncStorage.setItem(`wishlistItems_${phone}`, JSON.stringify(updated));
   },
   removeFromWishlist: async (id) => {
-    const phone = get().phone || (await AsyncStorage.getItem('phone')) || '';
+    const phone = get().phone || '';
+    if (!phone) return;
     set({ phone });
     const updated = get().items.filter(i => i.id !== id);
     set({ items: updated });
@@ -54,17 +59,18 @@ export const useWishlistStore = create<WishlistState>((set, get) => ({
 
 const Wishlist: React.FC = () => {
   const router = useRouter();
+  const phone = useAppSelector(selectPhone);
   const wishlistData = useWishlistStore(state => state.items);
   const removeFromWishlist = useWishlistStore(state => state.removeFromWishlist);
   const setPhone = useWishlistStore(state => state.setPhone);
   const loadWishlist = useWishlistStore(state => state.loadWishlist);
+  
   useEffect(() => {
-    (async () => {
-      const phone = await AsyncStorage.getItem('phone');
-      if (phone) setPhone(phone);
-      await loadWishlist();
-    })();
-  }, []);
+    if (phone) {
+      setPhone(phone);
+      loadWishlist();
+    }
+  }, [phone]);
   const renderItem = ({ item }: { item: WishlistItem }) => (
     <View style={styles.card}>
       <Image source={item.image} style={styles.productImg} resizeMode="cover" />

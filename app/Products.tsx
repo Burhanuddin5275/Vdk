@@ -1,6 +1,7 @@
+import { selectIsAuthenticated, selectPhone } from '@/store/authSlice';
+import { useAppSelector } from '@/store/hooks';
 import { colors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Image, ImageBackground, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -26,18 +27,15 @@ const Products = () => {
     const [showSuccess, setShowSuccess] = useState(false);
     const wishlistItems = useWishlistStore(state => state.items);
     const [wishlistMessage, setWishlistMessage] = useState<string | null>(null);
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const isAuthenticated = useAppSelector(selectIsAuthenticated);
+    const phone = useAppSelector(selectPhone);
 
     useEffect(() => {
-      (async () => {
-        const phone = await AsyncStorage.getItem('phone');
-        setIsLoggedIn(!!phone);
-      })();
+      // This useEffect is no longer needed as authentication state is managed by Redux
     }, []);
 
     const handleAddToCart = async () => {
-        const phone = await AsyncStorage.getItem('phone');
-        if (!phone) {
+        if (!isAuthenticated || !phone) {
             alert('Please log in to add items to your cart.');
             router.replace('/Login');
             return;
@@ -67,7 +65,7 @@ const Products = () => {
                         </TouchableOpacity>
                         <TouchableOpacity
                           onPress={async () => {
-                            if (!isLoggedIn) {
+                            if (!isAuthenticated) {
                               setWishlistMessage('Please log in to use wishlist.');
                               setTimeout(() => setWishlistMessage(null), 1000);
                               setTimeout(() => router.replace('/Login'), 1000);

@@ -1,40 +1,37 @@
+import { useAuth } from '@/hooks/useAuth';
 import { colors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { router, useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import { useRouter } from 'expo-router';
+import React from 'react';
 import { Alert, Dimensions, Image, ImageBackground, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 
 const { width } = Dimensions.get('window');
 
-const logout = async () => {
-  await AsyncStorage.removeItem('phone');
-  router.replace('/(tabs)/Home');
-};
-
-const allMenuItems: Array<{ label: string; icon: keyof typeof Ionicons.glyphMap; onPress: () => void }> = [
-  { label: 'My orders', icon: 'cart', onPress: () => {router.push('/Orders')} },
-  { label: 'Chat', icon: 'chatbubble-ellipses', onPress: () => {} },
-  { label: 'Wishlist', icon: 'heart', onPress: () => {router.push('/Wishlist')} },
-  { label: 'Manage addresses', icon: 'location', onPress: () => {} },
-  { label: 'Manage profile', icon: 'person-circle', onPress: () => {} },
-  { label: 'Contact us', icon: 'paper-plane', onPress: () => {} },
-  { label: 'About us', icon: 'information-circle', onPress: () => {} },
-  { label: 'Terms & conditions', icon: 'document-text', onPress: () => {} },
-  { label: 'Redeemed', icon: 'gift', onPress: () => {} },
-  { label: 'Privacy policy', icon: 'shield-checkmark', onPress: () => {} },
-  { label: 'Logout', icon: 'log-out', onPress: logout },
-];
-
 export default function Profile() {
   const router = useRouter();
-  // const { phone } = useLocalSearchParams();
-  const [phone, setPhone] = useState<string | null>(null);
-  useEffect(() => {
-    AsyncStorage.getItem('phone').then(setPhone);
-  }, []);
-  const isLoggedIn = !!phone;
-  const menuItems = isLoggedIn
+  const { isAuthenticated, user, logout } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+    router.replace('/(tabs)/Home');
+  };
+
+  const allMenuItems = [
+    { label: 'My orders', icon: 'cart', onPress: () => {router.push('/Orders')} },
+    { label: 'Chat', icon: 'chatbubble-ellipses', onPress: () => {} },
+    { label: 'Wishlist', icon: 'heart', onPress: () => {router.push('/Wishlist')} },
+    { label: 'Manage addresses', icon: 'location', onPress: () => {} },
+    { label: 'Manage profile', icon: 'person-circle', onPress: () => {} },
+    { label: 'Contact us', icon: 'paper-plane', onPress: () => {} },
+    { label: 'About us', icon: 'information-circle', onPress: () => {} },
+    { label: 'Terms & conditions', icon: 'document-text', onPress: () => {} },
+    { label: 'Redeemed', icon: 'gift', onPress: () => {} },
+    { label: 'Privacy policy', icon: 'shield-checkmark', onPress: () => {} },
+    { label: 'Logout', icon: 'log-out', onPress: handleLogout },
+  ];
+
+  const menuItems = isAuthenticated
     ? allMenuItems
     : allMenuItems.filter(item => [
         'Contact us',
@@ -51,24 +48,24 @@ export default function Profile() {
       style={styles.background}
       resizeMode="cover"
     >
-      <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 75 }}>
+      <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: verticalScale(75) }}>
         <View style={styles.container}>
           {/* Header */}
           <View style={styles.headerRow}>
             <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-              <Ionicons name="arrow-back" size={24} color="white" />
+              <Ionicons name="arrow-back" size={moderateScale(24)} color="white" />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Profile</Text>
           </View>
           {/* Profile Image & Name */}
-          {isLoggedIn && (
+          {isAuthenticated && (
             <View style={styles.profileSection}>
               <Image source={require('../../assets/images/Ellipse.png')} style={styles.profileImg} />
-              <Text style={styles.profileName}>Lorem Ipsum</Text>
+              <Text style={styles.profileName}>{user?.name || 'User'}</Text>
             </View>
           )}
           {/* Login Prompt */}
-          {!isLoggedIn && (
+          {!isAuthenticated && (
             <TouchableOpacity style={styles.loginBox} onPress={() => router.push('/Login')}>
               <Text style={styles.loginText}>Login to unlock more Features!</Text>
             </TouchableOpacity>
@@ -79,17 +76,17 @@ export default function Profile() {
               <View key={item.label}>
                 <TouchableOpacity style={styles.menuItem} onPress={item.onPress} activeOpacity={0.7}>
                   <View style={styles.iconCircle}>
-                    <Ionicons name={item.icon} size={24} color={colors.primaryDark} />
+                    <Ionicons name={item.icon} size={moderateScale(24)} color={colors.primaryDark} />
                   </View>
                   <Text style={styles.menuLabel}>{item.label}</Text>
-                  <Ionicons name="chevron-forward" size={24} color={colors.white} />
+                  <Ionicons name="chevron-forward" size={moderateScale(24)} color={colors.white} />
                 </TouchableOpacity>
                 {idx !== menuItems.length - 1 && <View style={styles.divider} />}
               </View>
             ))}
           </View>
           {/* Delete Account */}
-          {isLoggedIn && (
+          {isAuthenticated && (
             <TouchableOpacity
               style={styles.deleteBtn}
               onPress={() => {
@@ -119,112 +116,108 @@ export default function Profile() {
 const styles = StyleSheet.create({
   background: {
     flex: 1,
-    width: '100%',
-    height: '100%',
-    backgroundColor: colors.primary,
   },
   container: {
     flex: 1,
-    paddingTop: 60,
-    paddingHorizontal: 18,
-    alignItems: 'center',
+    paddingHorizontal: scale(20),
+    paddingTop: verticalScale(60),
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 18,
+    marginBottom: verticalScale(18),
     alignSelf: 'stretch',
   },
   backBtn: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: moderateScale(48),
+    height: moderateScale(48),
+    borderRadius: moderateScale(24),
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 10,
+    marginRight: scale(10),
   },
   headerTitle: {
     color: colors.white,
-    fontSize: 25,
+    fontSize: moderateScale(25),
     fontFamily: 'Sigmar',
     flex: 1,
     marginLeft: "20%",
-    marginTop: 2,
+    marginTop: verticalScale(2),
   },
   profileSection: {
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: verticalScale(24),
   },
   profileImg: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    borderWidth: 4,
+    width: moderateScale(100),
+    height: moderateScale(100),
+    borderRadius: moderateScale(50),
+    borderWidth: moderateScale(4),
     borderColor: colors.white,
-    marginBottom: 10,
+    marginBottom: verticalScale(10),
   },
   profileName: {
     color: colors.white,
-    fontSize: 22,
+    fontSize: moderateScale(22),
     fontFamily: 'Sigmar',
-    marginBottom: 18,
+    marginBottom: verticalScale(18),
   },
   menuList: {
     backgroundColor: 'transparent',
-    borderRadius: 18,
-    paddingVertical: 2,
-    marginBottom: 18,
+    borderRadius: moderateScale(18),
+    paddingVertical: verticalScale(2),
+    marginBottom: verticalScale(18),
     alignSelf: 'stretch',
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 6,
+    paddingVertical: verticalScale(14),
+    paddingHorizontal: scale(6),
   },
   iconCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: moderateScale(44),
+    height: moderateScale(44),
+    borderRadius: moderateScale(22),
     backgroundColor: colors.white,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 18,
+    marginRight: scale(18),
   },
   menuLabel: {
     color: colors.white,
-    fontSize: 17,
+    fontSize: moderateScale(17),
     flex: 1,
     fontFamily: 'PoppinsMedium',
   },
   divider: {
-    height: 1,
+    height: verticalScale(1),
     backgroundColor: 'rgba(255,255,255,0.25)',
-    marginLeft: 62,
+    marginLeft: scale(62),
   },
   deleteBtn: {
     alignSelf: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 18,
+    paddingVertical: verticalScale(10),
+    paddingHorizontal: scale(18),
   },
   deleteText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: moderateScale(16),
     fontFamily: 'PoppinsBold',
     textAlign: 'center',
   },
   loginBox: {
     backgroundColor: colors.white,
-    borderRadius: 16,
-    paddingVertical: 18,
-    paddingHorizontal: 12,
+    borderRadius: moderateScale(16),
+    paddingVertical: verticalScale(18),
+    paddingHorizontal: scale(12),
     alignItems: 'center',
-    marginBottom: 28,
-    marginTop: 10,
+    marginBottom: verticalScale(28),
+    marginTop: verticalScale(10),
   },
   loginText: {
     color: colors.primary,
-    fontSize: 18,
+    fontSize: moderateScale(18),
     fontFamily: 'PoppinsSemi',
   },
 });

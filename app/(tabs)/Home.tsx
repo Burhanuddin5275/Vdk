@@ -3,11 +3,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Dimensions, Image, ImageBackground, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 
 const brands = [
-  { image: require('../../assets/images/josh.png') },
-  { image: require('../../assets/images/ok.png') },
-  { image: require('../../assets/images/vida.png') },
+  { name: 'Josh', image: require('../../assets/images/josh.png') },
+  { name: 'OK', image: require('../../assets/images/ok.png') },
+  { name: 'Vida', image: require('../../assets/images/vida.png') },
   // Add more brands as needed
 ];
 
@@ -61,6 +62,25 @@ export default function HomeScreen() {
     }
   }, [loaded]);
 
+  const categories = [
+    {
+      label: 'Condoms',
+      image: require('../../assets/images/condom.png'),
+    },
+    {
+      label: 'Lubricant',
+      image: require('../../assets/images/Lubricants.png'),
+    },
+    {
+      label: 'Devices',
+      image: require('../../assets/images/Devices.png'),
+    },
+    {
+      label: 'Medicine',
+      image: require('../../assets/images/medicine.png'),
+    },
+  ];
+
   return (
     <>
       <SalePopup visible={showPopup} onClose={() => setShowPopup(false)} />
@@ -73,7 +93,7 @@ export default function HomeScreen() {
           {/* Header Section */}
           <View style={styles.headerBg}>
             <View style={styles.headerRow}>
-              <View style={{ flex: 1 }}>
+              <View style={{width:"40%"}}>
                 <Text style={styles.hello}>Hello!{"\n"}Hussain</Text>
                 <Text style={styles.subtext}>What would you like to buy?</Text>
                 <View style={styles.rewardBox}>
@@ -82,11 +102,13 @@ export default function HomeScreen() {
                   </Text><Text style={styles.rewardPts}>PTS</Text>
                 </View>
               </View>
-              <Image
+            <View style={{flex:1}}>
+                <Image
                 source={require('../../assets/images/family2.png')}
                 style={styles.familyImg}
                 resizeMode="contain"
               />
+            </View>
             </View>
           </View>
 
@@ -97,46 +119,22 @@ export default function HomeScreen() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.categoriesSlider}
           >
-            <TouchableOpacity onPress={() => router.push('/Condoms')}>
-              <LinearGradient colors={['#FFFFFF', '#E82A2F']} style={styles.categoryCard}>
-                <Image
-                  source={require('../../assets/images/condom.png')}
-                  style={styles.categoryImg}
-                  resizeMode="contain"
-                />
-                <Text style={styles.categoryLabel}>Condoms</Text>
-              </LinearGradient>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => router.push('/Lubricants')}>
-              <LinearGradient colors={['#FFFFFF', '#E82A2F']} style={styles.categoryCard}>
-                <Image
-                  source={require('../../assets/images/Lubricants.png')}
-                  style={styles.categoryImg}
-                  resizeMode="contain"
-                />
-                <Text style={styles.categoryLabel}>Lubricant</Text>
-              </LinearGradient>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => router.push('/Condoms')}>
-              <LinearGradient colors={['#FFFFFF', '#E82A2F']} style={styles.categoryCard}>
-                <Image
-                  source={require('../../assets/images/Devices.png')}
-                  style={styles.categoryImg}
-                  resizeMode="contain"
-                />
-                <Text style={styles.categoryLabel}>Devices</Text>
-              </LinearGradient>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => router.push('/Condoms')}>
-              <LinearGradient colors={['#FFFFFF', '#E82A2F']} style={styles.categoryCard}>
-                <Image
-                  source={require('../../assets/images/medicine.png')}
-                  style={styles.categoryImg}
-                  resizeMode="contain"
-                />
-                <Text style={styles.categoryLabel}>Medicine</Text>
-              </LinearGradient>
-            </TouchableOpacity>
+            {categories.map((category, idx) => (
+              <TouchableOpacity
+                key={idx}
+                onPress={() => router.push({ pathname: '/Categories', params: { category: category.label } })}
+                style={styles.categoryCard}
+              >
+                <LinearGradient colors={['#FFFFFF', '#E82A2F']} style={styles.categoryCard}>
+                  <Image
+                    source={category.image}
+                    style={styles.categoryImg}
+                    resizeMode="contain"
+                  />
+                  <Text style={styles.categoryLabel}>{category.label}</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            ))}
           </ScrollView>
 
           {/* Banner Section */}
@@ -156,7 +154,7 @@ export default function HomeScreen() {
             contentContainerStyle={styles.brandSlider}
           >
             {brands.map((brand, idx) => (
-              <TouchableOpacity key={idx} style={styles.brandCard}>
+              <TouchableOpacity key={idx} style={styles.brandCard} onPress={() => router.push({ pathname: '/Brands', params: { brand: brand.name } })}>
                 <Image
                   source={brand.image}
                   style={styles.brandImg}
@@ -187,60 +185,60 @@ const popupStyles = StyleSheet.create({
     alignItems: 'center',
   },
   popupBox: {
-    width: 320,
+    width: scale(320),
     backgroundColor: '#FFD6DE',
-    borderRadius: 28,
+    borderRadius: moderateScale(28),
     alignItems: 'center',
-    paddingVertical: 28,
-    paddingHorizontal: 16,
+    paddingVertical: verticalScale(28),
+    paddingHorizontal: scale(16),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: moderateScale(4) },
     shadowOpacity: 0.18,
-    shadowRadius: 16,
+    shadowRadius: moderateScale(16),
     elevation: 8,
     zIndex: 2,
   },
   closeBtn: {
     position: 'absolute',
-    top: 12,
-    right: 12,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    top: verticalScale(12),
+    right: scale(12),
+    width: moderateScale(32),
+    height: moderateScale(32),
+    borderRadius: moderateScale(16),
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: moderateScale(1) },
     shadowOpacity: 0.12,
-    shadowRadius: 2,
+    shadowRadius: moderateScale(2),
     elevation: 2,
     zIndex: 3,
   },
   closeText: {
-    fontSize: 22,
+    fontSize: moderateScale(22),
     color: '#222',
     fontWeight: 'bold',
-    marginTop: -2,
+    marginTop: verticalScale(-2),
   },
   saleText: {
-    fontSize: 44,
+    fontSize: moderateScale(44),
     fontWeight: 'bold',
     color: '#E53935',
-    marginTop: 8,
-    marginBottom: 8,
+    marginTop: verticalScale(8),
+    marginBottom: verticalScale(8),
     fontFamily: 'Sigmar',
   },
   productImg: {
-    width: 120,
-    height: 120,
-    marginVertical: 8,
+    width: moderateScale(120),
+    height: moderateScale(120),
+    marginVertical: verticalScale(8),
     alignSelf: 'center',
   },
   discountText: {
-    fontSize: 24,
+    fontSize: moderateScale(24),
     color: '#E53935',
-    marginTop: 12,
+    marginTop: verticalScale(12),
     fontWeight: '500',
     fontFamily: 'PoppinsSemi',
   },
@@ -255,141 +253,140 @@ const styles = StyleSheet.create({
   },
   headerBg: {
     backgroundColor: "#733326",
-    borderBottomLeftRadius: 32,
-    borderBottomRightRadius: 32,
-    padding: 20,
-    paddingTop: 40,
-    height: '30%',
+    borderBottomLeftRadius: moderateScale(32),
+    borderBottomRightRadius: moderateScale(32),
+    paddingLeft: scale(10),
+    paddingVertical: verticalScale(10),
+    paddingTop: verticalScale(20),
+    height: '28%',
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    overflow: "hidden",
+    justifyContent: "space-between"
   },
   hello: {
     color: '#fff',
-    fontSize: 22,
+    fontSize: moderateScale(22),
     fontFamily: "RussoOne",
-    marginBottom: 4,
-    marginTop: 40,
+    marginBottom: verticalScale(4),
+    marginTop: verticalScale(40),
   },
   subtext: {
     color: '#fff',
-    fontSize: 14,
-    marginBottom: 12,
+    fontSize: moderateScale(14),
+    marginBottom: verticalScale(12),
   },
   rewardBox: {
     backgroundColor: '#fff',
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 15,
+    borderRadius: moderateScale(12),
+    paddingHorizontal: scale(10),
+    paddingVertical: verticalScale(15),
     alignSelf: 'flex-start',
-    marginTop: 4,
-    marginBottom: 8,
+    marginTop: verticalScale(4),
+    marginBottom: verticalScale(8),
     alignItems: 'center',
   },
   rewardLabel: {
     color: "red",
     fontFamily: 'RussoOne',
-    fontSize: 12,
+    fontSize: moderateScale(12),
   },
   rewardPoints: {
     color: "red",
     fontFamily: 'PoppinsBold',
-    fontSize: 18,
+    fontSize: moderateScale(18),
     textAlign: 'center',
   },
   rewardPts: {
-    fontSize: 10,
+    fontSize: moderateScale(10),
     color: "red",
     fontFamily: 'PoppinsBold',
   },
   familyImg: {
-    width: '72%',
-    height: '90%',
-    left: 40,
+    width: '100%',
+    height: '100%',
+    resizeMode: "contain"
   },
   sectionTitle: {
     color: "white",
-    fontSize: 26,
+    fontSize: moderateScale(26),
     fontFamily: "Sigmar",
-    marginLeft: 16,
-
+    marginLeft: scale(15),
   },
   categoriesSlider: {
-    paddingHorizontal: 8,
-    gap: 8,
-    height: 250,
-    marginTop: 25
+    paddingHorizontal: scale(8),
+    gap: scale(8),
+    height: verticalScale(250),
+    marginTop: verticalScale(20)
   },
   categoryCard: {
-    marginTop: 5,
-    borderRadius: 18,
-    width: 213,
-    height: 220,
+    marginTop: verticalScale(5),
+    borderRadius: moderateScale(18),
+    width: scale(218),
+    height: verticalScale(200),
     alignItems: 'center',
     justifyContent: 'center',
-    marginHorizontal: 4,
+    marginHorizontal: scale(4),
+    elevation: 4
   },
   categoryImg: {
     width: "80%",
-    height: "60%",
-    marginBottom: 2,
+    height: "80%",
   },
   categoryLabel: {
     color: 'white',
-    fontSize: 22,
+    fontSize: moderateScale(22),
     fontFamily: "Sigmar"
   },
   bannerCard: {
-    borderRadius: 26,
+    borderRadius: moderateScale(26),
     alignItems: 'center',
     width: "96%",
-    marginHorizontal: 5
+    marginHorizontal: scale(5)
   },
-
   brandCard: {
     backgroundColor: '#FBF4E4',
-    borderRadius: 16,
-    width: 120,
-    height: 100,
+    borderRadius: moderateScale(16),
+    width: scale(140),
+    height: verticalScale(120),
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 2,
-    marginTop: 5,
-    marginHorizontal: 4,
+    marginTop: verticalScale(5),
+    marginHorizontal: scale(4),
   },
   brandSlider: {
-    paddingHorizontal: 8,
-    paddingVertical: 18,
-    height: 150,
+    paddingHorizontal: scale(8),
+    paddingVertical: verticalScale(18),
+    height: verticalScale(150),
   },
   brandImg: {
-    width: "100%",
-    height: "100%",
-    marginBottom: 2,
+    width: "60%",
+    height: "60%",
+    marginBottom: verticalScale(2),
   },
-
   bestSellerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginHorizontal: 16,
+    marginHorizontal: scale(16),
   },
   bestSellerTitle: {
     color: "white",
-    fontSize: 28,
+    fontSize: moderateScale(28),
     fontFamily: "Sigmar"
   },
   seeAll: {
     color: "white",
-    fontSize: 14,
+    fontSize: moderateScale(14),
     fontWeight: 'bold',
   },
   bestSellerSubtext: {
     color: 'white',
-    fontSize: 14,
-    marginLeft: 16,
-    marginTop: 4,
-    marginBottom: 16,
+    fontSize: moderateScale(14),
+    marginLeft: scale(16),
+    marginTop: verticalScale(4),
+    marginBottom: verticalScale(16),
   },
 });

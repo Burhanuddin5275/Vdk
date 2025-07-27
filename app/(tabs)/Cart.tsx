@@ -1,9 +1,13 @@
 import { Button } from '@/components/Button';
+import { selectPhone } from '@/store/authSlice';
+import { useAppSelector } from '@/store/hooks';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFonts } from 'expo-font';
+import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Image, ImageBackground, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { useCartStore } from '../../store/cartStore';
 
 interface CartItem {
@@ -17,7 +21,8 @@ interface CartItem {
 }
 
 export default function CartScreen() {
-  const [phone, setPhone] = useState<string | null>(null);
+  const router = useRouter();
+  const phone = useAppSelector(selectPhone);
   const [loading, setLoading] = useState(true);
   const allCartItems = useCartStore((state: any) => state.cartItems);
   const cartItems = allCartItems.filter((item: any) => item.user === phone);
@@ -43,7 +48,6 @@ export default function CartScreen() {
   }, [loaded]);
 
   const migrateCartItems = async () => {
-    const phone = await AsyncStorage.getItem('phone');
     if (!phone) return;
     const raw = await AsyncStorage.getItem('cartItems');
     if (!raw) return;
@@ -55,13 +59,14 @@ export default function CartScreen() {
   };
 
   useEffect(() => {
-    migrateCartItems().then(() => {
-      Promise.all([
-        AsyncStorage.getItem('phone').then(setPhone),
-        useCartStore.getState().loadCart()
-      ]).then(() => setLoading(false));
-    });
-  }, []);
+    if (phone) {
+      migrateCartItems().then(() => {
+        useCartStore.getState().loadCart().then(() => setLoading(false));
+      });
+    } else {
+      setLoading(false);
+    }
+  }, [phone]);
 
   if (loading) {
     return <View style={{flex:1,justifyContent:'center',alignItems:'center'}}><Text>Loading...</Text></View>;
@@ -89,7 +94,7 @@ export default function CartScreen() {
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="white" />
+            <Ionicons name="arrow-back" size={moderateScale(24)} color="white" />
           </TouchableOpacity>
           <View style={styles.titleContainer}>
             <Text style={styles.headerTitle}>Cart</Text>
@@ -119,14 +124,14 @@ export default function CartScreen() {
                       style={styles.minusButton}
                       onPress={() => useCartStore.getState().updateQuantity(item.id, -1)}
                     >
-                      <Ionicons name="remove" size={20} color="red" />
+                      <Ionicons name="remove" size={moderateScale(20)} color="red" />
                     </TouchableOpacity>
                     <Text style={styles.quantityText}>{item.quantity}</Text>
                     <TouchableOpacity
                       style={styles.plusButton}
                       onPress={() => useCartStore.getState().updateQuantity(item.id, 1)}
                     >
-                      <Ionicons name="add" size={20} color="red" />
+                      <Ionicons name="add" size={moderateScale(20)} color="red" />
                     </TouchableOpacity>
                   </View>
 
@@ -137,7 +142,7 @@ export default function CartScreen() {
                       setDeleteModalVisible(true);
                     }}
                   >
-                    <Ionicons name="trash-outline" size={20} color="white" />
+                    <Ionicons name="trash-outline" size={moderateScale(20)} color="white" />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -244,7 +249,10 @@ export default function CartScreen() {
               <Button
                 variant="secondary"
                 style={checkoutModalStyles.proceedButton}
-                onPress={() => setCheckoutModalVisible(false)}
+                onPress={() => {
+                  setCheckoutModalVisible(false);
+                  router.push('/Checkout');
+                }}
               >
                 Proceed to Checkout
               </Button>
@@ -329,7 +337,6 @@ const styles = StyleSheet.create({
     flex: 1,
     width: '100%',
     height: '100%',
-
   },
   container: {
     flex: 1,
@@ -337,69 +344,68 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 50,
-    paddingBottom: 20,
+    paddingHorizontal: scale(20),
+    paddingTop: verticalScale(50),
+    paddingBottom: verticalScale(20),
   },
   titleContainer: {
     flex: 1,
     alignItems: 'center',
   },
   backButton: {
-    width: 40,
-    height: 40,
+    width: moderateScale(40),
+    height: moderateScale(40),
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: moderateScale(20),
     fontFamily: "Sigmar",
     color: 'white',
   },
-
   cartList: {
     flex: 1,
-    paddingHorizontal: 20,
-    height: 2022,
+    paddingHorizontal: scale(20),
+    height: verticalScale(2022),
   },
   cartItem: {
     flexDirection: 'row',
-    paddingVertical: 15,
+    paddingVertical: verticalScale(15),
     alignItems: 'center',
   },
   imageContainer: {
     alignItems: 'center',
-    marginRight: 15,
+    marginRight: scale(15),
   },
   productImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 8,
-    marginBottom: 4,
+    width: moderateScale(80),
+    height: moderateScale(80),
+    borderRadius: moderateScale(8),
+    marginBottom: verticalScale(4),
   },
   productInfo: {
     flex: 1,
   },
   productName: {
-    fontSize: 14,
+    fontSize: moderateScale(14),
     fontFamily: "PoppinsMedium",
     color: 'white',
-    marginBottom: 2,
+    marginBottom: verticalScale(2),
   },
   productPack: {
-    fontSize: 14,
+    fontSize: moderateScale(14),
     color: '#FFFFFF',
     fontFamily: "PoppinsMedium",
-    marginBottom: 4,
+    marginBottom: verticalScale(4),
   },
   productPrice: {
-    fontSize: 16,
+    fontSize: moderateScale(16),
     fontFamily: "PoppinsBold",
     color: 'white',
-    marginBottom: 2,
+    marginBottom: verticalScale(2),
   },
   productPoints: {
-    fontSize: 18,
+    fontSize: moderateScale(18),
     color: 'rgba(255, 255, 255, 0.7)',
     fontFamily: "PoppinsBold",
   },
@@ -409,57 +415,57 @@ const styles = StyleSheet.create({
   quantityControls: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    marginBottom: 8,
+    paddingHorizontal: scale(8),
+    paddingVertical: verticalScale(4),
+    marginBottom: verticalScale(8),
   },
   minusButton: {
     backgroundColor: "white",
-    width: 24,
-    height: 24,
+    width: moderateScale(24),
+    height: moderateScale(24),
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 4,
+    borderRadius: moderateScale(4),
   },
   plusButton: {
     backgroundColor: "white",
-    width: 24,
-    height: 24,
+    width: moderateScale(24),
+    height: moderateScale(24),
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 4,
+    borderRadius: moderateScale(4),
   },
   quantityText: {
     color: 'white',
-    fontSize: 16,
+    fontSize: moderateScale(16),
     fontWeight: '600',
-    marginHorizontal: 12,
+    marginHorizontal: scale(12),
   },
   removeButton: {
-    width: 32,
-    height: 32,
+    width: moderateScale(32),
+    height: moderateScale(32),
     alignItems: 'center',
     justifyContent: 'center',
   },
   separator: {
-    height: 1,
+    height: verticalScale(1),
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    marginVertical: 5,
+    marginVertical: verticalScale(5),
   },
   checkoutContainer: {
-    paddingHorizontal: 25,
-    paddingVertical: 60,
+    paddingHorizontal: scale(25),
+    paddingVertical: verticalScale(60),
   },
   checkoutButton: {
     backgroundColor: 'white',
-    borderRadius: 25,
-    paddingVertical: 8,
+    borderRadius: moderateScale(25),
+    paddingVertical: verticalScale(8),
     alignItems: 'center',
-    bottom: 20,
+    bottom: verticalScale(20),
   },
   checkoutText: {
     color: '#FF0000',
-    fontSize: 18,
+    fontSize: moderateScale(18),
     fontFamily: "PoppinsMedium",
   },
 });
@@ -472,73 +478,73 @@ const modalStyles = StyleSheet.create({
   },
   container: {
     backgroundColor: '#E53935',
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
-    padding: 24,
+    borderTopLeftRadius: moderateScale(32),
+    borderTopRightRadius: moderateScale(32),
+    padding: scale(24),
     alignItems: 'center',
   },
   title: {
     color: 'white',
-    fontSize: 20,
+    fontSize: moderateScale(20),
     fontWeight: 'bold',
-    marginBottom: 8,
+    marginBottom: verticalScale(8),
   },
   divider: {
     width: '100%',
-    height: 1,
+    height: verticalScale(1),
     backgroundColor: 'rgba(255,255,255,0.3)',
-    marginVertical: 8,
+    marginVertical: verticalScale(8),
   },
   itemRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 16,
+    marginVertical: verticalScale(16),
   },
   itemImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 12,
+    width: moderateScale(80),
+    height: moderateScale(80),
+    borderRadius: moderateScale(12),
     backgroundColor: 'white',
-    marginRight: 16,
+    marginRight: scale(16),
   },
   itemName: {
     color: 'white',
-    fontSize: 18,
+    fontSize: moderateScale(18),
     fontWeight: 'bold',
-    marginBottom: 4,
+    marginBottom: verticalScale(4),
   },
   itemPrice: {
     color: 'white',
-    fontSize: 16,
+    fontSize: moderateScale(16),
     fontWeight: '600',
   },
   buttonRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     width: '100%',
-    marginTop: 24,
+    marginTop: verticalScale(24),
   },
   cancelButton: {
     backgroundColor: 'white',
-    borderRadius: 24,
-    paddingVertical: 10,
-    paddingHorizontal: 32,
-    marginRight: 12,
+    borderRadius: moderateScale(24),
+    paddingVertical: verticalScale(10),
+    paddingHorizontal: scale(32),
+    marginRight: scale(12),
   },
   cancelText: {
     color: '#E53935',
-    fontSize: 16,
+    fontSize: moderateScale(16),
     fontWeight: 'bold',
   },
   removeButton: {
     backgroundColor: 'white',
-    borderRadius: 24,
-    paddingVertical: 10,
-    paddingHorizontal: 32,
+    borderRadius: moderateScale(24),
+    paddingVertical: verticalScale(10),
+    paddingHorizontal: scale(32),
   },
   removeText: {
     color: '#E53935',
-    fontSize: 16,
+    fontSize: moderateScale(16),
     fontWeight: 'bold',
   },
 });
@@ -551,88 +557,88 @@ const checkoutModalStyles = StyleSheet.create({
   },
   container: {
     backgroundColor: '#FFF8F6',
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    padding: 24,
+    borderTopLeftRadius: moderateScale(28),
+    borderTopRightRadius: moderateScale(28),
+    padding: scale(24),
     alignItems: 'center',
   },
   promoRow: {
     flexDirection: 'row',
     alignItems: 'center',
     width: '100%',
-    marginBottom: 18,
-    marginTop: 8,
+    marginBottom: verticalScale(18),
+    marginTop: verticalScale(8),
   },
   promoInputBox: {
     flex: 1,
     backgroundColor: 'white',
-    borderRadius: 24,
-    borderWidth: 2,
+    borderRadius: moderateScale(24),
+    borderWidth: moderateScale(2),
     borderColor: '#E53935',
-    paddingVertical: 8,
-    paddingHorizontal: 18,
-    marginRight: 10,
+    paddingVertical: verticalScale(8),
+    paddingHorizontal: scale(18),
+    marginRight: scale(10),
   },
   promoInputText: {
     color: '#B0B0B0',
-    fontSize: 16,
+    fontSize: moderateScale(16),
   },
   applyButton: {
     backgroundColor: 'white',
     borderColor: '#E53935',
-    borderWidth: 2,
-    borderRadius: 24,
-    paddingVertical: 8,
-    paddingHorizontal: 24,
+    borderWidth: moderateScale(2),
+    borderRadius: moderateScale(24),
+    paddingVertical: verticalScale(8),
+    paddingHorizontal: scale(24),
   },
   applyButtonText: {
     color: '#E53935',
     fontWeight: 'bold',
-    fontSize: 16,
+    fontSize: moderateScale(16),
   },
   calcRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     width: '100%',
-    marginVertical: 4,
+    marginVertical: verticalScale(4),
   },
   label: {
     color: '#E53935',
-    fontSize: 16,
+    fontSize: moderateScale(16),
     fontWeight: 'bold',
   },
   valueBold: {
     color: '#E53935',
-    fontSize: 16,
+    fontSize: moderateScale(16),
     fontWeight: 'bold',
   },
   discountValue: {
     color: '#E53935',
-    fontSize: 16,
+    fontSize: moderateScale(16),
     fontWeight: 'bold',
   },
   divider: {
     width: '100%',
-    height: 1,
+    height: verticalScale(1),
     backgroundColor: '#E5E5E5',
-    marginVertical: 12,
+    marginVertical: verticalScale(12),
   },
   totalValue: {
     color: '#E53935',
-    fontSize: 20,
+    fontSize: moderateScale(20),
     fontWeight: 'bold',
   },
   proceedButton: {
     backgroundColor: '#E53935',
-    borderRadius: 24,
+    borderRadius: moderateScale(24),
     width: '100%',
     alignItems: 'center',
-    paddingVertical: 14,
-    marginTop: 24,
+    paddingVertical: verticalScale(14),
+    marginTop: verticalScale(24),
   },
   proceedButtonText: {
     color: 'white',
-    fontSize: 18,
+    fontSize: moderateScale(18),
     fontWeight: 'bold',
   },
 }); 

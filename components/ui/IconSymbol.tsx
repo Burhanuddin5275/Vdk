@@ -23,9 +23,13 @@ const MAPPING = {
   'calendar': 'event',
   'book.fill': 'book-online',
   'paperplane.fill': 'send',
-  'chevron.left.forwardslash.chevron.right': 'code',
   'chevron.right': 'chevron-right',
-} as IconMapping;
+  'location.fill': 'location-on',
+  'radio.checked': 'radio-button-checked',
+  'radio.unchecked': 'radio-button-unchecked',
+  'cube.fill': 'inventory', // Added for shipping box
+  'car.fill': 'directions-car', // Added for shipping car/truck
+} as unknown as IconMapping;
 
 /**
  * An icon component that uses native SF Symbols on iOS, and Material Icons on Android and web.

@@ -14,6 +14,8 @@ interface CartItem {
   user?: string;
 }
 
+export type { CartItem };
+
 interface CartState {
   cartItems: CartItem[];
   addToCart: (item: CartItem) => Promise<void>;
