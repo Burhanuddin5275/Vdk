@@ -1,6 +1,5 @@
 import { colors } from '@/theme/colors';
-import { useFonts } from 'expo-font';
-import React, { useEffect } from 'react';
+import React from 'react';
 import { StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 
@@ -9,6 +8,7 @@ type ButtonProps = {
   children: string;
   onPress?: () => void;
   style?: object;
+  disabled?: boolean;
 };
 
 const styles = StyleSheet.create({
@@ -32,7 +32,7 @@ const styles = StyleSheet.create({
   primaryText: {
     color: colors.textPrimary,
     fontSize: moderateScale(18),
-    fontFamily: 'SemiBold',
+    fontFamily: 'PoppinsSemi',
   },
   secondaryText: {
     color: colors.white,
@@ -46,17 +46,8 @@ export const Button: React.FC<ButtonProps> = ({
   children,
   onPress,
   style,
+  disabled,
 }) => {
-    const [loaded]=useFonts({
-      SemiBold:require("../assets/fonts/Poppins-SemiBold.ttf"),
-      Medium:require("../assets/fonts/Poppins-Medium.ttf"),
-    })
-  
-    useEffect(()=>{
-      if(loaded){
-        return;
-      }
-    },[loaded])
   return (
     <TouchableOpacity
       style={[
@@ -65,6 +56,7 @@ export const Button: React.FC<ButtonProps> = ({
         style,
       ]}
       onPress={onPress}
+      disabled={disabled}
     >
       <Text style={variant === 'primary' ? styles.primaryText : styles.secondaryText}>
         {children}

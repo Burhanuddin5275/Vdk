@@ -1,7 +1,9 @@
 import { colors } from '@/theme/colors';
-import { useFonts } from 'expo-font';
+import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Image, ImageBackground, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 
 const TABS = ['All', 'Active', 'Completed', 'Cancelled'];
 const ORDERS = [
@@ -15,19 +17,9 @@ const ORDERS = [
 ];
 
 export default function OrdersScreen() {
-  const [loaded] = useFonts({
-    RussoOne: require("../../assets/fonts/RussoOne-Regular.ttf"),
-    PoppinsMedium: require("../../assets/fonts/Poppins-Medium.ttf"),
-    PoppinsSemi: require("../../assets/fonts/Poppins-SemiBold.ttf"),
-    PoppinsBold: require("../../assets/fonts/Poppins-Bold.ttf"),
-    Sigmar: require("../../assets/fonts/Sigmar-Regular.ttf"),
-  })
-
   useEffect(() => {
-    if (loaded) {
-      return;
-    }
-  }, [loaded])
+    // No-op, as fonts are now loaded globally
+  }, [])
   const [activeTab, setActiveTab] = useState(0);
   const [date, setDate] = useState('');
 
@@ -38,13 +30,17 @@ export default function OrdersScreen() {
   else if (activeTab === 3) filteredOrders = ORDERS.filter(o => o.status === 'Re-Order');
 
   return (
-    <View style={styles.container}>
+    <ImageBackground
+      source={require('../../assets/images/ss1.png')}
+      style={styles.container}
+      resizeMode="cover"
+    >
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn}>
-          <Text style={styles.backArrow}>{'<'}</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Orders</Text>
+        <TouchableOpacity style={styles.backBtn} onPress={router.back}>
+          <Ionicons name="arrow-back" size={moderateScale(24)} color="white" />
+        </TouchableOpacity> 
+          <Text style={styles.headerTitle}>Orders</Text>
       </View>
       {/* Tabs */}
       <View style={styles.tabs}>
@@ -59,14 +55,16 @@ export default function OrdersScreen() {
       </View>
       {/* Date Filter */}
       <View style={styles.dateRow}>
-        <Text style={styles.dateLabel}>Date</Text>
-        <TextInput
-          style={styles.dateInput}
-          placeholder="mm/dd/yyyy"
-          placeholderTextColor="#888"
-          value={date}
-          onChangeText={setDate}
-        />
+        <View style={styles.dateContainer}>
+          <Text style={styles.dateLabel}>Date</Text>
+          <TextInput
+            style={styles.dateInput}
+            placeholder="mm/dd/yyyy"
+            placeholderTextColor="black"
+            value={date}
+            onChangeText={setDate}
+          />
+        </View>
       </View>
       {/* Orders List */}
       <ScrollView contentContainerStyle={styles.ordersList} showsVerticalScrollIndicator={false}>
@@ -79,42 +77,58 @@ export default function OrdersScreen() {
               <Text style={styles.orderNum}>Order#{order.id}</Text>
               <Text style={styles.orderPrice}>Pkr {order.price}</Text>
             </View>
-            <TouchableOpacity style={styles.actionBtn}>
+            <TouchableOpacity 
+              style={styles.actionBtn}
+              onPress={() => {
+                if (order.status === 'Track Order') {
+                  router.push({ pathname: '/OrderTracker', params: { id: order.id } });
+                }
+                else if (order.status === 'Leave Review') {
+                  router.push({ pathname: '/OrderReview', params: { id: order.id } });
+                }
+              }}
+            >
               <Text style={styles.actionBtnText}>{order.status}</Text>
             </TouchableOpacity>
           </View>
         ))}
       </ScrollView>
-    </View>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1, backgroundColor: '#E53935'
+    flex: 1, 
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: 48,
-    paddingBottom: 16,
-    paddingHorizontal: 16
+    justifyContent: 'flex-start',
+    height: verticalScale(120),
+    position: 'relative',
+    paddingHorizontal: scale(16),
   },
   backBtn: {
-    marginRight: 12,
-    padding: 4
-  },
-  backArrow: {
-    fontSize: 24,
-    color: '#fff'
+    width: 40,
+    height: 56,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
   },
   headerTitle: {
-    flex: 1,
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
     textAlign: 'center',
-    fontSize: 28,
+    textAlignVertical: 'center',
+    fontSize: moderateScale(28),
     color: '#fff',
-    fontWeight: 'bold',
-    letterSpacing: 1
+    fontFamily: 'Sigmar',
+    letterSpacing: 1,
+    lineHeight: 56,
   },
   tabs: {
     flexDirection: 'row',
@@ -153,21 +167,35 @@ const styles = StyleSheet.create({
   dateRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    margin: 16
+    margin: 16,
+  },
+  dateContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'white',
+    borderRadius: moderateScale(6),
+    overflow: 'hidden',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   dateLabel: {
-    color: '#fff',
-    fontWeight: 'bold',
-    marginRight: 8,
-    fontSize: 16
+    color: 'white',
+    fontFamily: 'InterRegular',
+    fontSize: moderateScale(12),
+    backgroundColor: colors.primaryDark,
+    paddingHorizontal: scale(8),
+    paddingVertical: verticalScale(6),
   },
   dateInput: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    minWidth: 110,
-    fontSize: 15
+    backgroundColor: 'transparent',
+    paddingHorizontal: scale(16),
+    paddingVertical: verticalScale(4),
+    fontSize: moderateScale(11),
+    color: 'black',
+    textAlign: 'center',
   },
   ordersList: {
     paddingHorizontal: 16,

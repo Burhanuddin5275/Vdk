@@ -1,12 +1,11 @@
 import { Button } from '@/components/Button';
 import { selectPhone } from '@/store/authSlice';
 import { useAppSelector } from '@/store/hooks';
+import { colors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useFonts } from 'expo-font';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Image, ImageBackground, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Image, ImageBackground, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { useCartStore } from '../../store/cartStore';
 
@@ -33,36 +32,15 @@ export default function CartScreen() {
   const [addToCartModalVisible, setAddToCartModalVisible] = useState(false);
   const [selectedSize, setSelectedSize] = useState('Pack of 3');
   const [qty, setQty] = useState(1);
-  const [loaded] = useFonts({
-    RussoOne: require("../../assets/fonts/RussoOne-Regular.ttf"),
-    PoppinsMedium: require("../../assets/fonts/Poppins-Medium.ttf"),
-    PoppinsSemi: require("../../assets/fonts/Poppins-SemiBold.ttf"),
-    PoppinsBold: require("../../assets/fonts/Poppins-Bold.ttf"),
-    Sigmar: require("../../assets/fonts/Sigmar-Regular.ttf"),
-  });
+  const [emptyCartMessage, setEmptyCartMessage] = useState('');
+  // Remove: useFonts import and usage, and useEffect for loaded
 
-  useEffect(() => {
-    if (loaded) {
-      return;
-    }
-  }, [loaded]);
-
-  const migrateCartItems = async () => {
-    if (!phone) return;
-    const raw = await AsyncStorage.getItem('cartItems');
-    if (!raw) return;
-    const items = JSON.parse(raw);
-    const migrated = items.map((item: any) =>
-      item.user ? item : { ...item, user: phone }
-    );
-    await AsyncStorage.setItem('cartItems', JSON.stringify(migrated));
-  };
+  // Remove: migrateCartItems function
+  // Remove: useEffect for migrateCartItems
 
   useEffect(() => {
     if (phone) {
-      migrateCartItems().then(() => {
-        useCartStore.getState().loadCart().then(() => setLoading(false));
-      });
+      useCartStore.getState().loadCart().then(() => setLoading(false));
     } else {
       setLoading(false);
     }
@@ -93,12 +71,10 @@ export default function CartScreen() {
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton}>
+          <TouchableOpacity style={styles.backButton} onPress={router.back}>
             <Ionicons name="arrow-back" size={moderateScale(24)} color="white" />
           </TouchableOpacity>
-          <View style={styles.titleContainer}>
             <Text style={styles.headerTitle}>Cart</Text>
-          </View>
           <View style={styles.backButton} />
         </View>
 
@@ -151,7 +127,19 @@ export default function CartScreen() {
           ))}
           {/* Checkout Button */}
           <View style={styles.checkoutContainer}>
-            <Button variant="primary" style={styles.checkoutButton} onPress={() => setCheckoutModalVisible(true)}>
+            <Button
+              variant="primary"
+              style={styles.checkoutButton}
+              onPress={() => {
+                if (cartItems.length > 0) {
+                  setCheckoutModalVisible(true);
+                } else {
+                  setEmptyCartMessage('Please add a product to your cart before checking out.');
+                  setTimeout(() => setEmptyCartMessage(''), 2000);
+                }
+              }}
+              disabled={cartItems.length === 0}
+            >
               Checkout
             </Button>
           </View>
@@ -211,18 +199,18 @@ export default function CartScreen() {
             <View style={checkoutModalStyles.container}>
               {/* Promo Code Row */}
               <View style={checkoutModalStyles.promoRow}>
-                <View style={checkoutModalStyles.promoInputBox}>
+                <View style={[checkoutModalStyles.promoInputBox, { flexDirection: 'row', alignItems: 'center' }]}>
                   <TextInput
-                    style={checkoutModalStyles.promoInputText}
+                    style={[checkoutModalStyles.promoInputText, { flex: 1 }]}
                     placeholder="Promo Code"
                     placeholderTextColor="#B0B0B0"
                     value={promoCode}
                     onChangeText={setPromoCode}
                   />
+                  <TouchableOpacity style={checkoutModalStyles.applyButton}>
+                    <Text style={checkoutModalStyles.applyButtonText}>Apply</Text>
+                  </TouchableOpacity>
                 </View>
-                <TouchableOpacity style={checkoutModalStyles.applyButton}>
-                  <Text style={checkoutModalStyles.applyButtonText}>Apply</Text>
-                </TouchableOpacity>
               </View>
 
               {/* Calculation Rows */}
@@ -245,17 +233,18 @@ export default function CartScreen() {
               </View>
 
               {/* Proceed Button */}
-
-              <Button
-                variant="secondary"
-                style={checkoutModalStyles.proceedButton}
+              <Pressable
+                style={({ hovered }) => [
+                  checkoutModalStyles.proceedButton,
+                  hovered && { backgroundColor: colors.primary }
+                ]}
                 onPress={() => {
                   setCheckoutModalVisible(false);
                   router.push('/Checkout');
                 }}
               >
-                Proceed to Checkout
-              </Button>
+                <Text style={checkoutModalStyles.proceedButtonText}>Proceed to Checkout</Text>
+              </Pressable>
             </View>
           </View>
         </Modal>
@@ -267,8 +256,8 @@ export default function CartScreen() {
           animationType="slide"
           onRequestClose={() => setAddToCartModalVisible(false)}
         >
-          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.3)' }}>
-            <View style={{ backgroundColor: '#FBF4E4', borderRadius: 24, padding: 24, width: 340, maxWidth: '95%' }}>
+          <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.3)' }}>
+            <View style={{ backgroundColor: '#FBF4E4', borderTopLeftRadius: 32, borderTopRightRadius: 32, padding: 24, width: '100%', maxWidth: '100%', alignSelf: 'center', }}>
               <Text style={{ color: '#E53935', fontFamily: 'PoppinsBold', fontSize: 18, marginBottom: 10 }}>Sizes</Text>
               <View style={{ flexDirection: 'row', marginBottom: 16 }}>
                 {sizes.map((s, i) => (
@@ -327,6 +316,15 @@ export default function CartScreen() {
           </View>
         </Modal>
 
+        {/* Empty Cart Message */}
+        {emptyCartMessage ? (
+          <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center', zIndex: 20 }}>
+            <View style={{ backgroundColor: '#E53935', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 24 }}>
+              <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>{emptyCartMessage}</Text>
+            </View>
+          </View>
+        ) : null}
+
       </View>
     </ImageBackground>
   );
@@ -344,24 +342,31 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: scale(20),
-    paddingTop: verticalScale(50),
-    paddingBottom: verticalScale(20),
-  },
-  titleContainer: {
-    flex: 1,
-    alignItems: 'center',
+    justifyContent: 'flex-start',
+    height: verticalScale(120),
+    position: 'relative',
+    paddingHorizontal: scale(16),
   },
   backButton: {
-    width: moderateScale(40),
-    height: moderateScale(40),
+  width: 40,
+    height: 56,
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 1,
   },
   headerTitle: {
-    fontSize: moderateScale(20),
-    fontFamily: "Sigmar",
-    color: 'white',
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    textAlign: 'center',
+    textAlignVertical: 'center',
+    fontSize: moderateScale(28),
+    color: '#fff',
+    fontFamily: 'Sigmar',
+    letterSpacing: 1,
+    lineHeight: 56,
   },
   cartList: {
     flex: 1,
@@ -575,25 +580,25 @@ const checkoutModalStyles = StyleSheet.create({
     borderRadius: moderateScale(24),
     borderWidth: moderateScale(2),
     borderColor: '#E53935',
-    paddingVertical: verticalScale(8),
+    paddingVertical: verticalScale(6),
     paddingHorizontal: scale(18),
     marginRight: scale(10),
   },
   promoInputText: {
-    color: '#B0B0B0',
+    color: '#E53935',
     fontSize: moderateScale(16),
   },
   applyButton: {
-    backgroundColor: 'white',
+    backgroundColor: '#E53935',
     borderColor: '#E53935',
     borderWidth: moderateScale(2),
     borderRadius: moderateScale(24),
-    paddingVertical: verticalScale(8),
-    paddingHorizontal: scale(24),
+    paddingVertical: verticalScale(4),
+    paddingHorizontal: scale(22),
   },
   applyButtonText: {
-    color: '#E53935',
-    fontWeight: 'bold',
+    color: 'white',
+    fontFamily:'PoppinsMedium',
     fontSize: moderateScale(16),
   },
   calcRow: {

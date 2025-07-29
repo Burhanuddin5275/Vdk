@@ -7,7 +7,7 @@ export type Address = {
 
 type AddressStore = {
   selectedAddress: Address | null;
-  setSelectedAddress: (address: Address) => void;
+  setSelectedAddress: (address: Address | null) => void;
 };
 
 export const useAddressStore = create<AddressStore>((set) => ({

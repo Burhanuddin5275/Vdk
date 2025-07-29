@@ -14,7 +14,7 @@ import { useWishlistStore } from './Wishlist';
 const screenWidth = Dimensions.get('window').width;
 const CARD_WIDTH = (screenWidth - scale(48)) / 2;
 
-const Brands = () => {
+const BestSeller = () => {
   const router = useRouter();
   const { brand } = useLocalSearchParams();
   const selectedBrand = brand;
@@ -76,20 +76,15 @@ const Brands = () => {
       'price' in p &&
       'img' in p &&
       'rating' in p &&
-      'pts' in p &&
-      (!brand || p.brand === brand)
+      'pts' in p
   );
 
   // Auto-slide functionality
   useEffect(() => {
-    const filteredAds = adsImages.filter(ad =>
-      displayList.some(product => 'brand' in product && product.brand === ad.brand)
-    );
-
-    if (filteredAds.length > 1) {
+    if (adsImages.length > 1) {
       const interval = setInterval(() => {
         setCurrentAdIndex(prevIndex =>
-          prevIndex === filteredAds.length - 1 ? 0 : prevIndex + 1
+          prevIndex === adsImages.length - 1 ? 0 : prevIndex + 1
         );
       }, 10000); // Change slide every 10 seconds
 
@@ -116,13 +111,10 @@ const Brands = () => {
       const product = displayList[i];
       data.push({ type: "product", data: product });
 
-      if ('brand' in product && (i + 1) % 4 === 0) {
-        const brandAds = adsImages.filter((ad) => ad.brand === product.brand);
-        if (brandAds.length > 0) {
-          const ad = brandAds[adIndex % brandAds.length]; // cycle ads
-          data.push({ type: "ad", brand: product.brand, data: ad });
-          adIndex++;
-        }
+      if ((i + 1) % 4 === 0 && adsImages.length > 0) {
+        const ad = adsImages[adIndex % adsImages.length]; // cycle ads
+        data.push({ type: "ad", data: ad });
+        adIndex++;
       }
     }
 
@@ -132,7 +124,7 @@ const Brands = () => {
 
   return (
     <ImageBackground
-      source={brand === 'Vida' ? require('../assets/images/ss2.png') : require('../assets/images/ss1.png')}
+      source={brand === 'Vida' ? require('../assets/images/seller.png') : require('../assets/images/ss1.png')}
       style={styles.container}
       resizeMode="cover"
     >
@@ -142,7 +134,7 @@ const Brands = () => {
           <TouchableOpacity style={styles.backBtn} onPress={router.back}>
             <Ionicons name="arrow-back" size={24} color="white" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>{brand ? brand : 'Brands'}</Text>
+          <Text style={styles.headerTitle}>Best Seller</Text>
         </View>
 
         {/* Ad Image Slider */}
@@ -157,31 +149,27 @@ const Brands = () => {
             }}
             ref={scrollViewRef}
           >
-            {adsImages
-              .filter(ad => displayList.some(product => 'brand' in product && product.brand === ad.brand))
-              .map((ad, index) => (
-                <View key={index} style={styles.adSlide}>
-                  <Image
-                    source={ad.image}
-                    style={styles.adSlideImage}
-                    resizeMode="contain"
-                  />
-                </View>
-              ))}
+            {adsImages.map((ad, index) => (
+              <View key={index} style={styles.adSlide}>
+                <Image
+                  source={ad.image}
+                  style={styles.adSlideImage}
+                  resizeMode="contain"
+                />
+              </View>
+            ))}
           </ScrollView>
           {/* Ad Indicators */}
           <View style={styles.adIndicators}>
-            {adsImages
-              .filter(ad => displayList.some(product => 'brand' in product && product.brand === ad.brand))
-              .map((_, index) => (
-                <View
-                  key={index}
-                  style={[
-                    styles.adIndicator,
-                    index === currentAdIndex && styles.adIndicatorActive
-                  ]}
-                />
-              ))}
+            {adsImages.map((_, index) => (
+              <View
+                key={index}
+                style={[
+                  styles.adIndicator,
+                  index === currentAdIndex && styles.adIndicatorActive
+                ]}
+              />
+            ))}
           </View>
         </View>
 
@@ -514,4 +502,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default Brands;
+export default BestSeller;

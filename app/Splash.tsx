@@ -3,24 +3,13 @@ import { colors } from '@/theme/colors';
 import { useFonts } from 'expo-font';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Dimensions, Image, ImageBackground, StyleSheet, Text, View } from 'react-native';
 import { moderateScale, verticalScale } from 'react-native-size-matters';
 const { width } = Dimensions.get('window');
 
 export default function Splash() {
   const router = useRouter();
-  const [loaded]=useFonts({
-    Sacramento:require("../assets/fonts/Sacramento-Regular.ttf"),
-    Sigmar:require("../assets/fonts/Sigmar-Regular.ttf"),
-    Poppins:require("../assets/fonts/Poppins-SemiBold.ttf"),
-  })
-
-  useEffect(()=>{
-    if(loaded){
-      return;
-    }
-  },[loaded])
   return (
     <ImageBackground
       source={require('../assets/images/ss1.png')}
@@ -91,14 +80,13 @@ const styles = StyleSheet.create({
     fontSize: moderateScale(50),
     color: colors.white,
     fontFamily: 'Sacramento',
-    height: verticalScale(50),
+    height: verticalScale(42),
     textAlign: "center"
   },
   startJourney: {
     fontSize: moderateScale(30),
     color: colors.white,
     fontFamily: 'Sigmar',
-    marginBottom: verticalScale(10),
     textAlign: "center"
   },
 });

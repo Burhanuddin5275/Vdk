@@ -1,5 +1,4 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useFonts } from 'expo-font';
 import { router } from 'expo-router';
 import React, { useEffect } from 'react';
 import { Dimensions, FlatList, Image, ImageBackground, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -13,18 +12,14 @@ import { colors } from '../theme/colors';
 const { width, height } = Dimensions.get('window');
 
 const Checkout = () => {
-    const [loaded] = useFonts({
-        PoppinsSemi: require("../assets/fonts/Poppins-SemiBold.ttf"),
-        PoppinsBold: require("../assets/fonts/Poppins-Bold.ttf"),
-        InterRegular: require("../assets/fonts/Inter-Regular.ttf"),
-        InterBold: require("../assets/fonts/Inter-Bold.ttf"),
-        Sigmar: require("../assets/fonts/Sigmar-Regular.ttf"),
-    })
     useEffect(() => {
-        if (loaded) {
-            return;
-        }
-    }, [loaded])
+        // No font loading needed here as fonts are now global
+        return () => {
+            // Clear address and shipping when leaving Checkout
+            useAddressStore.getState().setSelectedAddress(null);
+            useShippingStore.getState().setSelectedShipping(null);
+        };
+    }, []);
     const { cartItems, loadCart } = useCartStore();
 
     useEffect(() => {
@@ -59,7 +54,7 @@ const Checkout = () => {
             <View style={styles.container}>
                 {/* Header */}
                 <View style={styles.headerRow}>
-                    <TouchableOpacity style={styles.backBtn}>
+                    <TouchableOpacity style={styles.backBtn} onPress={router.back}>
                         <Ionicons name="arrow-back" size={24} color="white" />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>Checkout</Text>
@@ -68,7 +63,7 @@ const Checkout = () => {
                 {/* Address */}
                 <Text style={styles.sectionTitle}>Shipping Address</Text>
                 <View style={styles.sectionRow}>
-                    <IconSymbol name="house.fill" size={22} color={colors.white} />
+                    <IconSymbol name="house.fill" size={30} color={colors.white} />
                     <View style={{ flex: 1, marginLeft: 10 }}>
                         <Text style={styles.addressLabel}>{address.label}</Text>
                         <Text style={styles.addressDetails}>{address.desc}</Text>
@@ -81,7 +76,7 @@ const Checkout = () => {
                 {/* Shipping */}
                 <Text style={styles.sectionTitle}>Choose Shipping</Text>
                 <View style={styles.sectionRow}>
-                    <IconSymbol name="calendar" size={22} color={colors.white} />
+                    <IconSymbol name="calendar" size={30} color={colors.white} />
                     <View style={{ flex: 1, marginLeft: 10 }}>
                         <Text style={styles.shippingLabel}>{shipping.label}</Text>
                         <Text style={styles.shippingEstimate}>{shipping.desc}</Text>
@@ -102,7 +97,7 @@ const Checkout = () => {
 
                 {/* Continue to Payment Button */}
                 <View style={styles.footer}>
-                    <Button variant="secondary" style={styles.payBtn}>
+                    <Button variant="secondary" style={styles.payBtn} onPress={() =>router.push('/PaymentMethod')}>
                         Continue to Payment
                     </Button>
                 </View>
@@ -126,19 +121,34 @@ const styles = StyleSheet.create({
     headerRow: {
         flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'flex-start',
+        height: 56,
+        position: 'relative',
         marginBottom: 18,
+        paddingHorizontal: 0,
     },
     backBtn: {
-        padding: 4,
-        marginRight: 8,
+        width: 40,
+        height: 56,
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 1,
+        padding: 0,
+        marginRight: 0,
     },
     headerTitle: {
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        top: 0,
+        bottom: 0,
+        textAlign: 'center',
+        textAlignVertical: 'center',
         color: colors.white,
         fontSize: 25,
         fontFamily: 'Sigmar',
         letterSpacing: 1,
-        flex: 1,
-        marginLeft: "18%",
+        lineHeight: 56,
     },
     sectionTitle: {
         color: colors.white,
@@ -151,7 +161,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         borderRadius: 12,
-        padding: 12,
+        padding: 8,
         marginBottom: 8,
     },
     addressLabel: {

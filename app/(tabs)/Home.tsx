@@ -1,9 +1,12 @@
-import { useFonts } from 'expo-font';
+import { colors } from '@/theme/colors';
+import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Dimensions, Image, ImageBackground, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
+import { useWishlistStore } from '../../app/Wishlist';
+import { PRODUCTS } from '../../constants/products';
 
 const brands = [
   { name: 'Josh', image: require('../../assets/images/josh.png') },
@@ -44,23 +47,19 @@ function SalePopup({ visible, onClose }: SalePopupProps) {
 }
 
 export default function HomeScreen() {
-  const [loaded] = useFonts({
-    RussoOne: require("../../assets/fonts/RussoOne-Regular.ttf"),
-    PoppinsMedium: require("../../assets/fonts/Poppins-Medium.ttf"),
-    PoppinsBold: require("../../assets/fonts/Poppins-Bold.ttf"),
-    PoppinsSemi: require("../../assets/fonts/Poppins-SemiBold.ttf"),
-    Sigmar: require("../../assets/fonts/Sigmar-Regular.ttf"),
-  })
-
   const [showPopup, setShowPopup] = useState(false);
+  const wishlistItems = useWishlistStore((state: { items: { id: string }[] }) => state.items);
+  const isInWishlist = (id: string) => wishlistItems.some((w: { id: string }) => w.id === id);
+  const addToWishlist = useWishlistStore((state) => state.addToWishlist);
+  const removeFromWishlist = useWishlistStore((state) => state.removeFromWishlist);
 
   useEffect(() => {
-    if (loaded) {
+    if (true) { // Always true as fonts are loaded globally
       // Show popup after 7 seconds
       const timer = setTimeout(() => setShowPopup(true), 2000);
       return () => clearTimeout(timer);
     }
-  }, [loaded]);
+  }, []);
 
   const categories = [
     {
@@ -84,16 +83,17 @@ export default function HomeScreen() {
   return (
     <>
       <SalePopup visible={showPopup} onClose={() => setShowPopup(false)} />
-      <ScrollView contentContainerStyle={{ paddingBottom: 0 }}>
-        <ImageBackground
+           <ImageBackground
           source={require('../../assets/images/home.jpg')}
           style={styles.background}
           resizeMode="cover"
         >
+      <ScrollView contentContainerStyle={{ paddingBottom:"10%" }}>
+     
           {/* Header Section */}
           <View style={styles.headerBg}>
             <View style={styles.headerRow}>
-              <View style={{width:"40%"}}>
+              <View style={{width:"40%", marginBottom:verticalScale(24)}}>
                 <Text style={styles.hello}>Hello!{"\n"}Hussain</Text>
                 <Text style={styles.subtext}>What would you like to buy?</Text>
                 <View style={styles.rewardBox}>
@@ -167,12 +167,79 @@ export default function HomeScreen() {
           {/* Best Seller Section */}
           <View style={styles.bestSellerRow}>
             <Text style={styles.bestSellerTitle}>Best Seller</Text>
-            <Text style={styles.seeAll}>See All</Text>
+            <Text style={styles.seeAll} onPress={()=>{router.push('/BestSeller')}}>See All</Text>
           </View>
           <Text style={styles.bestSellerSubtext}>Find the top most popular items in DKT best sellers.</Text>
-          {/* Add best seller cards here if needed */}
-        </ImageBackground>
+
+          {/* Best Seller Product Slider */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={{ marginTop: 10, marginBottom: 24, height:verticalScale(260) }}
+            contentContainerStyle={{ paddingHorizontal: 16 }}
+          >
+            {PRODUCTS.filter(p => 'rating' in p)
+              .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+              .slice(0, 4)
+              .map((product, idx) => (
+                <TouchableOpacity
+                  key={product.id}
+                  style={[bestSellerStyles.productCard, idx === 3 && { marginRight: 0 }]}
+                  activeOpacity={0.8}
+                  onPress={() => router.push({ pathname: '/Products', params: { id: product.id, data: JSON.stringify(product) } })}
+                >
+                  <LinearGradient
+                    colors={["#FFD600", "#FF9800"]}
+                    style={bestSellerStyles.gradient}
+                  >
+                    {/* Wishlist Button */}
+                    <TouchableOpacity
+                      style={bestSellerStyles.wishlistBtn}
+                      onPress={async () => {
+                        if (isInWishlist(product.id)) {
+                          await removeFromWishlist(product.id);
+                        } else {
+                          await addToWishlist({
+                            id: product.id,
+                            name: product.name,
+                            price: product.price,
+                            image: product.img,
+                          });
+                        }
+                      }}
+                    >
+                      <Ionicons
+                        name={isInWishlist(product.id) ? "heart" : "heart-outline"}
+                        size={moderateScale(20)}
+                        color="#fff"
+                      />
+                    </TouchableOpacity>
+                    <Image
+                      source={product.img}
+                      style={bestSellerStyles.productImg}
+                    />
+                  </LinearGradient>
+                  {/* Footer */}
+                  <View style={bestSellerStyles.cardFooter}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={bestSellerStyles.cardTitle}>{product.name}</Text>
+                      <Text>
+                        Ratings <Text style={bestSellerStyles.rating}>{"★".repeat(Math.round(product.rating || 0))}</Text>
+                      </Text>
+                    </View>
+                    <View style={bestSellerStyles.ptsBadge}>
+                      <Text style={bestSellerStyles.ptsText}>
+                        {product.pts}
+                        {'\n'}PTS
+                      </Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              ))}
+          </ScrollView>
+       
       </ScrollView>
+       </ImageBackground>
     </>
   );
 }
@@ -244,6 +311,76 @@ const popupStyles = StyleSheet.create({
   },
 });
 
+const bestSellerStyles = StyleSheet.create({
+  productCard: {
+    width: 200,
+    marginRight: 16,
+  },
+  gradient: {
+    borderRadius: moderateScale(18),
+    width: '100%',
+    height:"60%",
+    paddingTop: verticalScale(18),
+    paddingBottom: 0,
+    paddingHorizontal: 10,
+    alignItems: 'center',
+    position: 'relative',
+    marginBottom: verticalScale(16),
+  },
+  wishlistBtn: {
+    position: 'absolute',
+    top: verticalScale(10),
+    right: 10,
+    zIndex: 2,
+    backgroundColor: '#E53935',
+    borderRadius: moderateScale(16),
+    padding: moderateScale(4),
+  },
+  productImg: {
+    width: '80%',
+    height: verticalScale(100),
+    borderRadius: moderateScale(10),
+    resizeMode: 'contain',
+    marginTop:verticalScale(10)
+  },
+  cardFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FBF4E4',
+    borderRadius: moderateScale(12),
+    paddingHorizontal: moderateScale(3),
+    paddingVertical: verticalScale(2),
+    marginTop: verticalScale(-8),
+    height: verticalScale(60),
+  },
+  cardTitle: {
+    fontFamily: 'InterBold',
+    fontSize: moderateScale(13),
+    color: colors.textSecondary,
+    marginBottom: 0,
+  },
+  ptsBadge: {
+    width: moderateScale(50),
+    height: moderateScale(40),
+    borderRadius: moderateScale(6),
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#AE2125',
+  },
+  ptsText: {
+    color: 'white',
+    fontFamily: 'PoppinsSemi',
+    fontSize: moderateScale(13),
+    textAlign: 'center',
+    lineHeight: moderateScale(15),
+  },
+  rating: {
+    color: '#FFD600',
+    fontSize: 16,
+  },
+});
+
 
 const styles = StyleSheet.create({
   background: {
@@ -255,10 +392,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#733326",
     borderBottomLeftRadius: moderateScale(32),
     borderBottomRightRadius: moderateScale(32),
-    paddingLeft: scale(10),
+    paddingLeft: scale(12),
     paddingVertical: verticalScale(10),
     paddingTop: verticalScale(20),
-    height: '28%',
+    height: verticalScale(250)
   },
   headerRow: {
     flexDirection: 'row',
@@ -282,7 +419,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: moderateScale(12),
     paddingHorizontal: scale(10),
-    paddingVertical: verticalScale(15),
+    paddingVertical: verticalScale(12),
     alignSelf: 'flex-start',
     marginTop: verticalScale(4),
     marginBottom: verticalScale(8),
@@ -359,7 +496,7 @@ const styles = StyleSheet.create({
   brandSlider: {
     paddingHorizontal: scale(8),
     paddingVertical: verticalScale(18),
-    height: verticalScale(150),
+    height: verticalScale(180),
   },
   brandImg: {
     width: "60%",

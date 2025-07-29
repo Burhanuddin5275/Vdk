@@ -2,7 +2,6 @@ import { selectIsAuthenticated } from '@/store/authSlice';
 import { useAppSelector } from '@/store/hooks';
 import { colors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
-import { useFonts } from 'expo-font';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -70,19 +69,6 @@ const Categories = () => {
     },
   ];
 
-  const [loaded] = useFonts({
-    Sigmar: require("../assets/fonts/Sigmar-Regular.ttf"),
-    PoppinsMedium: require("../assets/fonts/Poppins-Medium.ttf"),
-    PoppinsSemi: require("../assets/fonts/Poppins-SemiBold.ttf"),
-    PoppinsBold: require("../assets/fonts/Poppins-Bold.ttf"),
-    InterRegular: require("../assets/fonts/Inter-Regular.ttf"),
-    InterBold: require("../assets/fonts/Inter-Bold.ttf"),
-  })
-  useEffect(() => {
-    if (loaded) {
-      return;
-    }
-  }, [loaded])
   const [activeTab, setActiveTab] = useState(0);
   const [wishlistMessage, setWishlistMessage] = useState<string | null>(null);
   const [currentAdIndex, setCurrentAdIndex] = useState(0);
@@ -202,7 +188,7 @@ const Categories = () => {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: "10%" }}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity style={styles.backBtn}>
+          <TouchableOpacity style={styles.backBtn} onPress={router.back}>
             <Ionicons name="arrow-back" size={24} color="white" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>{selectedCategory ? selectedCategory : 'Condom'}</Text>
@@ -357,7 +343,7 @@ const Categories = () => {
                       <Image
                         source={prod.img}
                         style={{
-                          width: "100%",
+                          width: "80%",
                           height: verticalScale(150),
                           marginBottom: verticalScale(8),
                           borderRadius: moderateScale(10),
@@ -387,26 +373,29 @@ const Categories = () => {
                         </Text>
                         <Text>
                           Ratings{" "}
-                          <Text style={{ color: "#FFD600" }}>
+                          <Text style={{ color: "#FFD600", }}>
                             {"★".repeat(prod.rating)}
                           </Text>
                         </Text>
                       </View>
-                      <ImageBackground
-                        source={require("../assets/images/pts.png")}
-                        style={styles.ptsBadge}
-                        resizeMode="contain"
+                      <View
+                        style={[
+                          styles.ptsBadge,
+                          isVidaBrand
+                            ? { backgroundColor: '#0B3D0B' } // dark green for Vida
+                            : { backgroundColor: '#AE2125' }, // dark red for others
+                        ]}
                       >
                         <Text
                           style={[
                             styles.ptsText,
-                            isVidaBrand && { color: "white" },
+                            { color: 'white' },
                           ]}
                         >
                           {prod.pts}
-                          {"\n"}PTS
+                          {'\n'}PTS
                         </Text>
-                      </ImageBackground>
+                      </View>
                     </View>
                   </TouchableOpacity>
                 );
@@ -451,25 +440,31 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: verticalScale(48),
-    paddingBottom: verticalScale(12),
-    paddingHorizontal: scale(16)
+    justifyContent: 'flex-start',
+    height: verticalScale(120),
+    position: 'relative',
+    paddingHorizontal: scale(16),
   },
   backBtn: {
-    marginRight: scale(12),
-    padding: moderateScale(4)
-  },
-  backArrow: {
-    fontSize: moderateScale(24),
-    color: '#fff'
+    width: 40,
+    height: 56,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
   },
   headerTitle: {
-    flex: 1,
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
     textAlign: 'center',
+    textAlignVertical: 'center',
     fontSize: moderateScale(28),
     color: '#fff',
     fontFamily: 'Sigmar',
-    letterSpacing: moderateScale(1)
+    letterSpacing: moderateScale(1),
+    lineHeight: 56, 
   },
   tabsWrap: {
     alignItems: 'center',
@@ -507,39 +502,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(12),
     marginTop: verticalScale(8)
   },
-  card: {
-    borderRadius: moderateScale(16),
-    marginBottom: verticalScale(16),
-    paddingTop: verticalScale(10),
-    minHeight: verticalScale(200),
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: moderateScale(2) },
-    shadowOpacity: 0.15,
-    shadowRadius: moderateScale(4),
-    justifyContent: 'center',
 
-  },
-  cardImg: {
-    width: '90%',
-    height: "50%",
-    borderRadius: moderateScale(10),
-    alignSelf: 'center',
-    marginTop: verticalScale(8),
-    marginBottom: verticalScale(8),
-    backgroundColor: '#fff',
-  },
-  heart: {
-    position: 'absolute',
-    top: verticalScale(10),
-    right: scale(10),
-    backgroundColor: '#E53935',
-    borderRadius: moderateScale(12),
-    width: moderateScale(24),
-    height: moderateScale(24),
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1
-  },
+
   cardFooter: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -553,6 +517,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: moderateScale(1) },
     shadowOpacity: 0.08,
     shadowRadius: moderateScale(2),
+    height: verticalScale(80)
   },
   footerLeft: {
     flex: 1,
@@ -591,7 +556,6 @@ const styles = StyleSheet.create({
     paddingBottom: 0,
     paddingHorizontal: scale(10),
     alignItems: 'center',
-    marginHorizontal: moderateScale(3),
     position: 'relative',
     marginBottom: verticalScale(16),
   },
@@ -606,7 +570,7 @@ const styles = StyleSheet.create({
   },
   adBanner: {
     width: '100%',
-    height: verticalScale(200),
+    height: verticalScale(120),
     borderRadius: moderateScale(16),
     overflow: 'hidden',
     marginBottom: verticalScale(15),

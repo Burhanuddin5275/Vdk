@@ -31,7 +31,17 @@ export const useCartStore = create<CartState>((set, get) => ({
     if (stored) set({ cartItems: JSON.parse(stored) });
   },
   addToCart: async (item) => {
-    const updated = [...get().cartItems, item];
+    const existing = get().cartItems.find(cartItem => cartItem.id === item.id);
+    let updated;
+    if (existing) {
+      updated = get().cartItems.map(cartItem =>
+        cartItem.id === item.id
+          ? { ...cartItem, quantity: cartItem.quantity + (item.quantity || 1) }
+          : cartItem
+      );
+    } else {
+      updated = [...get().cartItems, { ...item, quantity: item.quantity || 1 }];
+    }
     set({ cartItems: updated });
     await AsyncStorage.setItem(CART_KEY, JSON.stringify(updated));
   },

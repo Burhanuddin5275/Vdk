@@ -9,7 +9,7 @@ export type ShippingOption = {
 
 type ShippingStore = {
   selectedShipping: ShippingOption | null;
-  setSelectedShipping: (shipping: ShippingOption) => void;
+  setSelectedShipping: (shipping: ShippingOption | null) => void;
 };
 
 export const useShippingStore = create<ShippingStore>((set) => ({

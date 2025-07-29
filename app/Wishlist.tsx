@@ -5,8 +5,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
 import { FlatList, Image, ImageBackground, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { scale } from 'react-native-size-matters';
 import { create } from 'zustand';
 import { Colors } from '../constants/Colors';
+import { colors } from '@/theme/colors';
 
 
 export type WishlistItem = {
@@ -64,7 +66,7 @@ const Wishlist: React.FC = () => {
   const removeFromWishlist = useWishlistStore(state => state.removeFromWishlist);
   const setPhone = useWishlistStore(state => state.setPhone);
   const loadWishlist = useWishlistStore(state => state.loadWishlist);
-  
+
   useEffect(() => {
     if (phone) {
       setPhone(phone);
@@ -109,32 +111,46 @@ const Wishlist: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 48,
+    paddingBottom: 0,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: 48,
-    paddingBottom: 18,
-    paddingHorizontal: 16,
-    backgroundColor: 'transparent',
+    justifyContent: 'flex-start',
+    height: 56,
+    position: 'relative',
+    marginBottom: 18,
+    paddingHorizontal: 0,
   },
   backBtn: {
-    marginRight: 12,
-    padding: 4,
+    width: 40,
+    height: 56,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
+    padding: 0,
+    marginRight: 0,
   },
   headerTitle: {
-    flex: 1,
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
     textAlign: 'center',
-    fontSize: 28,
-    color: Colors.light.background,
-    fontWeight: 'bold',
+    textAlignVertical: 'center',
+    color: colors.white,
+    fontSize: 25,
+    fontFamily: 'Sigmar',
     letterSpacing: 1,
+    lineHeight: 56,
   },
   card: {
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: 12,
-    marginHorizontal: 16,
     padding: 12,
   },
   productImg: {

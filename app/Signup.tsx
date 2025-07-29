@@ -1,23 +1,13 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image, ImageBackground, KeyboardAvoidingView, Platform } from 'react-native';
 import { colors } from '@/theme/colors';
-import { useFonts } from 'expo-font';
+import React, { useEffect, useState } from 'react';
+import { Image, ImageBackground, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 const Signup = () => {
   const [phone, setPhone] = useState('');
-  const [loaded] = useFonts({
-   MontserratSemi: require("../assets/fonts/Montserrat-SemiBold.ttf"),
-      PoppinsMedium: require("../assets/fonts/Poppins-Medium.ttf"),
-      PoppinsBold: require("../assets/fonts/Poppins-Bold.ttf"),
-      PoppinsSemi: require("../assets/fonts/Poppins-SemiBold.ttf"),
-      Sigmar: require("../assets/fonts/Sigmar-Regular.ttf"),
-    })
   
     useEffect(() => {
-      if (loaded) {
   return;
-      }
-    }, [loaded]);
+    }, []);
 
   return (
     <ImageBackground source={require('../assets/images/ss1.png')} style={styles.bg} resizeMode="cover">

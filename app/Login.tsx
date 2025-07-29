@@ -1,22 +1,14 @@
 import { useAuth } from '@/hooks/useAuth';
 import { colors } from '@/theme/colors';
-import { useFonts } from 'expo-font';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Image, ImageBackground, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 const Login = () => {
   const [phone, setPhone] = useState('');
-  const [loaded] = useFonts({
-   MontserratSemi: require("../assets/fonts/Montserrat-SemiBold.ttf"),
-      PoppinsMedium: require("../assets/fonts/Poppins-Medium.ttf"),
-      PoppinsBold: require("../assets/fonts/Poppins-Bold.ttf"),
-      PoppinsSemi: require("../assets/fonts/Poppins-SemiBold.ttf"),
-      Sigmar: require("../assets/fonts/Sigmar-Regular.ttf"),
-    })
   const router = useRouter();
   const { login } = useAuth();
-  const allowedPhones = ['3239339045', '30012345673', '3123456789']; // Example numbers
+  const allowedPhones = ['3239339045', '3001234567', '3123456789']; // Example numbers
 
   const handleLogin = async () => {
     if (allowedPhones.includes(phone)) {
@@ -28,10 +20,8 @@ const Login = () => {
   };
   
     useEffect(() => {
-      if (loaded) {
-  return;
-      }
-    }, [loaded]);
+      // No longer needed as fonts are loaded globally
+    }, []);
 
   return (
     <ImageBackground source={require('../assets/images/ss1.png')} style={styles.bg} resizeMode="cover">

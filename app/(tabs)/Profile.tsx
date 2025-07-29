@@ -3,7 +3,7 @@ import { colors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from 'react';
-import { Alert, Dimensions, Image, ImageBackground, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Dimensions, Image, ImageBackground, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 
 const { width } = Dimensions.get('window');
@@ -11,6 +11,7 @@ const { width } = Dimensions.get('window');
 export default function Profile() {
   const router = useRouter();
   const { isAuthenticated, user, logout } = useAuth();
+  const [showDeleteModal, setShowDeleteModal] = React.useState(false);
 
   const handleLogout = () => {
     logout();
@@ -21,7 +22,7 @@ export default function Profile() {
     { label: 'My orders', icon: 'cart', onPress: () => {router.push('/Orders')} },
     { label: 'Chat', icon: 'chatbubble-ellipses', onPress: () => {} },
     { label: 'Wishlist', icon: 'heart', onPress: () => {router.push('/Wishlist')} },
-    { label: 'Manage addresses', icon: 'location', onPress: () => {} },
+    { label: 'Manage addresses', icon: 'location', onPress: () => {router.push('/ShippingAddress')} },
     { label: 'Manage profile', icon: 'person-circle', onPress: () => {} },
     { label: 'Contact us', icon: 'paper-plane', onPress: () => {} },
     { label: 'About us', icon: 'information-circle', onPress: () => {} },
@@ -48,6 +49,29 @@ export default function Profile() {
       style={styles.background}
       resizeMode="cover"
     >
+      {/* Modal for Delete Account Confirmation */}
+      {showDeleteModal && (
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>Delete this account</Text>
+            <Text style={styles.modalMessage}>
+              Are you sure you want to delete this customer account? By proceeding, all the data will be removed permanently.
+            </Text>
+            <TouchableOpacity onPress={() => setShowDeleteModal(false)}>
+              <Text style={styles.modalCancel}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => {
+                setShowDeleteModal(false);
+                // TODO: Add your delete logic here
+                router.replace('/(tabs)/Profile');
+              }}
+            >
+              <Text style={styles.modalDelete}>Yes, delete account</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
       <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: verticalScale(75) }}>
         <View style={styles.container}>
           {/* Header */}
@@ -76,7 +100,7 @@ export default function Profile() {
               <View key={item.label}>
                 <TouchableOpacity style={styles.menuItem} onPress={item.onPress} activeOpacity={0.7}>
                   <View style={styles.iconCircle}>
-                    <Ionicons name={item.icon} size={moderateScale(24)} color={colors.primaryDark} />
+                    <Ionicons name={item.icon as any} size={moderateScale(24)} color={colors.primaryDark} />
                   </View>
                   <Text style={styles.menuLabel}>{item.label}</Text>
                   <Ionicons name="chevron-forward" size={moderateScale(24)} color={colors.white} />
@@ -89,20 +113,7 @@ export default function Profile() {
           {isAuthenticated && (
             <TouchableOpacity
               style={styles.deleteBtn}
-              onPress={() => {
-                Alert.alert(
-                  'Delete Account',
-                  'Are you sure you want to delete this account?',
-                  [
-                    { text: 'Cancel', style: 'cancel' },
-                    {
-                      text: 'Delete', style: 'destructive', onPress: () => {
-                        router.replace('/(tabs)/Profile');
-                      }
-                    },
-                  ]
-                );
-              }}
+              onPress={() => setShowDeleteModal(true)}
             >
               <Text style={styles.deleteText}>Delete this account</Text>
             </TouchableOpacity>
@@ -119,34 +130,39 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    paddingHorizontal: scale(20),
-    paddingTop: verticalScale(60),
   },
   headerRow: {
-    flexDirection: 'row',
+   flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: verticalScale(18),
-    alignSelf: 'stretch',
+    justifyContent: 'flex-start',
+    height: verticalScale(120),
+    position: 'relative',
+    paddingHorizontal: scale(16),
   },
   backBtn: {
-    width: moderateScale(48),
-    height: moderateScale(48),
-    borderRadius: moderateScale(24),
+   width: 40,
+    height: 56,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: scale(10),
+    zIndex: 1,
   },
   headerTitle: {
-    color: colors.white,
-    fontSize: moderateScale(25),
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    textAlign: 'center',
+    textAlignVertical: 'center',
+    fontSize: moderateScale(28),
+    color: '#fff',
     fontFamily: 'Sigmar',
-    flex: 1,
-    marginLeft: "20%",
-    marginTop: verticalScale(2),
+    letterSpacing: 1,
+    lineHeight: 56,
   },
   profileSection: {
     alignItems: 'center',
-    marginBottom: verticalScale(24),
+    marginBottom: verticalScale(20),
   },
   profileImg: {
     width: moderateScale(100),
@@ -160,12 +176,10 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontSize: moderateScale(22),
     fontFamily: 'Sigmar',
-    marginBottom: verticalScale(18),
   },
   menuList: {
     backgroundColor: 'transparent',
     borderRadius: moderateScale(18),
-    paddingVertical: verticalScale(2),
     marginBottom: verticalScale(18),
     alignSelf: 'stretch',
   },
@@ -219,5 +233,46 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontSize: moderateScale(18),
     fontFamily: 'PoppinsSemi',
+  },
+  modalOverlay: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+    padding:20
+  },
+  modalContainer: {
+    width: '85%',
+    backgroundColor: '#F8D7DA',
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 12,
+    color: '#000',
+    textAlign: 'center',
+  },
+  modalMessage: {
+    fontSize: 15,
+    color: '#333',
+    marginBottom: 24,
+    textAlign: 'center',
+  },
+  modalCancel: {
+    color: '#007AFF',
+    fontSize: 18,
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  modalDelete: {
+    color: '#D32F2F',
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
 });

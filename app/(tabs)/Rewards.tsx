@@ -3,31 +3,37 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { Dimensions, Image, ImageBackground, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 
 const rewards = [
   {
     name: 'Dining Set',
     points: 460,
+    imageKey: 'Dining.png',
     image: require('../../assets/images/Dining.png'),
   },
   {
     name: 'Juicer',
     points: 560,
+    imageKey: 'Jucier.png',
     image: require('../../assets/images/Jucier.png'),
   },
   {
     name: 'WASHING MACHINE',
     points: 1260,
+    imageKey: 'Washing.png',
     image: require('../../assets/images/Washing.png'),
   },
   {
     name: 'FRIDGE',
     points: 1560,
+    imageKey: 'Fridge.png',
     image: require('../../assets/images/Fridge.png'),
   },
   {
     name: 'AC',
     points: 1860,
+    imageKey: 'Ac.png',
     image: require('../../assets/images/Ac.png'),
   },
 ];
@@ -52,7 +58,7 @@ export default function RewardsScreen() {
       <ScrollView contentContainerStyle={styles.rewardsList} showsVerticalScrollIndicator={false}>
       <View style={styles.container}>
         {/* Header */}
-        <View style={styles.headerRow}>
+        <View style={styles.header}>
           <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={24} color="white" />
           </TouchableOpacity>
@@ -84,7 +90,7 @@ export default function RewardsScreen() {
                   <Text style={styles.pointsSub}>POINTS</Text>
                 </View>
               </View>
-              <TouchableOpacity style={styles.redeemBtn}>
+              <TouchableOpacity style={styles.redeemBtn} onPress={() => router.push({ pathname: '/Mall', params: { name: item.name, points: item.points, imageKey: item.imageKey } })}>
                 <Text style={styles.redeemText}>Redeem</Text>
               </TouchableOpacity>
             </View>
@@ -106,29 +112,35 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    paddingTop: 20,
-    paddingHorizontal: 8,
   },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
+  header: {
+     flexDirection: 'row',
+     alignItems: 'center',
+     justifyContent: 'flex-start',
+     height: verticalScale(80),
+     position: 'relative',
+     paddingHorizontal: scale(16),
   },
   backBtn: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 40,
+    height: 56,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 10,
+    zIndex: 1,
   },
   headerTitle: {
-    color: colors.white,
-    fontSize: 28,
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    textAlign: 'center',
+    textAlignVertical: 'center',
+    fontSize: moderateScale(28),
+    color: '#fff',
     fontFamily: 'Sigmar',
-    flex: 1,
-    marginLeft: "25%",
-    marginTop: 2,
+    letterSpacing: 1,
+    lineHeight: 56,
   },
   pointsBadgeContainer: {
     alignItems: 'center',
@@ -189,7 +201,7 @@ const styles = StyleSheet.create({
   },
   rewardsList: {
     paddingTop: 18,
-    paddingBottom: 40,
+    paddingBottom: 80,
   },
   rewardItem: {
     flexDirection: 'row',

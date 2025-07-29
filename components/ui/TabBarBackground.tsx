@@ -12,7 +12,7 @@ export default function TabBarBackground() {
         right: 0,
         bottom: 8,
         top: 0,
-        height: 100,
+        height: 120,
         backgroundColor,
         borderTopLeftRadius: 38,
         borderTopRightRadius: 38,

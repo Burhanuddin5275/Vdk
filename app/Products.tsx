@@ -13,7 +13,7 @@ const Products = () => {
     const { id, data } = useLocalSearchParams();
     const product = data ? JSON.parse(data as string) : {};
     // Use both img and img1 if available
-    const images = [product.img1, product.img2].filter(Boolean);
+    const images = [product.img, product.img1, product.img2].filter(Boolean);
     const [selectedImg, setSelectedImg] = useState(images[0]);
     const [modalVisible, setModalVisible] = useState(false);
     const [selectedSize, setSelectedSize] = useState('Pack of 3');
@@ -27,17 +27,19 @@ const Products = () => {
     const [showSuccess, setShowSuccess] = useState(false);
     const wishlistItems = useWishlistStore(state => state.items);
     const [wishlistMessage, setWishlistMessage] = useState<string | null>(null);
+    const [cartMessage, setCartMessage] = useState<string | null>(null);
     const isAuthenticated = useAppSelector(selectIsAuthenticated);
     const phone = useAppSelector(selectPhone);
 
     useEffect(() => {
-      // This useEffect is no longer needed as authentication state is managed by Redux
+        // This useEffect is no longer needed as authentication state is managed by Redux
     }, []);
 
     const handleAddToCart = async () => {
         if (!isAuthenticated || !phone) {
-            alert('Please log in to add items to your cart.');
-            router.replace('/Login');
+            setCartMessage('Please log in to add items to your cart.');
+            setTimeout(() => setCartMessage(null), 2000);
+            setTimeout(() => router.replace('/Login'), 1000);
             return;
         }
         addToCart({
@@ -64,30 +66,30 @@ const Products = () => {
                             <Ionicons name="arrow-back" size={24} color="#E53935" />
                         </TouchableOpacity>
                         <TouchableOpacity
-                          onPress={async () => {
-                            if (!isAuthenticated) {
-                              setWishlistMessage('Please log in to use wishlist.');
-                              setTimeout(() => setWishlistMessage(null), 1000);
-                              setTimeout(() => router.replace('/Login'), 1000);
-                              return;
-                            }
-                            if (wishlistItems.some((w: { id: string }) => w.id === product.id)) {
-                              await useWishlistStore.getState().removeFromWishlist(product.id);
-                              setWishlistMessage('Removed from wishlist');
-                            } else {
-                              await useWishlistStore.getState().addToWishlist({
-                                id: product.id,
-                                name: product.name,
-                                price: product.price,
-                                image: product.img || product.image || selectedImg,
-                                pack: '',
-                              });
-                              setWishlistMessage('Added to wishlist');
-                            }
-                            setTimeout(() => setWishlistMessage(null), 2000);
-                          }}
+                            onPress={async () => {
+                                if (!isAuthenticated) {
+                                    setWishlistMessage('Please log in to use wishlist.');
+                                    setTimeout(() => setWishlistMessage(null), 1000);
+                                    setTimeout(() => router.replace('/Login'), 1000);
+                                    return;
+                                }
+                                if (wishlistItems.some((w: { id: string }) => w.id === product.id)) {
+                                    await useWishlistStore.getState().removeFromWishlist(product.id);
+                                    setWishlistMessage('Removed from wishlist');
+                                } else {
+                                    await useWishlistStore.getState().addToWishlist({
+                                        id: product.id,
+                                        name: product.name,
+                                        price: product.price,
+                                        image: product.img || product.image || selectedImg,
+                                        pack: '',
+                                    });
+                                    setWishlistMessage('Added to wishlist');
+                                }
+                                setTimeout(() => setWishlistMessage(null), 2000);
+                            }}
                         >
-                          <Ionicons name={wishlistItems.some((w: { id: string }) => w.id === product.id) ? 'heart' : 'heart-outline'} size={24} color="#E53935" />
+                            <Ionicons name={wishlistItems.some((w: { id: string }) => w.id === product.id) ? 'heart' : 'heart-outline'} size={24} color="#E53935" />
                         </TouchableOpacity>
                     </View>
                     {/* Product Image */}
@@ -116,7 +118,7 @@ const Products = () => {
                         <Text style={styles.title}>{product.name}</Text>
                         <Text style={styles.pcs}>36 pcs</Text>
                         <Text style={styles.sectionTitle}>Product Details</Text>
-                        <Text style={styles.details}>Josh Lahori Tikka Condoms offer bold sensations with gentle lubrication for enhanced intimacy and energy. Limited edition.</Text>
+                        <Text style={styles.details}>{product.description}</Text>
                         <View style={styles.divider} />
                         <Text style={styles.sectionTitle}>Reviews</Text>
                         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
@@ -214,6 +216,13 @@ const Products = () => {
                 <View style={{ position: 'absolute', top: 80, left: 0, right: 0, alignItems: 'center', zIndex: 20 }}>
                     <View style={{ backgroundColor: '#E53935', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 24 }}>
                         <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>{wishlistMessage}</Text>
+                    </View>
+                </View>
+            )}
+            {cartMessage && (
+                <View style={{ position: 'absolute', top: 120, left: 0, right: 0, alignItems: 'center', zIndex: 20 }}>
+                    <View style={{ backgroundColor: '#E53935', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 24 }}>
+                        <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>{cartMessage}</Text>
                     </View>
                 </View>
             )}

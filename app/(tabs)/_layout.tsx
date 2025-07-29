@@ -1,16 +1,15 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
-
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import TabBarBackground from '@/components/ui/TabBarBackground';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Text } from 'react-native';
+import { scale } from 'react-native-size-matters';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
-
   return (
     <Tabs
       initialRouteName="Home"
@@ -25,10 +24,9 @@ export default function TabLayout() {
         tabBarStyle: {
           backgroundColor: 'transparent',
           position: 'absolute',
-          height: 85,
+          height: scale(85),
           borderTopLeftRadius: 32,
           borderTopRightRadius: 32,
-       
         },
         tabBarBackground: () => <TabBarBackground />, 
       }}>

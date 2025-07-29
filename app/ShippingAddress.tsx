@@ -2,18 +2,18 @@ import { Button } from '@/components/Button';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { colors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
-import { useFonts } from 'expo-font';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  Dimensions,
-  ImageBackground,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Dimensions,
+    ImageBackground,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
+import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { useAddressStore } from '../store/addressStore';
 
 const { width, height } = Dimensions.get('window');
@@ -25,18 +25,6 @@ const ADDRESSES = [
 ];
 
 const ShippingAddress = () => {
-    const [loaded] = useFonts({
-            PoppinsSemi: require("../assets/fonts/Poppins-SemiBold.ttf"),
-            PoppinsBold: require("../assets/fonts/Poppins-Bold.ttf"),
-            InterRegular: require("../assets/fonts/Inter-Regular.ttf"),
-            InterBold: require("../assets/fonts/Inter-Bold.ttf"),
-            Sigmar: require("../assets/fonts/Sigmar-Regular.ttf"),
-        })
-        useEffect(() => {
-            if (loaded) {
-                return;
-            }
-        }, [loaded])
   const router = useRouter();
   const { selectedAddress } = useAddressStore();
   const initialIndex = selectedAddress
@@ -97,7 +85,7 @@ const ShippingAddress = () => {
           </View>
 
           {/* Add New Address */}
-          <TouchableOpacity style={styles.addNewBox} activeOpacity={0.85}>
+          <TouchableOpacity style={styles.addNewBox} activeOpacity={0.85} onPress={() => router.push('/Address')}>
             <Text style={styles.addNewText}>+ Add New Shipping Address</Text>
           </TouchableOpacity>
         </ScrollView>
@@ -128,27 +116,35 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    paddingHorizontal: 0,
-    justifyContent: 'flex-start',
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingTop: 48,
-    paddingHorizontal: 20,
-    marginBottom: 8,
+  flexDirection: 'row',
+     alignItems: 'center',
+     justifyContent: 'flex-start',
+     height: verticalScale(120),
+     position: 'relative',
+     paddingHorizontal: scale(16)
   },
   backBtn: {
-    width: 32,
-    height: 32,
+   width: 40,
+    height: 56,
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 1,
   },
   headerTitle: {
-    color: colors.white,
-    fontSize: 25,
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    textAlign: 'center',
+    textAlignVertical: 'center',
+    fontSize: moderateScale(24),
+    color: '#fff',
     fontFamily: 'Sigmar',
-    marginLeft:"8%"
+    letterSpacing: 1,
+    lineHeight: 56,
   },
   addressRow: {
     flexDirection: 'row',
