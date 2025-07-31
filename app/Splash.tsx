@@ -35,7 +35,6 @@ export default function Splash() {
             Get Started
           </Button>
         </View>
-        <StatusBar style="light" />
       </View>
     </ImageBackground>
   );

@@ -46,7 +46,7 @@ const Card = () => {
                         value={holder}
                         onChangeText={setHolder}
                         placeholder="Card Holder Name"
-                        placeholderTextColor={colors.primary}
+                        placeholderTextColor={colors.white}
                     />
                     <Text style={styles.label}>Card Number*</Text>
                     <TextInput
@@ -54,7 +54,7 @@ const Card = () => {
                         value={number}
                         onChangeText={setNumber}
                         placeholder="Card Number"
-                        placeholderTextColor={colors.primary}
+                        placeholderTextColor={colors.white}
                         keyboardType="numeric"
                         maxLength={19}
                     />
@@ -66,7 +66,7 @@ const Card = () => {
                                 value={expiry}
                                 onChangeText={setExpiry}
                                 placeholder="MM/YY"
-                                placeholderTextColor={colors.primary}
+                                placeholderTextColor={colors.white}
                                 maxLength={5}
                             />
                         </View>
@@ -77,7 +77,7 @@ const Card = () => {
                                 value={cvv}
                                 onChangeText={setCvv}
                                 placeholder="CVV"
-                                placeholderTextColor={colors.primary}
+                                placeholderTextColor={colors.white}
                                 maxLength={4}
                                 secureTextEntry
                                 keyboardType="numeric"
@@ -147,15 +147,13 @@ const styles = StyleSheet.create({
         borderRadius: 16,
     },
     form: {
-        marginTop: 8,
-        marginBottom: 16,
+
     },
     label: {
         color: colors.white,
         fontSize: 15,
         fontFamily: 'PoppinsSemi',
         marginBottom: 4,
-        marginTop: 10,
     },
     input: {
         backgroundColor: 'transparent',

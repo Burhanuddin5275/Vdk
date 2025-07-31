@@ -3,14 +3,19 @@ import { useAppSelector } from '@/store/hooks';
 import { colors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Image, ImageBackground, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useCartStore } from '../store/cartStore';
 import { useWishlistStore } from './Wishlist';
 
+const backgroundImages = {
+  ss1: require('../assets/images/ss1.png'),
+  ss2: require('../assets/images/ss2.png'),
+};
+
 const Products = () => {
     const router = useRouter();
-    const { id, data } = useLocalSearchParams();
+    const { id, data, category, backgroundImage } = useLocalSearchParams();
     const product = data ? JSON.parse(data as string) : {};
     // Use both img and img1 if available
     const images = [product.img, product.img1, product.img2].filter(Boolean);
@@ -31,9 +36,17 @@ const Products = () => {
     const isAuthenticated = useAppSelector(selectIsAuthenticated);
     const phone = useAppSelector(selectPhone);
 
-    useEffect(() => {
-        // This useEffect is no longer needed as authentication state is managed by Redux
-    }, []);
+    // Ensure backgroundImage is a string (not string[])
+    let bgKey: 'ss1' | 'ss2' | undefined;
+    if (Array.isArray(backgroundImage)) {
+      if (backgroundImage[0] === 'ss1' || backgroundImage[0] === 'ss2') bgKey = backgroundImage[0];
+    } else if (backgroundImage === 'ss1' || backgroundImage === 'ss2') {
+      bgKey = backgroundImage;
+    }
+
+    // Determine main color based on background
+    const mainColor = bgKey === 'ss2' ? '#0B3D0B' : '#E53935';
+
 
     const handleAddToCart = async () => {
         if (!isAuthenticated || !phone) {
@@ -59,11 +72,11 @@ const Products = () => {
 
     return (
         <>
-            <ImageBackground source={require('../assets/images/ss1.png')} style={{ flex: 1 }} resizeMode="cover">
+            <ImageBackground source={bgKey ? backgroundImages[bgKey] : require('../assets/images/ss1.png')} style={{ flex: 1 }} resizeMode="cover">
                 <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
                     <View style={styles.header}>
                         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-                            <Ionicons name="arrow-back" size={24} color="#E53935" />
+                            <Ionicons name="arrow-back" size={24} color={mainColor} />
                         </TouchableOpacity>
                         <TouchableOpacity
                             onPress={async () => {
@@ -89,7 +102,7 @@ const Products = () => {
                                 setTimeout(() => setWishlistMessage(null), 2000);
                             }}
                         >
-                            <Ionicons name={wishlistItems.some((w: { id: string }) => w.id === product.id) ? 'heart' : 'heart-outline'} size={24} color="#E53935" />
+                            <Ionicons name={wishlistItems.some((w: { id: string }) => w.id === product.id) ? 'heart' : 'heart-outline'} size={24} color={mainColor} />
                         </TouchableOpacity>
                     </View>
                     {/* Product Image */}
@@ -113,7 +126,7 @@ const Products = () => {
                     <View style={styles.cardSection}>
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                             {product.brand && <Text style={styles.brand}>{product.brand}</Text>}
-                            <View style={styles.ptsBadge}><Text style={styles.ptsText}>{product.pts} PTS</Text></View>
+                            <View style={styles.ptsBadge}><Text style={[styles.ptsText, { color: mainColor }]}>{product.pts} PTS</Text></View>
                         </View>
                         <Text style={styles.title}>{product.name}</Text>
                         <Text style={styles.pcs}>36 pcs</Text>
@@ -132,10 +145,10 @@ const Products = () => {
                 {/* Price & Add to Cart */}
                 <View style={styles.bottomBar}>
                     <View>
-                        <Text style={styles.priceLabel}>Total Price</Text>
-                        <Text style={styles.price}>Pkr {product.price ? product.price : 0}</Text>
+                        <Text style={[styles.priceLabel, { color: mainColor }]}>Total Price</Text>
+                        <Text style={[styles.price, { color: mainColor }]}>Pkr {product.price ? product.price : 0}</Text>
                     </View>
-                    <TouchableOpacity style={styles.cartBtn} onPress={() => setModalVisible(true)}>
+                    <TouchableOpacity style={[styles.cartBtn, { backgroundColor: mainColor }]} onPress={() => setModalVisible(true)}>
                         <Ionicons name="cart" size={18} color="#fff" style={{ marginRight: 6 }} />
                         <Text style={styles.cartBtnText}>Add to Cart</Text>
                     </TouchableOpacity>
@@ -145,7 +158,7 @@ const Products = () => {
             {modalVisible && (
                 <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.3)', zIndex: 10 }}>
                     <View style={{ backgroundColor: '#FBF4E4', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, width: '100%', maxWidth: '100%' }}>
-                        <Text style={{ color: '#E53935', fontFamily: 'PoppinsBold', fontSize: 18, marginBottom: 10 }}>Sizes</Text>
+                        <Text style={{ color: mainColor, fontFamily: 'PoppinsBold', fontSize: 18, marginBottom: 10 }}>Sizes</Text>
                         <View style={{ flexDirection: 'row', marginBottom: 16 }}>
                             {sizes.map((s, i) => (
                                 <TouchableOpacity
@@ -153,7 +166,7 @@ const Products = () => {
                                     onPress={() => setSelectedSize(s.label)}
                                     style={{
                                         borderWidth: selectedSize === s.label ? 2 : 0,
-                                        borderColor: '#E53935',
+                                        borderColor: mainColor,
                                         borderRadius: 12,
                                         backgroundColor: '#fff',
                                         marginRight: 16,
@@ -163,37 +176,37 @@ const Products = () => {
                                     }}
                                 >
                                     <View style={{ width: 48, height: 32, backgroundColor: '#F2F2F2', borderRadius: 8, marginBottom: 6 }} />
-                                    <Text style={{ color: selectedSize === s.label ? '#E53935' : '#1A1A1A', fontFamily: 'PoppinsBold', fontSize: 14 }}>{s.label}</Text>
+                                    <Text style={{ color: selectedSize === s.label ? mainColor : '#1A1A1A', fontFamily: 'PoppinsBold', fontSize: 14 }}>{s.label}</Text>
                                 </TouchableOpacity>
                             ))}
                         </View>
                         <View style={{ height: 1, backgroundColor: '#E5E5E5', marginVertical: 10 }} />
-                        <Text style={{ color: '#E53935', fontFamily: 'PoppinsBold', fontSize: 16, marginBottom: 8 }}>Quantity</Text>
+                        <Text style={{ color: mainColor, fontFamily: 'PoppinsBold', fontSize: 16, marginBottom: 8 }}>Quantity</Text>
                         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
                             <TouchableOpacity
                                 style={{ backgroundColor: '#E5E5E5', borderRadius: 6, width: 32, height: 32, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}
                                 onPress={() => setQty(q => Math.max(1, q - 1))}
                             >
-                                <Ionicons name="remove" size={20} color="#E53935" />
+                                <Ionicons name="remove" size={20} color={mainColor} />
                             </TouchableOpacity>
-                            <Text style={{ fontSize: 18, fontFamily: 'PoppinsBold', color: '#E53935', marginHorizontal: 8 }}>{qty}</Text>
+                            <Text style={{ fontSize: 18, fontFamily: 'PoppinsBold', color: mainColor, marginHorizontal: 8 }}>{qty}</Text>
                             <TouchableOpacity
                                 style={{ backgroundColor: '#E5E5E5', borderRadius: 6, width: 32, height: 32, alignItems: 'center', justifyContent: 'center', marginLeft: 12 }}
                                 onPress={() => setQty(q => q + 1)}
                             >
-                                <Ionicons name="add" size={20} color="#E53935" />
+                                <Ionicons name="add" size={20} color={mainColor} />
                             </TouchableOpacity>
                         </View>
                         <View style={{ height: 1, backgroundColor: '#E5E5E5', marginVertical: 10 }} />
                         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                             <View>
-                                <Text style={{ color: '#E53935', fontFamily: 'PoppinsMedium', fontSize: 15 }}>Total Price</Text>
-                                <Text style={{ color: '#E53935', fontFamily: 'PoppinsBold', fontSize: 24 }}>
+                                <Text style={{ color: mainColor, fontFamily: 'PoppinsMedium', fontSize: 15 }}>Total Price</Text>
+                                <Text style={{ color: mainColor, fontFamily: 'PoppinsBold', fontSize: 24 }}>
                                     Pkr {(product.price ? product.price : (sizes.find(s => s.label === selectedSize)?.price ?? 0)) * qty}/-
                                 </Text>
                             </View>
                             <TouchableOpacity
-                                style={{ backgroundColor: '#E53935', borderRadius: 24, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 22, paddingVertical: 12 }}
+                                style={{ backgroundColor: mainColor, borderRadius: 24, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 22, paddingVertical: 12 }}
                                 onPress={handleAddToCart}
                             >
                                 <Ionicons name="cart" size={20} color="#fff" style={{ marginRight: 8 }} />
@@ -206,7 +219,7 @@ const Products = () => {
             {/* Success Message */}
             {showSuccess && (
                 <View style={{ position: 'absolute', top: 80, left: 0, right: 0, alignItems: 'center', zIndex: 20 }}>
-                    <View style={{ backgroundColor: '#E53935', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 24 }}>
+                    <View style={{ backgroundColor: mainColor, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 24 }}>
                         <Text style={{ color: '#fff', fontFamily: 'PoppinsBold', fontSize: 16 }}>Product added to cart!</Text>
                     </View>
                 </View>
@@ -214,14 +227,14 @@ const Products = () => {
             {/* Snackbar/Toast */}
             {wishlistMessage && (
                 <View style={{ position: 'absolute', top: 80, left: 0, right: 0, alignItems: 'center', zIndex: 20 }}>
-                    <View style={{ backgroundColor: '#E53935', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 24 }}>
+                    <View style={{ backgroundColor: mainColor, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 24 }}>
                         <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>{wishlistMessage}</Text>
                     </View>
                 </View>
             )}
             {cartMessage && (
                 <View style={{ position: 'absolute', top: 120, left: 0, right: 0, alignItems: 'center', zIndex: 20 }}>
-                    <View style={{ backgroundColor: '#E53935', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 24 }}>
+                    <View style={{ backgroundColor: mainColor, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 24 }}>
                         <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>{cartMessage}</Text>
                     </View>
                 </View>

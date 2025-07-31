@@ -93,7 +93,7 @@ export default function HomeScreen() {
           {/* Header Section */}
           <View style={styles.headerBg}>
             <View style={styles.headerRow}>
-              <View style={{width:"40%", marginBottom:verticalScale(24)}}>
+              <View style={{width:"40%"}}>
                 <Text style={styles.hello}>Hello!{"\n"}Hussain</Text>
                 <Text style={styles.subtext}>What would you like to buy?</Text>
                 <View style={styles.rewardBox}>
@@ -352,7 +352,7 @@ const bestSellerStyles = StyleSheet.create({
     paddingHorizontal: moderateScale(3),
     paddingVertical: verticalScale(2),
     marginTop: verticalScale(-8),
-    height: verticalScale(60),
+    height: verticalScale(50),
   },
   cardTitle: {
     fontFamily: 'InterBold',
@@ -395,7 +395,7 @@ const styles = StyleSheet.create({
     paddingLeft: scale(12),
     paddingVertical: verticalScale(10),
     paddingTop: verticalScale(20),
-    height: verticalScale(250)
+    height: verticalScale(260)
   },
   headerRow: {
     flexDirection: 'row',
@@ -442,8 +442,7 @@ const styles = StyleSheet.create({
     fontFamily: 'PoppinsBold',
   },
   familyImg: {
-    width: '100%',
-    height: '100%',
+    width: scale(210),
     resizeMode: "contain"
   },
   sectionTitle: {
@@ -451,12 +450,13 @@ const styles = StyleSheet.create({
     fontSize: moderateScale(26),
     fontFamily: "Sigmar",
     marginLeft: scale(15),
+   marginTop: verticalScale(20)
   },
   categoriesSlider: {
     paddingHorizontal: scale(8),
     gap: scale(8),
     height: verticalScale(250),
-    marginTop: verticalScale(20)
+    marginTop: verticalScale(2)
   },
   categoryCard: {
     marginTop: verticalScale(5),
@@ -490,18 +490,17 @@ const styles = StyleSheet.create({
     height: verticalScale(120),
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: verticalScale(5),
+    marginTop: verticalScale(2),
     marginHorizontal: scale(4),
   },
   brandSlider: {
     paddingHorizontal: scale(8),
     paddingVertical: verticalScale(18),
-    height: verticalScale(180),
+    height: verticalScale(165),
   },
   brandImg: {
     width: "60%",
     height: "60%",
-    marginBottom: verticalScale(2),
   },
   bestSellerRow: {
     flexDirection: 'row',
@@ -511,7 +510,7 @@ const styles = StyleSheet.create({
   },
   bestSellerTitle: {
     color: "white",
-    fontSize: moderateScale(28),
+    fontSize: moderateScale(26),
     fontFamily: "Sigmar"
   },
   seeAll: {

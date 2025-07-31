@@ -15,6 +15,13 @@ const TABS = ['All'];
 const screenWidth = Dimensions.get('window').width;
 const CARD_WIDTH = (screenWidth - 48) / 2;
 
+const categoryImageMap = {
+  'Condoms': require('../assets/images/condom.png'),
+  'Lubricant': require('../assets/images/Lubricants.png'),
+  'Devices': require('../assets/images/Devices.png'),
+  'Medicine': require('../assets/images/medicine.png'),
+};
+
 const Categories = () => {
   const router = useRouter();
   const { category } = useLocalSearchParams();
@@ -292,7 +299,12 @@ const Categories = () => {
                     onPress={() =>
                       router.push({
                         pathname: "/Products",
-                        params: { id: prod.id, data: JSON.stringify(prod) },
+                        params: {
+                          id: prod.id,
+                          data: JSON.stringify(prod),
+                          category: selectedCategory,
+                          backgroundImage: isVidaBrand ? 'ss2' : 'ss',
+                        },
                       })
                     }
                   >

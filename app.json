@@ -1,11 +1,12 @@
 {
   "expo": {
-    "name": "Vdk",
-    "slug": "Vdk",
+    "name": "dkt",
+    "slug": "dkt",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
-    "scheme": "vdk",
+    "icon": "./assets/images/DKT-Logo.jpg",
+    "resizeMode": "contain",
+    "scheme": "dkt",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -13,24 +14,24 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "foregroundImage": "./assets/images/DKT-Logo.jpg",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.burhanuddin4747.Vdk"
+      "package": "com.burhanuddin4747.dkt"
     },
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/DKT-Logo.jpg"
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200,
+          "image": "./assets/images/DKT-Logo.jpg",
+          "imageWidth": "20%",
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
@@ -42,8 +43,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "9d3c2ceb-af6c-4ff6-b0ee-6c7ac80e3a89"
+        "projectId": "3ce542ea-4681-4e52-b8f2-50147002ef31"
       }
-    }
+    },
+    "owner": "burhanuddin4747"
   }
 }
