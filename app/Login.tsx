@@ -1,19 +1,23 @@
 import { useAuth } from '@/hooks/useAuth';
 import { colors } from '@/theme/colors';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Image, ImageBackground, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { moderateScale, scale } from 'react-native-size-matters';
 
 const Login = () => {
   const [phone, setPhone] = useState('');
   const router = useRouter();
+  const { returnTo } = useLocalSearchParams();
   const { login } = useAuth();
   const allowedPhones = ['3239339045', '3001234567', '3123456789']; // Example numbers
 
   const handleLogin = async () => {
     if (allowedPhones.includes(phone)) {
       login(phone, { name: 'User' });
-      router.replace('/(tabs)/Profile');
+      // Redirect to the previous screen or default to Profile
+      const redirectTo = returnTo ? decodeURIComponent(returnTo as string) : '/(tabs)/Profile';
+      router.replace(redirectTo as any);
     } else {
       alert('Invalid phone number');
     }
@@ -77,7 +81,7 @@ const styles = StyleSheet.create({
   },
   welcome: {
     color: colors.white,
-    fontSize: 26,
+    fontSize: scale(26),
     fontFamily: 'Sigmar',
     textAlign: 'center',
     marginBottom: 32,
@@ -90,7 +94,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     marginBottom: 18,
-    width: '100%',
+    width: scale(300),
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
@@ -126,7 +130,7 @@ const styles = StyleSheet.create({
   continueBtn: {
     backgroundColor: '#FBF4E4',
     borderRadius: 16,
-    width: '100%',
+    width: scale(300),
     alignItems: 'center',
     paddingVertical: 16,
     marginBottom: 18,
@@ -139,12 +143,12 @@ const styles = StyleSheet.create({
   },
   continueText: {
     color: colors.textPrimary,
-    fontSize: 16,
+    fontSize:moderateScale(16),
     fontFamily: 'MontserratSemi',
   },
   terms: {
     color: '#fff',
-    fontSize: 14,
+    fontSize: moderateScale(14),
     textAlign: 'center',
     marginTop: 8,
     fontFamily: 'InterRegular',

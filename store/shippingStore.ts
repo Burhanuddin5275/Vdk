@@ -4,7 +4,7 @@ export type ShippingOption = {
   id: string;
   label: string;
   desc: string;
-  icon: string;
+  image: any;
 };
 
 type ShippingStore = {

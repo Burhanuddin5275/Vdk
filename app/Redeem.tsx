@@ -3,7 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { Dimensions, Image, ImageBackground, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { verticalScale } from 'react-native-size-matters';
+import { moderateScale, s, scale, verticalScale } from 'react-native-size-matters';
 
 const { width } = Dimensions.get('window');
 
@@ -19,7 +19,7 @@ const Redeem = () => {
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={28} color={colors.white} />
+            <Ionicons name="arrow-back" size={moderateScale(28)} color={colors.white} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Redeem</Text>
         </View>
@@ -53,24 +53,19 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    paddingTop: 48,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-start',
-    height: 56,
+    height: verticalScale(80),
     position: 'relative',
-    width: '100%',
-    marginBottom: 24,
-    paddingHorizontal: 16,
+    paddingHorizontal: scale(18),
+    marginTop: verticalScale(20),
   },
   backBtn: {
-    width: 40,
-    height: 56,
-    alignItems: 'center',
+    width: scale(40),
+    height: scale(40),
     justifyContent: 'center',
     zIndex: 1,
   },
@@ -82,26 +77,27 @@ const styles = StyleSheet.create({
     bottom: 0,
     textAlign: 'center',
     textAlignVertical: 'center',
-    color: colors.white,
-    fontSize: 25,
+    fontSize: moderateScale(28),
+    color: '#fff',
     fontFamily: 'Sigmar',
-    lineHeight: 56,
+    letterSpacing: 1,
+    lineHeight: verticalScale(55),
   },
   iconWrap: {
-    paddingTop:verticalScale(100),
+    paddingTop: verticalScale(100),
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 32,
     marginBottom: 24,
   },
   checkImg: {
-    width: 150,
-    height: 150,
+    width: scale(150),
+    height: verticalScale(150),
     alignSelf: 'center',
   },
   successText: {
     color: colors.white,
-    fontSize: 24,
+    fontSize: moderateScale(24),
     fontFamily: 'PoppinsSemi',
     marginTop: 12,
     marginBottom: 8,
@@ -118,9 +114,11 @@ const styles = StyleSheet.create({
     padding: 28,
     alignItems: 'center',
     justifyContent: 'center',
+    height: verticalScale(100),
   },
   redeemBtn: {
     width: '100%',
+    height: verticalScale(50),
     borderRadius: 26,
     paddingVertical: 14,
     backgroundColor: colors.primary,

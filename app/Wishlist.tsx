@@ -5,7 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
 import { FlatList, Image, ImageBackground, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { scale } from 'react-native-size-matters';
+import { moderateScale, s, scale, verticalScale } from 'react-native-size-matters';
 import { create } from 'zustand';
 import { Colors } from '../constants/Colors';
 import { colors } from '@/theme/colors';
@@ -91,7 +91,7 @@ const Wishlist: React.FC = () => {
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
+            <Ionicons name="arrow-back" size={28} color="#fff" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Wishlist</Text>
         </View>
@@ -111,52 +111,46 @@ const Wishlist: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 48,
-    paddingBottom: 0,
   },
   header: {
-    flexDirection: 'row',
+         flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-start',
-    height: 56,
+    height: verticalScale(80),
     position: 'relative',
-    marginBottom: 18,
-    paddingHorizontal: 0,
+    paddingHorizontal: scale(18),
+    marginTop: verticalScale(20),
   },
   backBtn: {
-    width: 40,
-    height: 56,
-    alignItems: 'center',
+      width: scale(40),
+    height: scale(40),
     justifyContent: 'center',
     zIndex: 1,
-    padding: 0,
-    marginRight: 0,
   },
   headerTitle: {
-    position: 'absolute',
+   position: 'absolute',
     left: 0,
     right: 0,
     top: 0,
     bottom: 0,
     textAlign: 'center',
     textAlignVertical: 'center',
-    color: colors.white,
-    fontSize: 25,
+    fontSize: moderateScale(28),
+    color: '#fff',
     fontFamily: 'Sigmar',
     letterSpacing: 1,
-    lineHeight: 56,
+    lineHeight: verticalScale(55),
   },
   card: {
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: 12,
-    padding: 12,
+    padding: moderateScale(15),
   },
   productImg: {
-    width: 64,
-    height: 64,
-    borderRadius: 8,
+    width: scale(64),
+    height: verticalScale(64),
+    borderRadius: scale(8),
     marginRight: 14,
   },
   infoWrap: {
@@ -164,17 +158,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   productName: {
-    fontSize: 16,
+    fontSize: moderateScale(16),
     fontWeight: 'bold',
     color: Colors.light.background,
   },
   productPack: {
-    fontSize: 13,
+    fontSize: moderateScale(13),
     color: Colors.light.background,
     marginTop: 2,
   },
   productPrice: {
-    fontSize: 18,
+    fontSize: moderateScale(18),
     color: Colors.light.background,
     fontWeight: 'bold',
     marginTop: 6,
@@ -187,11 +181,11 @@ const styles = StyleSheet.create({
   removeText: {
     color: Colors.light.background,
     fontWeight: 'bold',
-    fontSize: 15,
+    fontSize: moderateScale(15),
     backgroundColor: '#E53935',
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    borderRadius: scale(8),
+    paddingHorizontal: scale(10),
+    paddingVertical: scale(4),
     overflow: 'hidden',
   },
   separator: {
@@ -222,7 +216,7 @@ const styles = StyleSheet.create({
   addAllBtnText: {
     color: Colors.light.background,
     fontWeight: 'bold',
-    fontSize: 18,
+    fontSize: moderateScale(16),
     letterSpacing: 1,
   },
 });

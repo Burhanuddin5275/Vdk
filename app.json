@@ -4,8 +4,7 @@
     "slug": "dkt",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/DKT-Logo.jpg",
-    "resizeMode": "contain",
+    "icon": "./assets/images/DKT-Logo.png",
     "scheme": "dkt",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -14,7 +13,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/DKT-Logo.jpg",
+        "foregroundImage": "./assets/images/DKT-Logo.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
@@ -23,15 +22,14 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/DKT-Logo.jpg"
+      "favicon": "./assets/images/DKT-Logo.png"
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/DKT-Logo.jpg",
-          "imageWidth": "20%",
+          "image": "./assets/images/DKT-Logo.png",
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }

@@ -95,7 +95,7 @@ const Address = () => {
                     )}
                   </View>
                 </TouchableOpacity>
-                <Text style={styles.saveCardLabel}>Save Card</Text>
+                <Text style={styles.saveCardLabel}>Save Address</Text>
               </View>
             </View>
           </View>
@@ -123,30 +123,30 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-start',
-    height: verticalScale(120),
+    height: verticalScale(80),
     position: 'relative',
-    paddingHorizontal: scale(16),
+    paddingHorizontal: scale(18),
+    marginTop: verticalScale(20),
   },
   backBtn: {
-    width: 40,
-    height: 56,
-    alignItems: 'center',
+      width: scale(40),
+    height: scale(40),
     justifyContent: 'center',
     zIndex: 1,
   },
   headerTitle: {
-    position: 'absolute',
+   position: 'absolute',
     left: 0,
     right: 0,
     top: 0,
     bottom: 0,
     textAlign: 'center',
     textAlignVertical: 'center',
-    fontSize: moderateScale(24),
+    fontSize: moderateScale(28),
     color: '#fff',
     fontFamily: 'Sigmar',
     letterSpacing: 1,
-    lineHeight: 56,
+    lineHeight: verticalScale(55),
   },
   form: {
     marginTop: verticalScale(10),
@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
   },
   saveCardLabel: {
     color: '#fff',
-    fontSize: moderateScale(16),
+    fontSize: moderateScale(14),
     fontFamily: 'PoppinsMedium',
   },
   bottomBar: {
@@ -198,9 +198,11 @@ const styles = StyleSheet.create({
      alignItems: 'center',
      justifyContent: 'center',
      marginTop: 8,
+     height: verticalScale(100),
   },
   addBtn: {
     width: width - 64,
+    height: verticalScale(50),
     borderRadius: 22,
     backgroundColor: colors.primary,
     alignSelf: 'center',

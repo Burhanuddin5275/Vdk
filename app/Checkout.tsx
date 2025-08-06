@@ -8,6 +8,7 @@ import { useAddressStore } from '../store/addressStore';
 import { CartItem, useCartStore } from '../store/cartStore';
 import { useShippingStore } from '../store/shippingStore';
 import { colors } from '../theme/colors';
+import { moderateScale, s, scale, verticalScale } from 'react-native-size-matters';
 
 const { width, height } = Dimensions.get('window');
 
@@ -55,7 +56,7 @@ const Checkout = () => {
                 {/* Header */}
                 <View style={styles.headerRow}>
                     <TouchableOpacity style={styles.backBtn} onPress={router.back}>
-                        <Ionicons name="arrow-back" size={24} color="white" />
+                        <Ionicons name="arrow-back" size={moderateScale(28)} color="white" />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>Checkout</Text>
                 </View>
@@ -63,7 +64,7 @@ const Checkout = () => {
                 {/* Address */}
                 <Text style={styles.sectionTitle}>Shipping Address</Text>
                 <View style={styles.sectionRow}>
-                    <IconSymbol name="house.fill" size={30} color={colors.white} />
+                    <IconSymbol name="location.fill" size={30} color={colors.white} />
                     <View style={{ flex: 1, marginLeft: 10 }}>
                         <Text style={styles.addressLabel}>{address.label}</Text>
                         <Text style={styles.addressDetails}>{address.desc}</Text>
@@ -76,7 +77,9 @@ const Checkout = () => {
                 {/* Shipping */}
                 <Text style={styles.sectionTitle}>Choose Shipping</Text>
                 <View style={styles.sectionRow}>
-                    <IconSymbol name="calendar" size={30} color={colors.white} />
+                    <Image source={require('../assets/Icon/Box.png')} 
+                    resizeMode='contain'
+                    style={{width:scale(30), height:scale(40), tintColor: colors.white}}/>
                     <View style={{ flex: 1, marginLeft: 10 }}>
                         <Text style={styles.shippingLabel}>{shipping.label}</Text>
                         <Text style={styles.shippingEstimate}>{shipping.desc}</Text>
@@ -114,45 +117,40 @@ const styles = StyleSheet.create({
     },
     container: {
         flex: 1,
-        paddingHorizontal: 20,
-        paddingTop: 48,
-        paddingBottom: 0,
+        paddingHorizontal:scale(20),
     },
-    headerRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'flex-start',
-        height: 56,
-        position: 'relative',
-        marginBottom: 18,
-        paddingHorizontal: 0,
+    headerRow: { 
+         flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    height: verticalScale(80),
+    position: 'relative',
+    paddingHorizontal: scale(18),
+    marginTop: verticalScale(20),
     },
     backBtn: {
-        width: 40,
-        height: 56,
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 1,
-        padding: 0,
-        marginRight: 0,
+      width: scale(40),
+    height: scale(40),
+    justifyContent: 'center',
+    zIndex: 1,
     },
     headerTitle: {
-        position: 'absolute',
-        left: 0,
-        right: 0,
-        top: 0,
-        bottom: 0,
-        textAlign: 'center',
-        textAlignVertical: 'center',
-        color: colors.white,
-        fontSize: 25,
-        fontFamily: 'Sigmar',
-        letterSpacing: 1,
-        lineHeight: 56,
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    textAlign: 'center',
+    textAlignVertical: 'center',
+    fontSize: moderateScale(28),
+    color: '#fff',
+    fontFamily: 'Sigmar',
+    letterSpacing: 1,
+    lineHeight: verticalScale(55),
     },
     sectionTitle: {
         color: colors.white,
-        fontSize: 20,
+        fontSize: moderateScale(20),
         fontFamily: 'PoppinsMedium',
         marginTop: 10,
         marginBottom: 4,
@@ -167,34 +165,36 @@ const styles = StyleSheet.create({
     addressLabel: {
         color: colors.white,
         fontFamily: 'PoppinsMedium',
-        fontSize: 18,
+        fontSize: moderateScale(18),
+        lineHeight:verticalScale(18),
     },
     addressDetails: {
         color: colors.white,
-        fontSize: 15,
+        fontSize: moderateScale(15),
         fontFamily: 'PoppinsRegular',
         opacity: 0.7,
     },
     changeBtn: {
         borderRadius: 16,
-        paddingHorizontal: 14,
-        paddingVertical: 4,
+        paddingHorizontal: scale(12),
+        paddingVertical: verticalScale(4),
         borderColor: colors.white,
         borderWidth: 1,
     },
     changeBtnText: {
         color: colors.primary,
         fontFamily: "PoppinsMedium",
-        fontSize: 10,
+        fontSize: moderateScale(10),
     },
     shippingLabel: {
         color: colors.white,
         fontFamily: 'PoppinsMedium',
-        fontSize: 18,
+        fontSize: moderateScale(18),
+        lineHeight:verticalScale(18),
     },
     shippingEstimate: {
         color: colors.white,
-        fontSize: 15,
+        fontSize: moderateScale(12),
         fontFamily: 'PoppinsRegular',
         opacity: 0.7,
     },
@@ -206,27 +206,27 @@ const styles = StyleSheet.create({
         marginBottom: 12,
     },
     cartImage: {
-        width: 70,
-        height: 70,
+        width: scale(70),
+        height: scale(70),
         borderRadius: 12,
         backgroundColor: colors.white,
     },
     cartName: {
         color: colors.white,
         fontFamily: 'PoppinsMedium',
-        fontSize: 15,
+        fontSize: moderateScale(15),
         marginBottom: 2,
     },
     cartPack: {
         color: colors.white,
         fontFamily: 'PoppinsMedium',
-        fontSize: 15,
+        fontSize: moderateScale(15),
         opacity: 0.8,
     },
     cartPrice: {
         color: colors.white,
         fontFamily: 'PoppinsBold',
-        fontSize: 18,
+        fontSize: moderateScale(16),
         marginTop: 2,
     },
 
@@ -237,9 +237,9 @@ const styles = StyleSheet.create({
         padding: 18,
         alignItems: 'center',
         justifyContent: 'center',
-        marginHorizontal: -20,
-        paddingHorizontal: 20,
-        height:"16%",
+        marginHorizontal: scale(-20),
+        paddingHorizontal: scale(20),
+        height: verticalScale(100),
     },
     payBtn: {
         width: '100%',

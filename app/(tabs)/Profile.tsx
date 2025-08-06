@@ -15,33 +15,34 @@ export default function Profile() {
 
   const handleLogout = () => {
     logout();
+    router.push('/(tabs)/Home');
     router.replace('/(tabs)/Home');
   };
 
   const allMenuItems = [
-    { label: 'My orders', icon: 'cart', onPress: () => {router.push('/Orders')} },
-    { label: 'Chat', icon: 'chatbubble-ellipses', onPress: () => {} },
-    { label: 'Wishlist', icon: 'heart', onPress: () => {router.push('/Wishlist')} },
-    { label: 'Manage addresses', icon: 'location', onPress: () => {router.push('/ShippingAddress')} },
-    { label: 'Manage profile', icon: 'person-circle', onPress: () => {} },
-    { label: 'Contact us', icon: 'paper-plane', onPress: () => {} },
-    { label: 'About us', icon: 'information-circle', onPress: () => {} },
-    { label: 'Terms & conditions', icon: 'document-text', onPress: () => {} },
-    { label: 'Redeemed', icon: 'gift', onPress: () => {} },
-    { label: 'Privacy policy', icon: 'shield-checkmark', onPress: () => {} },
-    { label: 'Logout', icon: 'log-out', onPress: handleLogout },
+    { label: 'My orders', icon: 'cart', onPress: () => { router.push('/Orders') } },
+    { label: 'Chat', icon: 'chatbubble-ellipses', onPress: () => { } },
+    { label: 'Wishlist', icon: 'heart', onPress: () => { router.push('/Wishlist') } },
+    { label: 'Manage addresses', icon: 'location', onPress: () => { router.push('/ShippingAddress') } },
+    { label: 'Manage profile', icon: 'person-circle', onPress: () => { } },
+    { label: 'Contact us', icon: 'paper-plane', onPress: () => { } },
+    { label: 'About us', icon: 'information-circle', onPress: () => { } },
+    { label: 'Terms & conditions', icon: 'document-text', onPress: () => { } },
+    { label: 'Redeemed', icon: 'gift', onPress: () => {router.push('/Redeemed') } },
+    { label: 'Privacy policy', icon: 'shield-checkmark', onPress: () => { } },
+    { label: 'Logout', icon: 'log-out', onPress: handleLogout }, 
   ];
 
   const menuItems = isAuthenticated
     ? allMenuItems
     : allMenuItems.filter(item => [
-        'Contact us',
-        'Chat',
-        'About us',
-        'Terms & conditions',
-        'Redeemed',
-        'Privacy policy',
-      ].includes(item.label));
+      'Contact us',
+      'Chat',
+      'About us',
+      'Terms & conditions',
+      'Redeemed',
+      'Privacy policy',
+    ].includes(item.label));
   // Removed hardware back button logout logic
   return (
     <ImageBackground
@@ -77,7 +78,7 @@ export default function Profile() {
           {/* Header */}
           <View style={styles.headerRow}>
             <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-              <Ionicons name="arrow-back" size={moderateScale(24)} color="white" />
+              <Ionicons name="arrow-back" size={moderateScale(28)} color="white" />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Profile</Text>
           </View>
@@ -90,7 +91,7 @@ export default function Profile() {
           )}
           {/* Login Prompt */}
           {!isAuthenticated && (
-            <TouchableOpacity style={styles.loginBox} onPress={() => router.push('/Login')}>
+            <TouchableOpacity style={styles.loginBox} onPress={() => router.push(`/Login?returnTo=${encodeURIComponent('/(tabs)/Profile')}`)}>
               <Text style={styles.loginText}>Login to unlock more Features!</Text>
             </TouchableOpacity>
           )}
@@ -127,22 +128,24 @@ export default function Profile() {
 const styles = StyleSheet.create({
   background: {
     flex: 1,
+    width: '100%',
+    height: '100%',
   },
   container: {
     flex: 1,
   },
   headerRow: {
-   flexDirection: 'row',
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-start',
-    height: verticalScale(120),
+    height: verticalScale(80),
     position: 'relative',
-    paddingHorizontal: scale(16),
+    paddingHorizontal: scale(18),
+    marginTop: verticalScale(20),
   },
   backBtn: {
-   width: 40,
-    height: 56,
-    alignItems: 'center',
+    width: scale(40),
+    height: scale(40),
     justifyContent: 'center',
     zIndex: 1,
   },
@@ -162,22 +165,20 @@ const styles = StyleSheet.create({
   },
   profileSection: {
     alignItems: 'center',
-    marginBottom: verticalScale(20),
   },
   profileImg: {
-    width: moderateScale(100),
-    height: moderateScale(100),
+    width: moderateScale(150),
+    height: moderateScale(145),
     borderRadius: moderateScale(50),
-    borderWidth: moderateScale(4),
-    borderColor: colors.white,
-    marginBottom: verticalScale(10),
   },
   profileName: {
     color: colors.white,
     fontSize: moderateScale(22),
+    lineHeight: moderateScale(40),
     fontFamily: 'Sigmar',
   },
   menuList: {
+    padding: scale(16),
     backgroundColor: 'transparent',
     borderRadius: moderateScale(18),
     marginBottom: verticalScale(18),
@@ -207,7 +208,7 @@ const styles = StyleSheet.create({
   divider: {
     height: verticalScale(1),
     backgroundColor: 'rgba(255,255,255,0.25)',
-    marginLeft: scale(62),
+    marginLeft: scale(8),
   },
   deleteBtn: {
     alignSelf: 'center',
@@ -223,11 +224,12 @@ const styles = StyleSheet.create({
   loginBox: {
     backgroundColor: colors.white,
     borderRadius: moderateScale(16),
-    paddingVertical: verticalScale(18),
+    paddingVertical: verticalScale(14),
     paddingHorizontal: scale(12),
     alignItems: 'center',
-    marginBottom: verticalScale(28),
-    marginTop: verticalScale(10),
+    marginLeft: scale(14),
+    marginBottom: verticalScale(18),
+    width: scale(320)
   },
   loginText: {
     color: colors.primary,
@@ -241,7 +243,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 1000,
-    padding:20
+    padding: 20
   },
   modalContainer: {
     width: '85%',

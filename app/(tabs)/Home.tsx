@@ -7,11 +7,15 @@ import { Dimensions, Image, ImageBackground, Modal, ScrollView, StyleSheet, Text
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { useWishlistStore } from '../../app/Wishlist';
 import { PRODUCTS } from '../../constants/products';
+import { useRef } from 'react';
+import LottieView from 'lottie-react-native';
+import { Animated, Easing } from 'react-native';
+
 
 const brands = [
   { name: 'Josh', image: require('../../assets/images/josh.png') },
   { name: 'OK', image: require('../../assets/images/ok.png') },
-  { name: 'Vida', image: require('../../assets/images/vida.png') },
+  { name: 'Vida', image: require('../../assets/images/vidafem.png') },
   // Add more brands as needed
 ];
 
@@ -20,31 +24,79 @@ type SalePopupProps = {
   visible: boolean;
   onClose: () => void;
 };
-function SalePopup({ visible, onClose }: SalePopupProps) {
-  const { width } = Dimensions.get('window');
+
+const SalePopup = ({ visible, onClose }: SalePopupProps) => {
+  const lottieRef = useRef<LottieView>(null);
+  const [showGiftAnimation, setShowGiftAnimation] = useState(true);
+  const scaleAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (visible) {
+      setShowGiftAnimation(true);
+
+      // Start zoom-in animation
+      Animated.timing(scaleAnim, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+        easing: Easing.out(Easing.exp),
+      }).start();
+
+      const timer = setTimeout(() => {
+        setShowGiftAnimation(false);
+      }, 5000);
+
+      return () => clearTimeout(timer);
+    } else {
+      scaleAnim.setValue(0); // reset scale when hidden
+    }
+  }, [visible]);
+
   return (
     <Modal visible={visible} transparent animationType="fade">
       <View style={popupStyles.overlay}>
-        <View style={popupStyles.popupBox}>
-          {/* Close button */}
+        {/* 🎉 Confetti Background */}
+        {visible && showGiftAnimation && (
+          <Image
+            source={require('../../assets/animations/confetti.gif')}
+            style={popupStyles.giftBackground}
+            resizeMode="cover"
+          />
+        )}
+
+        {/* 🎁 Zoom In Popup */}
+        <Animated.View
+          style={[
+            popupStyles.popupBox,
+            {
+              transform: [
+                {
+                  scale: scaleAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.4, 1],
+                  }),
+                },
+              ],
+            },
+          ]}
+        >
+          <Text style={popupStyles.saleText}>Sale</Text>
           <TouchableOpacity style={popupStyles.closeBtn} onPress={onClose}>
             <Text style={popupStyles.closeText}>×</Text>
           </TouchableOpacity>
-          {/* Sale text */}
-          <Text style={popupStyles.saleText}>Sale</Text>
-          {/* Product image */}
+
           <Image
             source={require('../../assets/images/Lubricants.png')}
             style={popupStyles.productImg}
             resizeMode="contain"
           />
-          {/* Discount text */}
           <Text style={popupStyles.discountText}>Get upto 50% Off</Text>
-        </View>
+        </Animated.View>
       </View>
     </Modal>
   );
-}
+};
+
 
 export default function HomeScreen() {
   const [showPopup, setShowPopup] = useState(false);
@@ -83,17 +135,17 @@ export default function HomeScreen() {
   return (
     <>
       <SalePopup visible={showPopup} onClose={() => setShowPopup(false)} />
-           <ImageBackground
-          source={require('../../assets/images/home.jpg')}
-          style={styles.background}
-          resizeMode="cover"
-        >
-      <ScrollView contentContainerStyle={{ paddingBottom:"10%" }}>
-     
+      <ImageBackground
+        source={require('../../assets/images/home.jpg')}
+        style={styles.background}
+        resizeMode="cover"
+      >
+        <ScrollView contentContainerStyle={{ paddingBottom: "20%" }}>
+
           {/* Header Section */}
           <View style={styles.headerBg}>
             <View style={styles.headerRow}>
-              <View style={{width:"40%"}}>
+              <View style={{ width: scale(140), paddingLeft: scale(16) }}>
                 <Text style={styles.hello}>Hello!{"\n"}Hussain</Text>
                 <Text style={styles.subtext}>What would you like to buy?</Text>
                 <View style={styles.rewardBox}>
@@ -102,13 +154,13 @@ export default function HomeScreen() {
                   </Text><Text style={styles.rewardPts}>PTS</Text>
                 </View>
               </View>
-            <View style={{flex:1}}>
+              <View style={{ flex: 1, alignItems: 'flex-end', }}>
                 <Image
-                source={require('../../assets/images/family2.png')}
-                style={styles.familyImg}
-                resizeMode="contain"
-              />
-            </View>
+                  source={require('../../assets/images/family2.png')}
+                  style={styles.familyImg}
+                  resizeMode="contain"
+                />
+              </View>
             </View>
           </View>
 
@@ -166,8 +218,8 @@ export default function HomeScreen() {
 
           {/* Best Seller Section */}
           <View style={styles.bestSellerRow}>
-            <Text style={styles.bestSellerTitle}>Best Seller</Text>
-            <Text style={styles.seeAll} onPress={()=>{router.push('/BestSeller')}}>See All</Text>
+            <Text style={styles.sectionTitle}>Best Seller</Text>
+            <Text style={styles.seeAll} onPress={() => { router.push('/BestSeller') }}>See All</Text>
           </View>
           <Text style={styles.bestSellerSubtext}>Find the top most popular items in DKT best sellers.</Text>
 
@@ -175,7 +227,7 @@ export default function HomeScreen() {
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            style={{ marginTop: 10, marginBottom: 24, height:verticalScale(260) }}
+            style={{ marginTop: 10, marginBottom: 24, height: verticalScale(260) }}
             contentContainerStyle={{ paddingHorizontal: 16 }}
           >
             {PRODUCTS.filter(p => 'rating' in p)
@@ -223,23 +275,31 @@ export default function HomeScreen() {
                   <View style={bestSellerStyles.cardFooter}>
                     <View style={{ flex: 1 }}>
                       <Text style={bestSellerStyles.cardTitle}>{product.name}</Text>
-                      <Text>
+                      <Text style={{ fontSize: moderateScale(10) }}>
                         Ratings <Text style={bestSellerStyles.rating}>{"★".repeat(Math.round(product.rating || 0))}</Text>
                       </Text>
                     </View>
-                    <View style={bestSellerStyles.ptsBadge}>
-                      <Text style={bestSellerStyles.ptsText}>
+                    <ImageBackground
+                      source={require('../../assets/images/VectorRed.png')}
+                      style={[bestSellerStyles.ptsBadge, { justifyContent: 'center', alignItems: 'center' }]}
+                    >
+                      <Text
+                        style={[
+                          bestSellerStyles.ptsText,
+                          { color: 'white' },
+                        ]}
+                      >
                         {product.pts}
                         {'\n'}PTS
                       </Text>
-                    </View>
+                    </ImageBackground>
                   </View>
                 </TouchableOpacity>
               ))}
           </ScrollView>
-       
-      </ScrollView>
-       </ImageBackground>
+
+        </ScrollView>
+      </ImageBackground>
     </>
   );
 }
@@ -247,23 +307,32 @@ export default function HomeScreen() {
 const popupStyles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.04)',
+    backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  popupBox: {
+  giftBackground: {
+    position: 'absolute',
+    top: '5%',
     width: scale(320),
-    backgroundColor: '#FFD6DE',
-    borderRadius: moderateScale(28),
+    height: verticalScale(320),
+    zIndex: -1,
+    opacity: 0.6,
+  },
+
+  popupBox: {
+    width:"90%",
+    height:"45%",
+    backgroundColor: '#FFE2E2',
+    borderRadius: moderateScale(24),
     alignItems: 'center',
-    paddingVertical: verticalScale(28),
+    paddingVertical: verticalScale(18),
     paddingHorizontal: scale(16),
     shadowColor: '#000',
     shadowOffset: { width: 0, height: moderateScale(4) },
     shadowOpacity: 0.18,
     shadowRadius: moderateScale(16),
     elevation: 8,
-    zIndex: 2,
   },
   closeBtn: {
     position: 'absolute',
@@ -272,15 +341,12 @@ const popupStyles = StyleSheet.create({
     width: moderateScale(32),
     height: moderateScale(32),
     borderRadius: moderateScale(16),
+    borderColor: 'red',
+    borderWidth: 1,
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: moderateScale(1) },
-    shadowOpacity: 0.12,
-    shadowRadius: moderateScale(2),
     elevation: 2,
-    zIndex: 3,
   },
   closeText: {
     fontSize: moderateScale(22),
@@ -289,37 +355,34 @@ const popupStyles = StyleSheet.create({
     marginTop: verticalScale(-2),
   },
   saleText: {
-    fontSize: moderateScale(44),
-    fontWeight: 'bold',
+    fontSize: moderateScale(46),
+    lineHeight: moderateScale(35),
     color: '#E53935',
-    marginTop: verticalScale(8),
-    marginBottom: verticalScale(8),
     fontFamily: 'Sigmar',
   },
   productImg: {
-    width: moderateScale(120),
-    height: moderateScale(120),
-    marginVertical: verticalScale(8),
+    width: moderateScale(186),
+    height: moderateScale(186),
+    marginVertical: verticalScale(20),
     alignSelf: 'center',
   },
   discountText: {
-    fontSize: moderateScale(24),
+    fontSize: moderateScale(30),
+    lineHeight: moderateScale(24),
     color: '#E53935',
-    marginTop: verticalScale(12),
-    fontWeight: '500',
-    fontFamily: 'PoppinsSemi',
+    fontFamily: 'PoppinsRegular',
   },
 });
 
 const bestSellerStyles = StyleSheet.create({
   productCard: {
-    width: 200,
-    marginRight: 16,
+    width: scale(200),
+    marginRight: scale(10),
   },
   gradient: {
     borderRadius: moderateScale(18),
-    width: '100%',
-    height:"60%",
+    width: scale(194),
+    height: verticalScale(184),
     paddingTop: verticalScale(18),
     paddingBottom: 0,
     paddingHorizontal: 10,
@@ -337,11 +400,11 @@ const bestSellerStyles = StyleSheet.create({
     padding: moderateScale(4),
   },
   productImg: {
-    width: '80%',
-    height: verticalScale(100),
+    width: scale(78),
+    height: verticalScale(130),
     borderRadius: moderateScale(10),
     resizeMode: 'contain',
-    marginTop:verticalScale(10)
+    marginTop: verticalScale(10)
   },
   cardFooter: {
     flexDirection: 'row',
@@ -352,11 +415,12 @@ const bestSellerStyles = StyleSheet.create({
     paddingHorizontal: moderateScale(3),
     paddingVertical: verticalScale(2),
     marginTop: verticalScale(-8),
-    height: verticalScale(50),
+    height: verticalScale(40),
+    width: scale(195)
   },
   cardTitle: {
     fontFamily: 'InterBold',
-    fontSize: moderateScale(13),
+    fontSize: moderateScale(12),
     color: colors.textSecondary,
     marginBottom: 0,
   },
@@ -366,7 +430,6 @@ const bestSellerStyles = StyleSheet.create({
     borderRadius: moderateScale(6),
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#AE2125',
   },
   ptsText: {
     color: 'white',
@@ -377,7 +440,7 @@ const bestSellerStyles = StyleSheet.create({
   },
   rating: {
     color: '#FFD600',
-    fontSize: 16,
+    fontSize: moderateScale(10),
   },
 });
 
@@ -392,12 +455,12 @@ const styles = StyleSheet.create({
     backgroundColor: "#733326",
     borderBottomLeftRadius: moderateScale(32),
     borderBottomRightRadius: moderateScale(32),
-    paddingLeft: scale(12),
     paddingVertical: verticalScale(10),
-    paddingTop: verticalScale(20),
-    height: verticalScale(260)
+    paddingTop: verticalScale(10),
+    height: verticalScale(280)
   },
   headerRow: {
+    marginTop: verticalScale(40),
     flexDirection: 'row',
     alignItems: 'center',
     overflow: "hidden",
@@ -405,17 +468,18 @@ const styles = StyleSheet.create({
   },
   hello: {
     color: '#fff',
-    fontSize: moderateScale(22),
+    fontSize: moderateScale(28),
     fontFamily: "RussoOne",
-    marginBottom: verticalScale(4),
-    marginTop: verticalScale(40),
+
   },
   subtext: {
     color: '#fff',
-    fontSize: moderateScale(14),
+    fontSize: moderateScale(16),
     marginBottom: verticalScale(12),
   },
   rewardBox: {
+    width: scale(85),
+    height: verticalScale(80),
     backgroundColor: '#fff',
     borderRadius: moderateScale(12),
     paddingHorizontal: scale(10),
@@ -428,60 +492,66 @@ const styles = StyleSheet.create({
   rewardLabel: {
     color: "red",
     fontFamily: 'RussoOne',
-    fontSize: moderateScale(12),
+    fontSize: moderateScale(15),
   },
   rewardPoints: {
     color: "red",
     fontFamily: 'PoppinsBold',
-    fontSize: moderateScale(18),
+    fontSize: moderateScale(24),
+    lineHeight: moderateScale(28),
     textAlign: 'center',
   },
   rewardPts: {
-    fontSize: moderateScale(10),
+    fontSize: moderateScale(16),
+    lineHeight: moderateScale(12),
     color: "red",
     fontFamily: 'PoppinsBold',
   },
   familyImg: {
-    width: scale(210),
-    resizeMode: "contain"
+    width: scale(225),
+    height: verticalScale(232),
+    resizeMode: "contain",
   },
   sectionTitle: {
     color: "white",
-    fontSize: moderateScale(26),
+    fontSize: moderateScale(32),
+    lineHeight: moderateScale(37),
     fontFamily: "Sigmar",
     marginLeft: scale(15),
-   marginTop: verticalScale(20)
+    marginTop: verticalScale(30)
   },
   categoriesSlider: {
     paddingHorizontal: scale(8),
+    paddingVertical: verticalScale(10),
     gap: scale(8),
-    height: verticalScale(250),
-    marginTop: verticalScale(2)
+    height: verticalScale(240),
   },
   categoryCard: {
     marginTop: verticalScale(5),
     borderRadius: moderateScale(18),
-    width: scale(218),
-    height: verticalScale(200),
+    width: scale(223),
+    height: verticalScale(220),
     alignItems: 'center',
     justifyContent: 'center',
     marginHorizontal: scale(4),
     elevation: 4
   },
   categoryImg: {
-    width: "80%",
-    height: "80%",
+    width: scale(280),
+    height: verticalScale(160),
   },
   categoryLabel: {
     color: 'white',
     fontSize: moderateScale(22),
-    fontFamily: "Sigmar"
+    fontFamily: "Sigmar",
+    lineHeight: moderateScale(36),
   },
   bannerCard: {
+    marginTop: verticalScale(18),
     borderRadius: moderateScale(26),
     alignItems: 'center',
-    width: "96%",
-    marginHorizontal: scale(5)
+    width: scale(340),
+    marginHorizontal: scale(4)
   },
   brandCard: {
     backgroundColor: '#FBF4E4',
@@ -490,36 +560,32 @@ const styles = StyleSheet.create({
     height: verticalScale(120),
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: verticalScale(2),
     marginHorizontal: scale(4),
   },
   brandSlider: {
     paddingHorizontal: scale(8),
     paddingVertical: verticalScale(18),
-    height: verticalScale(165),
+    height: verticalScale(150),
   },
   brandImg: {
-    width: "60%",
-    height: "60%",
+    width: scale(98),
+    height: verticalScale(46),
   },
   bestSellerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginHorizontal: scale(16),
-  },
-  bestSellerTitle: {
-    color: "white",
-    fontSize: moderateScale(26),
-    fontFamily: "Sigmar"
   },
   seeAll: {
     color: "white",
     fontSize: moderateScale(14),
-    fontWeight: 'bold',
+    fontFamily: "PoppinsMedium",
+    marginTop: scale(35),
+    marginRight: scale(20)
   },
   bestSellerSubtext: {
     color: 'white',
+    width: scale(250),
     fontSize: moderateScale(14),
     marginLeft: scale(16),
     marginTop: verticalScale(4),

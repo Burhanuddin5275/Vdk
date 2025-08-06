@@ -1,17 +1,17 @@
 import { Button } from '@/components/Button';
-import { IconSymbol } from '@/components/ui/IconSymbol';
 import { colors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    Dimensions,
-    ImageBackground,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Dimensions,
+  Image,
+  ImageBackground,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { useShippingStore } from '../store/shippingStore';
@@ -23,19 +23,19 @@ const SHIPPING_OPTIONS = [
     id: 'economy',
     label: 'Economy', 
     desc: 'Estimated Arrival: 25 Aug 2025',
-    icon: 'cube.fill'
+    image: require('../assets/Icon/Box.png')
   },
   { 
     id: 'regular',
     label: 'Regular', 
     desc: 'Estimated Arrival: 24 Aug 2025',
-    icon: 'cube.fill'
+    image: require('../assets/Icon/Box.png')
   },
   { 
     id: 'cargo',
     label: 'Cargo', 
     desc: 'Estimated Arrival: 22 Aug 2025',
-    icon: 'car.fill'
+    image: require('../assets/Icon/Truck.png')
   },
 ];
 
@@ -63,18 +63,7 @@ const ChooseShipping = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedShipping]);
 
-  const getShippingIcon = (label: string) => {
-    switch (label.toLowerCase()) {
-        case 'economy':
-            return 'cube.fill';
-        case 'regular':
-            return 'cube.fill';
-        case 'cargo':
-            return 'car.fill';
-        default:
-            return 'cube.fill';
-    }
-  };
+
 
   return (
     <ImageBackground
@@ -86,7 +75,7 @@ const ChooseShipping = () => {
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={28} color={colors.white} />
+            <Ionicons name="arrow-back" size={moderateScale(28)} color={colors.white} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Choose Shipping</Text>
         </View>
@@ -100,11 +89,15 @@ const ChooseShipping = () => {
                   activeOpacity={0.8}
                   onPress={() => setSelected(idx)}
                 >
-                  <IconSymbol 
-                    name={getShippingIcon(option.label)} 
-                    size={28} 
-                    color={colors.white} 
-                    style={{ marginRight: 12 }} 
+                  <Image 
+                    source={option.image} 
+                    style={{
+                      width: moderateScale(28),
+                      height: moderateScale(28),
+                      marginRight: 12,
+                      tintColor: colors.white
+                    }} 
+                    resizeMode="contain"
                   />
                   <View style={{ flex: 1 }}>
                     <Text style={styles.shippingLabel}>{option.label}</Text>
@@ -150,17 +143,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
- flexDirection: 'row',
+  flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-start',
-    height: verticalScale(120),
+    height: verticalScale(80),
     position: 'relative',
-    paddingHorizontal: scale(16)
+    paddingHorizontal: scale(18),
+    marginTop: verticalScale(20),
   },
   backBtn: {
-   width: 40,
-    height: 56,
-    alignItems: 'center',
+   width: scale(40),
+    height: scale(40),
     justifyContent: 'center',
     zIndex: 1,
   },
@@ -172,17 +165,17 @@ const styles = StyleSheet.create({
     bottom: 0,
     textAlign: 'center',
     textAlignVertical: 'center',
-    fontSize: moderateScale(24),
+    fontSize: moderateScale(28),
     color: '#fff',
     fontFamily: 'Sigmar',
     letterSpacing: 1,
-    lineHeight: 56,
+    lineHeight: verticalScale(55),
   },
   shippingRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 18,
-    paddingHorizontal: 20,
+    paddingVertical: verticalScale(18),
+    paddingHorizontal: scale(20),
     backgroundColor: 'transparent',
   },
   shippingLabel: {
@@ -211,13 +204,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 8,
+    height: verticalScale(100),
   },
   applyBtn: {
     width: width - 64,
+    height: verticalScale(50),
     borderRadius: 22,
     backgroundColor: colors.primary,
     alignSelf: 'center',
-    paddingVertical: 14,
+    paddingVertical: moderateScale(12),
   },
 });
 

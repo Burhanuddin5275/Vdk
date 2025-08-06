@@ -56,30 +56,45 @@ export default function RewardsScreen() {
       resizeMode="cover"
     >
       <ScrollView contentContainerStyle={styles.rewardsList} showsVerticalScrollIndicator={false}>
-      <View style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={24} color="white" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Mall</Text>
-        </View>
-        {/* Points Badge */}
-        <View style={styles.pointsBadgeContainer}>
-          {pointsBadges.map((badge, idx) => (
-            <View style={styles.pointsBadgeOuter} key={idx}>
-              <View style={styles.pointsBadgeInner}>
-                <Text style={styles.pointsValue}>{badge.value}</Text>
-                <Text style={styles.pointsLabel}>{badge.label}</Text>
+        <View style={styles.container}>
+          {/* Header */}
+          <View style={styles.header}>
+            <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+              <Ionicons name="arrow-back" size={moderateScale(28)} color="white" />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Mall</Text>
+          </View>
+          {/* Points Badge */}
+
+          <View style={styles.pointsBadgeContainer}>
+            {pointsBadges.map((badge, idx) => (
+              <View style={styles.pointsBadgeOuter} key={idx}>
+                <View style={{
+                  width: "98%",
+                  height: verticalScale(147),
+                  borderRadius: scale(150),
+                  backgroundColor: '#FFC4C6',
+                  borderWidth: scale(2),
+                  borderColor: '#660101', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  marginBottom: 0,
+                }} >
+                  <View style={styles.pointsBadgeInner}>
+                    <Text style={styles.pointsValue}>{badge.value}</Text>
+                    <Text style={styles.pointsLabel}>{badge.label}</Text>
+                  </View>
+
+                </View>
+                <View style={styles.pointsBadgeFooter}>
+                  <Text style={styles.pointsFooterText}>{badge.footer}</Text>
+                </View>
               </View>
-              <View style={styles.pointsBadgeFooter}>
-                <Text style={styles.pointsFooterText}>{badge.footer}</Text>
-              </View>
-            </View>
-          ))}
-        </View>
-        {/* Rewards List */}
-        
+            ))}
+          </View>
+
+          {/* Rewards List */}
+
           {rewards.map((item, idx) => (
             <View style={styles.rewardItem} key={item.name}>
               <Image source={item.image} style={styles.rewardImage} resizeMode="cover" />
@@ -95,9 +110,9 @@ export default function RewardsScreen() {
               </TouchableOpacity>
             </View>
           ))}
-     
-      </View>
-         </ScrollView>
+
+        </View>
+      </ScrollView>
     </ImageBackground>
   );
 }
@@ -114,17 +129,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-     flexDirection: 'row',
-     alignItems: 'center',
-     justifyContent: 'flex-start',
-     height: verticalScale(80),
-     position: 'relative',
-     paddingHorizontal: scale(16),
+       flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    height: verticalScale(80),
+    position: 'relative',
+    paddingHorizontal: scale(18),
+    marginTop: verticalScale(20),
   },
   backBtn: {
-    width: 40,
-    height: 56,
-    alignItems: 'center',
+    width: scale(40),
+    height: scale(40),
     justifyContent: 'center',
     zIndex: 1,
   },
@@ -140,43 +155,40 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontFamily: 'Sigmar',
     letterSpacing: 1,
-    lineHeight: 56,
+    lineHeight: verticalScale(55),
   },
   pointsBadgeContainer: {
     alignItems: 'center',
     marginBottom: 18,
   },
   pointsBadgeOuter: {
-    width: 180,
-    height: 180,
-    borderRadius: 90,
+    width: "50%",
+    height: verticalScale(155),
+    borderRadius: scale(150),
     backgroundColor: '#FFC4C6',
-    borderWidth: 8,
-    borderColor: colors.primaryDark,
+    borderWidth: scale(3),
+    borderColor: '#660101',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 0,
 
   },
   pointsBadgeInner: {
-    width: 150,
-    height: 120,
+    width: scale(150),
+    height: verticalScale(120),
     borderRadius: 75,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 10,
   },
   pointsValue: {
     color: '#E82A2F',
-    fontSize: 38,
-    fontWeight: 'bold',
+    fontSize: moderateScale(36),
     fontFamily: 'RussoOne',
     textAlign: 'center',
   },
   pointsLabel: {
     color: '#E82A2F',
-    fontSize: 22,
-    fontWeight: 'bold',
+    fontSize: moderateScale(30),
     fontFamily: 'RussoOne',
     textAlign: 'center',
     marginTop: -6,
@@ -184,39 +196,36 @@ const styles = StyleSheet.create({
   pointsBadgeFooter: {
     backgroundColor: '#660101',
     borderRadius: 15,
-    paddingHorizontal: 18,
-    paddingVertical: 6,
+    paddingHorizontal: scale(12),
+    paddingVertical: scale(4),
     position: 'absolute',
-    bottom: 0,
+    bottom: scale(-8),
     left: 0,
     right: 0,
     alignItems: 'center',
   },
   pointsFooterText: {
     color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: moderateScale(16),
     fontFamily: 'PoppinsSemi',
     letterSpacing: 1,
   },
   rewardsList: {
-    paddingTop: 18,
     paddingBottom: 80,
   },
   rewardItem: {
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: 18,
-    marginBottom: 22,
-    padding: 10,
+    padding: scale(22),
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
     shadowRadius: 2,
   },
   rewardImage: {
-    width: 70,
-    height: 70,
+    width: scale(70),
+    height: verticalScale(65),
     borderRadius: 12,
     marginRight: 16,
     backgroundColor: '#fff',
@@ -228,25 +237,22 @@ const styles = StyleSheet.create({
   rewardName: {
     color: colors.white,
     fontSize: 18,
-    fontWeight: 'bold',
     fontFamily: 'PoppinsSemi',
     marginBottom: 2,
   },
   rewardPoints: {
     color: colors.white,
     fontSize: 16,
-    fontWeight: 'bold',
     fontFamily: 'RussoOne',
   },
   pointsSub: {
     fontSize: 12,
-    fontWeight: 'bold',
     fontFamily: 'PoppinsSemi',
     color: colors.white,
   },
   redeemBtn: {
     backgroundColor: colors.white,
-    borderRadius: 18,
+    borderRadius: scale(16),
     paddingHorizontal: 18,
     paddingVertical: 6,
     alignItems: 'center',
@@ -255,8 +261,7 @@ const styles = StyleSheet.create({
   },
   redeemText: {
     color: colors.primary,
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: moderateScale(14),
     fontFamily: 'PoppinsSemi',
   },
 }); 

@@ -2,7 +2,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import React from 'react';
 import { Dimensions, FlatList, Image, ImageBackground, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import TabLayout from './(tabs)/_layout';
-import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
+import { moderateScale, s, scale, verticalScale } from 'react-native-size-matters';
 import { Ionicons } from '@expo/vector-icons';
 
 const bgImage = require('../assets/images/ss1.png');
@@ -45,7 +45,7 @@ const OrderTracker = () => {
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity style={styles.backBtn} onPress={router.back}>
-            <Ionicons name="arrow-back" size={moderateScale(24)} color="white" />
+            <Ionicons name="arrow-back" size={moderateScale(28)} color="white" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Order Tracker</Text>
         </View>
@@ -110,17 +110,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    flexDirection: 'row',
+         flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-start',
-    height: verticalScale(120),
+    height: verticalScale(80),
     position: 'relative',
-    paddingHorizontal: scale(16),
+    paddingHorizontal: scale(18),
+    marginTop: verticalScale(20),
   },
   backBtn: {
-    width: 40,
-    height: 56,
-    alignItems: 'center',
+      width: scale(40),
+    height: scale(40),
     justifyContent: 'center',
     zIndex: 1,
   },
@@ -133,15 +133,15 @@ const styles = StyleSheet.create({
     bottom: 0,
     textAlign: 'center',
     textAlignVertical: 'center',
-    fontSize: moderateScale(24),
+    fontSize: moderateScale(28),
     color: '#fff',
     fontFamily: 'Sigmar',
     letterSpacing: 1,
-    lineHeight: 56,
+    lineHeight: verticalScale(55),
   },
   orderNumber: {
     color: '#fff',
-    fontSize: 18,
+    fontSize: moderateScale(18),
   fontFamily:"PoppinsSemi",
     marginBottom: 8,
     marginTop: 8,
@@ -169,12 +169,12 @@ const styles = StyleSheet.create({
     width: 28,
   },
   circle: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
+    width: scale(14),
+    height: scale(14),
+    borderRadius: scale(7),
     borderWidth: 2,
     borderColor: '#fff',
-    backgroundColor: 'transparent',
+    backgroundColor: 'transparent', 
     marginBottom: 2,
   },
   circleActive: {
@@ -189,12 +189,12 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   timelineContent: {
-    marginLeft: 8,
+    marginLeft: scale(8),
     flex: 1,
   },
   timelineLabel: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: moderateScale(16),
     fontFamily:"Montserrat"
   },
   timelineLabelActive: {
@@ -211,24 +211,24 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 8,
     marginTop: 8,
-      paddingHorizontal: 20,
+      paddingHorizontal: scale(20),
   },
   itemsHeaderText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: moderateScale(16),
     fontFamily:"Montserrat"
   },
   productRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 16,
-      paddingHorizontal: 20,
+      paddingHorizontal: scale(20),
   },
   productImage: {
-    width: 70,
-    height: 70,
-    borderRadius: 12,
-    marginRight: 14,
+    width: scale(70),
+    height: scale(70),
+    borderRadius: scale(12),
+    marginRight: scale(14),
     backgroundColor: '#fff',
   },
   productInfo: {
@@ -236,19 +236,19 @@ const styles = StyleSheet.create({
   },
   productName: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: moderateScale(16),
     fontFamily:"PoppinsMedium"
   },
   productPack: {
     color: '#fff',
-    fontSize: 14,
+    fontSize: moderateScale(14),
     opacity: 0.8,
     marginBottom: 2,
     fontFamily:"PoppinsMedium"
   },
   productPrice: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: moderateScale(16),
     fontFamily:"PoppinsSemi",
     marginTop: 2,
   },

@@ -5,12 +5,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Image, ImageBackground, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { useCartStore } from '../store/cartStore';
 import { useWishlistStore } from './Wishlist';
 
 const backgroundImages = {
-  ss1: require('../assets/images/ss1.png'),
-  ss2: require('../assets/images/ss2.png'),
+    ss1: require('../assets/images/ss1.png'),
+    ss2: require('../assets/images/ss2.png'),
 };
 
 const Products = () => {
@@ -39,9 +40,9 @@ const Products = () => {
     // Ensure backgroundImage is a string (not string[])
     let bgKey: 'ss1' | 'ss2' | undefined;
     if (Array.isArray(backgroundImage)) {
-      if (backgroundImage[0] === 'ss1' || backgroundImage[0] === 'ss2') bgKey = backgroundImage[0];
+        if (backgroundImage[0] === 'ss1' || backgroundImage[0] === 'ss2') bgKey = backgroundImage[0];
     } else if (backgroundImage === 'ss1' || backgroundImage === 'ss2') {
-      bgKey = backgroundImage;
+        bgKey = backgroundImage;
     }
 
     // Determine main color based on background
@@ -52,7 +53,8 @@ const Products = () => {
         if (!isAuthenticated || !phone) {
             setCartMessage('Please log in to add items to your cart.');
             setTimeout(() => setCartMessage(null), 2000);
-            setTimeout(() => router.replace('/Login'), 1000);
+            const currentRoute = `/Products?id=${id}&data=${encodeURIComponent(data as string)}&category=${category}&backgroundImage=${backgroundImage}`;
+            setTimeout(() => router.replace(`/Login?returnTo=${encodeURIComponent(currentRoute)}`), 1000);
             return;
         }
         addToCart({
@@ -76,14 +78,15 @@ const Products = () => {
                 <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
                     <View style={styles.header}>
                         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-                            <Ionicons name="arrow-back" size={24} color={mainColor} />
+                            <Ionicons name="arrow-back" size={28} color={mainColor} />
                         </TouchableOpacity>
                         <TouchableOpacity
                             onPress={async () => {
                                 if (!isAuthenticated) {
                                     setWishlistMessage('Please log in to use wishlist.');
                                     setTimeout(() => setWishlistMessage(null), 1000);
-                                    setTimeout(() => router.replace('/Login'), 1000);
+                                    const currentRoute = `/Products?id=${id}&data=${encodeURIComponent(data as string)}&category=${category}&backgroundImage=${backgroundImage}`;
+                                    setTimeout(() => router.replace(`/Login?returnTo=${encodeURIComponent(currentRoute)}`), 1000);
                                     return;
                                 }
                                 if (wishlistItems.some((w: { id: string }) => w.id === product.id)) {
@@ -135,10 +138,10 @@ const Products = () => {
                         <View style={styles.divider} />
                         <Text style={styles.sectionTitle}>Reviews</Text>
                         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-                            <Text style={{ color: '#FFD600', fontSize: 18, marginRight: 4 }}>
+                            <Text style={{ color: '#FFD600', fontSize:moderateScale(15), marginRight: 4 }}>
                                 {'★'.repeat(product.rating || 0)}
                             </Text>
-                            <Text style={{ color: colors.white, fontSize: 15 }}>{product.rating}</Text>
+                            <Text style={{ color: colors.white, fontSize:moderateScale(15) }}>{product.rating}</Text>
                         </View>
                     </View>
                 </ScrollView>
@@ -158,7 +161,7 @@ const Products = () => {
             {modalVisible && (
                 <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.3)', zIndex: 10 }}>
                     <View style={{ backgroundColor: '#FBF4E4', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, width: '100%', maxWidth: '100%' }}>
-                        <Text style={{ color: mainColor, fontFamily: 'PoppinsBold', fontSize: 18, marginBottom: 10 }}>Sizes</Text>
+                        <Text style={{ color: mainColor, fontFamily: 'PoppinsRegular', fontSize: moderateScale(15), marginBottom: 10 }}>Sizes</Text>
                         <View style={{ flexDirection: 'row', marginBottom: 16 }}>
                             {sizes.map((s, i) => (
                                 <TouchableOpacity
@@ -168,40 +171,42 @@ const Products = () => {
                                         borderWidth: selectedSize === s.label ? 2 : 0,
                                         borderColor: mainColor,
                                         borderRadius: 12,
-                                        backgroundColor: '#fff',
                                         marginRight: 16,
                                         padding: 8,
                                         alignItems: 'center',
-                                        width: 90,
+                                        width:scale(94),
+                                        height:verticalScale(100)
                                     }}
                                 >
-                                    <View style={{ width: 48, height: 32, backgroundColor: '#F2F2F2', borderRadius: 8, marginBottom: 6 }} />
-                                    <Text style={{ color: selectedSize === s.label ? mainColor : '#1A1A1A', fontFamily: 'PoppinsBold', fontSize: 14 }}>{s.label}</Text>
+                                    <View style={{ width: scale(65), height: verticalScale(65), backgroundColor: '#F2F2F2', borderRadius: 12, marginBottom: 6 }} />
+                                    <Text style={{ color: selectedSize === s.label ? mainColor : '#1A1A1A', fontFamily: 'PoppinsBold', fontSize:moderateScale(12) }}>{s.label}</Text>
                                 </TouchableOpacity>
                             ))}
                         </View>
                         <View style={{ height: 1, backgroundColor: '#E5E5E5', marginVertical: 10 }} />
-                        <Text style={{ color: mainColor, fontFamily: 'PoppinsBold', fontSize: 16, marginBottom: 8 }}>Quantity</Text>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
-                            <TouchableOpacity
-                                style={{ backgroundColor: '#E5E5E5', borderRadius: 6, width: 32, height: 32, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}
-                                onPress={() => setQty(q => Math.max(1, q - 1))}
-                            >
-                                <Ionicons name="remove" size={20} color={mainColor} />
-                            </TouchableOpacity>
-                            <Text style={{ fontSize: 18, fontFamily: 'PoppinsBold', color: mainColor, marginHorizontal: 8 }}>{qty}</Text>
-                            <TouchableOpacity
-                                style={{ backgroundColor: '#E5E5E5', borderRadius: 6, width: 32, height: 32, alignItems: 'center', justifyContent: 'center', marginLeft: 12 }}
-                                onPress={() => setQty(q => q + 1)}
-                            >
-                                <Ionicons name="add" size={20} color={mainColor} />
-                            </TouchableOpacity>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                            <Text style={{ color: mainColor, fontFamily: 'PoppinsRegular', fontSize:moderateScale(15) }}>Quantity</Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                <TouchableOpacity
+                                    style={{ backgroundColor: '#E5E5E5', borderRadius: 6, width: 32, height: 32, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}
+                                    onPress={() => setQty(q => Math.max(1, q - 1))}
+                                >
+                                    <Ionicons name="remove" size={20} color={mainColor} />
+                                </TouchableOpacity>
+                                <Text style={{ fontSize: 18, fontFamily: 'PoppinsBold', color: mainColor, marginHorizontal: 8 }}>{qty}</Text>
+                                <TouchableOpacity
+                                    style={{ backgroundColor: '#E5E5E5', borderRadius: 6, width: 32, height: 32, alignItems: 'center', justifyContent: 'center', marginLeft: 12 }}
+                                    onPress={() => setQty(q => q + 1)}
+                                >
+                                    <Ionicons name="add" size={20} color={mainColor} />
+                                </TouchableOpacity>
+                            </View>
                         </View>
                         <View style={{ height: 1, backgroundColor: '#E5E5E5', marginVertical: 10 }} />
                         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                             <View>
-                                <Text style={{ color: mainColor, fontFamily: 'PoppinsMedium', fontSize: 15 }}>Total Price</Text>
-                                <Text style={{ color: mainColor, fontFamily: 'PoppinsBold', fontSize: 24 }}>
+                                <Text style={{ color: mainColor, fontFamily: 'PoppinsMedium', fontSize: moderateScale(15) }}>Total Price</Text>
+                                <Text style={{ color: mainColor, fontFamily: 'PoppinsBold', fontSize: moderateScale(25) }}>
                                     Pkr {(product.price ? product.price : (sizes.find(s => s.label === selectedSize)?.price ?? 0)) * qty}/-
                                 </Text>
                             </View>
@@ -209,8 +214,8 @@ const Products = () => {
                                 style={{ backgroundColor: mainColor, borderRadius: 24, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 22, paddingVertical: 12 }}
                                 onPress={handleAddToCart}
                             >
-                                <Ionicons name="cart" size={20} color="#fff" style={{ marginRight: 8 }} />
-                                <Text style={{ color: '#fff', fontFamily: 'PoppinsBold', fontSize: 16 }}>Add to Cart</Text>
+                                <Ionicons name="cart" size={scale(20)} color="#fff" style={{ marginRight: 8 }} />
+                                <Text style={{ color: '#fff', fontFamily: 'PoppinsMedium', fontSize:moderateScale(15) }}>Add to Cart</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -264,24 +269,24 @@ const styles = StyleSheet.create({
         elevation: 2,
     },
     imageWrap: {
-
+        width: scale(350),
+        height: verticalScale(280),
         alignItems: 'center',
         justifyContent: 'center',
-        paddingTop: 16,
-        paddingBottom: 60,
+        paddingTop:verticalScale(10),
+        paddingBottom:verticalScale(40),
         backgroundColor: '#fff',
         borderBottomEndRadius: 32,
         borderBottomStartRadius: 32,
     },
     productImg: {
-        width: 180,
-        height: 180,
+        width: scale(220),
+        height: verticalScale(220),
     },
     thumbnailRow: {
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
-        marginTop: 10,
         gap: 8,
     },
     thumbnailWrap: {
@@ -291,13 +296,14 @@ const styles = StyleSheet.create({
         padding: 2,
         backgroundColor: '#fff',
         marginHorizontal: 2,
+        marginTop:verticalScale(30)
     },
     thumbnailSelected: {
         borderColor: colors.primaryDark,
     },
     thumbnailImg: {
-        width: 40,
-        height: 40,
+        width: scale(15),
+        height:verticalScale(15),
         borderRadius: 6,
     },
     cardSection: {
@@ -308,8 +314,8 @@ const styles = StyleSheet.create({
     },
     brand: {
         color: '#fff',
-        fontSize: 15,
-        fontFamily: 'InterBold',
+        fontSize: moderateScale(18),
+        fontFamily: 'PoppinsSemi',
     },
     ptsBadge: {
         backgroundColor: '#fff',
@@ -322,32 +328,34 @@ const styles = StyleSheet.create({
     },
     ptsText: {
         color: colors.primaryDark,
-        fontFamily: 'InterBold',
-        fontSize: 13,
+        fontFamily: 'PoppinsBold',
+        fontSize: moderateScale(15),
         textAlign: 'center',
     },
     title: {
         color: '#fff',
-        fontSize: 32,
+        fontSize: moderateScale(38),
+        lineHeight:verticalScale(34),
         fontFamily: 'Sigmar',
         marginTop: 8,
     },
     pcs: {
         color: '#fff',
-        fontSize: 32,
+        fontSize: moderateScale(38),
         fontFamily: 'Sigmar',
+         lineHeight:verticalScale(36),
     },
     sectionTitle: {
         color: '#fff',
-        fontSize: 16,
-        fontFamily: 'InterBold',
+        fontSize: moderateScale(18),
+        fontFamily: 'PoppinsSemi',
         marginTop: 16,
         marginBottom: 4,
     },
     details: {
         color: '#fff',
-        fontSize: 14,
-        fontFamily: 'InterRegular',
+        fontSize: moderateScale(14),
+        fontFamily: 'PoppinsRegular',
         marginBottom: 8,
     },
     divider: {
@@ -359,6 +367,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
         borderTopLeftRadius: 24,
         borderTopRightRadius: 24,
+        height:verticalScale(85),
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
@@ -373,13 +382,13 @@ const styles = StyleSheet.create({
     },
     priceLabel: {
         color: colors.textSecondary,
-        fontSize: 13,
-        fontFamily: 'InterRegular',
+        fontSize: moderateScale(15),
+        fontFamily: 'PoppinsRegular',
     },
     price: {
         color: colors.primaryDark,
-        fontSize: 22,
-        fontFamily: 'Sigmar',
+        fontSize: moderateScale(25),
+        fontFamily: 'PoppinsBold',
         marginTop: 2,
     },
     cartBtn: {
@@ -392,8 +401,8 @@ const styles = StyleSheet.create({
     },
     cartBtnText: {
         color: '#fff',
-        fontFamily: 'InterBold',
-        fontSize: 15,
+        fontFamily: 'PoppinsSemi',
+        fontSize: moderateScale(15),
     },
 });
 

@@ -72,7 +72,7 @@ export default function CartScreen() {
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity style={styles.backButton} onPress={router.back}>
-            <Ionicons name="arrow-back" size={moderateScale(24)} color="white" />
+            <Ionicons name="arrow-back" size={moderateScale(28)} color="white" />
           </TouchableOpacity>
             <Text style={styles.headerTitle}>Cart</Text>
           <View style={styles.backButton} />
@@ -343,14 +343,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-start',
-    height: verticalScale(120),
+    height: verticalScale(80),
     position: 'relative',
-    paddingHorizontal: scale(16),
+    paddingHorizontal: scale(18),
+    marginTop: verticalScale(20),
   },
   backButton: {
-  width: 40,
-    height: 56,
-    alignItems: 'center',
+    width: scale(40),
+    height: scale(40),
     justifyContent: 'center',
     zIndex: 1,
   },
@@ -366,7 +366,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontFamily: 'Sigmar',
     letterSpacing: 1,
-    lineHeight: 56,
+    lineHeight: verticalScale(55),
   },
   cartList: {
     flex: 1,
@@ -577,11 +577,11 @@ const checkoutModalStyles = StyleSheet.create({
   promoInputBox: {
     flex: 1,
     backgroundColor: 'white',
-    borderRadius: moderateScale(24),
+    borderRadius: moderateScale(34),
     borderWidth: moderateScale(2),
     borderColor: '#E53935',
     paddingVertical: verticalScale(6),
-    paddingHorizontal: scale(18),
+    paddingHorizontal: scale(6),
     marginRight: scale(10),
   },
   promoInputText: {
@@ -592,7 +592,7 @@ const checkoutModalStyles = StyleSheet.create({
     backgroundColor: '#E53935',
     borderColor: '#E53935',
     borderWidth: moderateScale(2),
-    borderRadius: moderateScale(24),
+    borderRadius: moderateScale(25),
     paddingVertical: verticalScale(4),
     paddingHorizontal: scale(22),
   },

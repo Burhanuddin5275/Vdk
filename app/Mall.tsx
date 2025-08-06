@@ -3,7 +3,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React from 'react';
 import { Dimensions, ImageBackground, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { verticalScale } from 'react-native-size-matters';
+import { s } from 'react-native-size-matters';
+import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 
 const { width } = Dimensions.get('window');
 
@@ -54,10 +55,10 @@ const Mall = () => {
         ) : (
           <View style={styles.headerRow}>
             <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-              <Ionicons name="arrow-back" size={28} color={colors.white} />
+              <Ionicons name="arrow-back" size={moderateScale(28)} color={colors.white} />
             </TouchableOpacity>
             <TouchableOpacity style={styles.heartBtn}>
-              <Ionicons name="heart-outline" size={28} color={colors.white} />
+              <Ionicons name="heart-outline" size={moderateScale(28)} color={colors.white} />
             </TouchableOpacity>
           </View>
         )}
@@ -81,7 +82,7 @@ const Mall = () => {
           <Text style={styles.pointsLabel}>Total Points Required</Text>
           <Text style={styles.pointsValue}>{points} PTS</Text>
         </View>
-        <TouchableOpacity style={styles.redeemBtn} onPress={()=>{router.push('/Redeem')}}>
+        <TouchableOpacity style={styles.redeemBtn} onPress={() => { router.push('/Redeem') }}>
           <Text style={styles.redeemText}>Redeem</Text>
         </TouchableOpacity>
       </View>
@@ -94,17 +95,16 @@ const styles = StyleSheet.create({
     flex: 1,
     width: '100%',
     height: '100%',
-    backgroundColor: colors.primary,
   },
   imageHeaderWrap: {
-    width: '100%',
-    height: verticalScale(260),
+    width: scale(350),
+    height: verticalScale(280),
     position: 'relative',
     justifyContent: 'flex-end',
   },
   productImg: {
-    width: '100%',
-    height: '100%',
+    width: scale(350),
+    height: verticalScale(280),
     borderBottomLeftRadius: 32,
     borderBottomRightRadius: 32,
   },
@@ -114,9 +114,12 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 18,
+    height: verticalScale(50),
+
+    justifyContent: 'space-between',
+    paddingHorizontal: scale(18),
+    marginTop: verticalScale(20),
   },
   backBtn: {
     borderRadius: 20,
@@ -137,27 +140,28 @@ const styles = StyleSheet.create({
   },
   category: {
     color: colors.white,
-    fontSize: 16,
-    fontFamily: 'PoppinsMedium',
+    fontSize: moderateScale(18),
+    fontFamily: 'PoppinsSemi',
     marginBottom: 4,
   },
   title: {
     color: colors.white,
-    fontSize: 32,
+    fontSize: moderateScale(38),
+    lineHeight: moderateScale(40),
     fontFamily: 'Sigmar',
     marginBottom: 12,
   },
   sectionLabel: {
     color: colors.white,
-    fontSize: 16,
+    fontSize: moderateScale(18),
     fontFamily: 'PoppinsSemi',
     marginTop: 10,
     marginBottom: 2,
   },
   details: {
     color: colors.white,
-    fontSize: 15,
-    fontFamily: 'PoppinsMedium',
+    fontSize: moderateScale(13),
+    fontFamily: 'PoppinsRegular',
     marginBottom: 10,
   },
   divider: {
@@ -173,13 +177,13 @@ const styles = StyleSheet.create({
   },
   stars: {
     color: '#FFD600',
-    fontSize: 22,
+    fontSize: moderateScale(22),
     marginRight: 8,
     fontFamily: 'PoppinsBold',
   },
   rating: {
     color: colors.white,
-    fontSize: 16,
+    fontSize: moderateScale(16),
     fontFamily: 'PoppinsMedium',
   },
   footer: {
@@ -194,24 +198,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    height: verticalScale(100)
   },
   pointsWrap: {
     flex: 1,
   },
   pointsLabel: {
     color: colors.primary,
-    fontSize: 15,
+    fontSize: moderateScale(15),
     fontFamily: 'PoppinsMedium',
   },
   pointsValue: {
     color: colors.primary,
-    fontSize: 26,
-    fontFamily: 'Sigmar',
+    fontSize: moderateScale(26),
+    fontFamily: 'PoppinsBold',
     marginTop: 2,
   },
   redeemBtn: {
     backgroundColor: colors.primary,
-    borderRadius: 26,
+    borderRadius: scale(26),
     paddingVertical: 8,
     paddingHorizontal: 32,
     alignItems: 'center',
@@ -219,7 +224,7 @@ const styles = StyleSheet.create({
   },
   redeemText: {
     color: colors.white,
-    fontSize: 18,
+    fontSize: moderateScale(18),
     fontFamily: 'PoppinsSemi',
   },
 });

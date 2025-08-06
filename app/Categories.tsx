@@ -13,7 +13,11 @@ import { useWishlistStore } from './Wishlist';
 const TABS = ['All'];
 
 const screenWidth = Dimensions.get('window').width;
-const CARD_WIDTH = (screenWidth - 48) / 2;
+const COLUMN_GAP = scale(12);
+const CARD_WIDTH = (screenWidth - COLUMN_GAP * 3) / 2;
+
+
+
 
 const categoryImageMap = {
   'Condoms': require('../assets/images/condom.png'),
@@ -23,58 +27,75 @@ const categoryImageMap = {
 };
 
 const Categories = () => {
+
   const router = useRouter();
   const { category } = useLocalSearchParams();
   const selectedCategory = category;
 
-  // Create ads array with images
-  const adsImages = [
+// Slider banner ads
+const bannerAds = [
+  {
+    brand: "Josh",
+    category: "Lubricant",
+    image: require("../assets/images/lubricantSlider.png"),
+  },
+  {
+    brand: "Josh",
+    category: "Condoms",
+    image: require("../assets/images/Pyasa.png"),
+  },
+   {
+    brand: "Josh",
+    category: "Condoms",
+    image: require("../assets/images/Anam.png"),
+  },
+     {
+    brand: "OK",
+    category: "Condoms",
+    image: require("../assets/images/okWanna.png"),
+  },
+  {
+    brand: "Vida",
+    category: "Medicine",
+    image: require("../assets/images/Heer.png"),
+  },
+];
+
+// Inter-product brand ads
+const adsImages = [
+  {
+    brand: "Josh",
+    category: "Lubricant",
+    image: require("../assets/images/lubricant.png"),
+  },
     {
-      brand: "Josh",
-      category: "Condoms",
-      image: require("../assets/images/lahoriTikka.png"),
-    },
+    brand: "Josh",
+    category: "Condoms",
+    image: require("../assets/images/lahoriTikka.png"),
+  },
+  {
+    brand: "OK",
+    category: "Condoms",
+    image: require("../assets/images/okBanner.png"),
+  },
     {
-      brand: "OK",
-      category: "Condoms",
-      image: require("../assets/images/okBanner.png"),
-    },
-    {
-      brand: "Vida",
-      category: "Medicine",
-      image: require("../assets/images/Vidafem1.png"),
-    },
-    {
-      brand: "Josh",
-      category: "Lubricant",
-      image: require("../assets/images/lubricant.png"),
-    },
-    {
-      brand: "OK",
-      category: "Condoms",
-      image: require("../assets/images/okWanna.png"),
-    },
-    {
-      brand: "Vida",
-      category: "Devices",
-      image: require("../assets/images/Heer.png"),
-    },
-    {
-      brand: "Josh",
-      category: "Condoms",
-      image: require("../assets/images/Pyasa.png"),
-    },
-    {
-      brand: "Josh",
-      category: "Lubricant",
-      image: require("../assets/images/lubricantSlider.png"),
-    },
-    {
-      brand: "Vida",
-      category: "Medicine",
-      image: require("../assets/images/Vidafem1.png"),
-    },
-  ];
+    brand: "OK",
+    category: "Condoms",
+    image: require("../assets/images/wanna.png"),
+  },
+  {
+    brand: "Vida",
+    category: "Devices",
+    image: require("../assets/images/Heer.png"),
+  },
+
+  {
+    brand: "Vida",
+    category: "Medicine",
+    image: require("../assets/images/Vidafem1.png"),
+  },
+];
+
 
   const [activeTab, setActiveTab] = useState(0);
   const [wishlistMessage, setWishlistMessage] = useState<string | null>(null);
@@ -102,7 +123,7 @@ const Categories = () => {
         prodCat + 's' === cat
       );
     });
-  } 
+  }
 
   // If in category mode, check for multiple brands
   let categoryBrands: string[] = [];
@@ -118,27 +139,25 @@ const Categories = () => {
     displayList = [...filtered];
   }
 
-  // Auto-slide functionality
-  useEffect(() => {
-    const filteredAds = adsImages.filter(ad => 
-      displayList.some(product => 
-        'brand' in product && 
-        'Category' in product && 
-        product.brand === ad.brand && 
-        ad.category.toLowerCase() === String(selectedCategory).toLowerCase()
-      )
-    );
-    
-    if (filteredAds.length > 1) {
-      const interval = setInterval(() => {
-        setCurrentAdIndex(prevIndex => 
-          prevIndex === filteredAds.length - 1 ? 0 : prevIndex + 1
-        );
-      }, 10000); // Change slide every 3 seconds
+useEffect(() => {
+  const filteredBanners = bannerAds.filter(ad =>
+    displayList.some(product =>
+      'brand' in product &&
+      'Category' in product &&
+      product.brand === ad.brand &&
+      ad.category.toLowerCase() === String(selectedCategory).toLowerCase()
+    )
+  );
 
-      return () => clearInterval(interval);
-    }
-  }, [displayList, adsImages, selectedCategory]);
+  if (filteredBanners.length > 1) {
+    const interval = setInterval(() => {
+      setCurrentAdIndex(prev => (prev === filteredBanners.length - 1 ? 0 : prev + 1));
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }
+}, [displayList, bannerAds, selectedCategory]);
+
 
   // Auto-scroll to current index
   useEffect(() => {
@@ -160,8 +179,8 @@ const Categories = () => {
       data.push({ type: "product", data: product });
 
       if ('brand' in product && 'Category' in product && (i + 1) % 4 === 0) {
-        const brandAds = adsImages.filter((ad) => 
-          ad.brand === product.brand && 
+        const brandAds = adsImages.filter((ad) =>
+          ad.brand === product.brand &&
           ad.category.toLowerCase() === String(selectedCategory).toLowerCase()
         );
         if (brandAds.length > 0) {
@@ -196,61 +215,61 @@ const Categories = () => {
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity style={styles.backBtn} onPress={router.back}>
-            <Ionicons name="arrow-back" size={24} color="white" />
+            <Ionicons name="arrow-back" size={28} color="white" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>{selectedCategory ? selectedCategory : 'Condom'}</Text>
         </View>
-        
-        {/* Ad Image Slider */}
-        <View style={styles.adSliderContainer}>
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false}
-            pagingEnabled
-            onMomentumScrollEnd={(event) => {
-              const index = Math.round(event.nativeEvent.contentOffset.x / screenWidth);
-              setCurrentAdIndex(index);
-            }}
-            ref={scrollViewRef}
-          >
-            {adsImages
-              .filter(ad => displayList.some(product => 
-                'brand' in product && 
-                'Category' in product && 
-                product.brand === ad.brand && 
-                ad.category.toLowerCase() === String(selectedCategory).toLowerCase()
-              ))
-              .map((ad, index) => (
-                <View key={index} style={styles.adSlide}>
-                  <Image 
-                    source={ad.image} 
-                    style={styles.adSlideImage}
-                    resizeMode="contain"
-                  />
-                </View>
-              ))}
-          </ScrollView>
-          {/* Ad Indicators */}
-          <View style={styles.adIndicators}>
-            {adsImages
-              .filter(ad => displayList.some(product => 
-                'brand' in product && 
-                'Category' in product && 
-                product.brand === ad.brand && 
-                ad.category.toLowerCase() === String(selectedCategory).toLowerCase()
-              ))
-              .map((_, index) => (
-              <View 
-                key={index} 
-                style={[
-                  styles.adIndicator, 
-                  index === currentAdIndex && styles.adIndicatorActive
-                ]} 
-              />
-            ))}
-          </View>
+ 
+       <View style={styles.adSliderContainer}>
+  <ScrollView
+    horizontal
+    showsHorizontalScrollIndicator={false}
+    pagingEnabled
+    onMomentumScrollEnd={(event) => {
+      const index = Math.round(event.nativeEvent.contentOffset.x / screenWidth);
+      setCurrentAdIndex(index);
+    }}
+    ref={scrollViewRef}
+  >
+    {bannerAds
+      .filter(ad => displayList.some(product =>
+        'brand' in product &&
+        'Category' in product &&
+        product.brand === ad.brand &&
+        ad.category.toLowerCase() === String(selectedCategory).toLowerCase()
+      ))
+      .map((ad, index) => (
+        <View key={index} style={styles.adSlide}>
+          <Image
+            source={ad.image}
+            style={styles.adSlideImage}
+            resizeMode="contain"
+          />
         </View>
-        
+      ))}
+  </ScrollView>
+
+  <View style={styles.adIndicators}>
+    {bannerAds
+      .filter(ad => displayList.some(product =>
+        'brand' in product &&
+        'Category' in product &&
+        product.brand === ad.brand &&
+        ad.category.toLowerCase() === String(selectedCategory).toLowerCase()
+      ))
+      .map((_, index) => (
+        <View
+          key={index}
+          style={[
+            styles.adIndicator,
+            index === currentAdIndex && styles.adIndicatorActive
+          ]}
+        />
+      ))}
+  </View>
+</View>
+
+
         {/* Banner and Tabs logic */}
         {!selectedCategory ? (
           <>
@@ -294,7 +313,10 @@ const Categories = () => {
                 return (
                   <TouchableOpacity
                     key={prod.id}
-                    style={{ width: CARD_WIDTH, marginBottom: verticalScale(32) }}
+                    style={{
+                      width: CARD_WIDTH,
+                      marginBottom: verticalScale(32),
+                    }}
                     activeOpacity={0.8}
                     onPress={() =>
                       router.push({
@@ -326,7 +348,8 @@ const Categories = () => {
                           if (!isAuthenticated) {
                             setWishlistMessage("Please log in to use wishlist.");
                             setTimeout(() => setWishlistMessage(null), 1000);
-                            setTimeout(() => router.replace("/Login"), 1000);
+                            const currentRoute = `/Categories${category ? `?category=${category}` : ''}`;
+                            setTimeout(() => router.replace(`/Login?returnTo=${encodeURIComponent(currentRoute)}`), 1000);
                             return;
                           }
                           if (isInWishlist(prod.id)) {
@@ -371,42 +394,59 @@ const Categories = () => {
                         isVidaBrand
                           ? { backgroundColor: vidaColors.background }
                           : prod.brand === "Josh"
-                          ? { backgroundColor: "#FBF4E4" }
-                          : prod.brand === "OK"
-                          ? { backgroundColor: colors.secondary }
-                          : null,
+                            ? { backgroundColor: "#FBF4E4" }
+                            : prod.brand === "OK"
+                              ? { backgroundColor: colors.secondary }
+                              : null,
                       ]}
                     >
                       <View style={styles.footerLeft}>
                         <Text
-                          style={[styles.cardTitle, isVidaBrand && { color: vidaColors.text }]}
+                          style={[styles.cardTitle, isVidaBrand && { color: vidaColors.text }]} numberOfLines={3}
                         >
                           {prod.name}
                         </Text>
-                        <Text>
-                          Ratings{" "}
+                        <Text style={{fontSize:scale(10), fontFamily: 'InterRegular'}}>
+                          Ratings
                           <Text style={{ color: "#FFD600", }}>
                             {"★".repeat(prod.rating)}
                           </Text>
                         </Text>
                       </View>
-                      <View
-                        style={[
-                          styles.ptsBadge,
-                          isVidaBrand
-                            ? { backgroundColor: '#0B3D0B' } // dark green for Vida
-                            : { backgroundColor: '#AE2125' }, // dark red for others
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.ptsText,
-                            { color: 'white' },
-                          ]}
-                        >
-                          {prod.pts}
-                          {'\n'}PTS
-                        </Text>
+                      <View>
+                        {isVidaBrand ? (
+                          <ImageBackground
+                            source={require('../assets/images/VectorGreen.png')}
+                            style={[styles.ptsBadge, { justifyContent: 'center', alignItems: 'center' }]}
+                            imageStyle={{ borderRadius: moderateScale(6) }}
+                          >
+                            <Text
+                              style={[
+                                styles.ptsText,
+                                { color: 'white' },
+                              ]}
+                            >
+                              {prod.pts}
+                              {'\n'}PTS
+                            </Text>
+                          </ImageBackground>
+                        ) : (
+                             <ImageBackground
+                            source={require('../assets/images/VectorRed.png')}
+                            style={[styles.ptsBadge, { justifyContent: 'center', alignItems: 'center' }]}
+                            imageStyle={{ borderRadius: moderateScale(6) }}
+                          >
+                          <Text
+                            style={[
+                              styles.ptsText,
+                              { color: 'white' },
+                            ]}
+                          >
+                            {prod.pts}
+                            {'\n'}PTS
+                          </Text>
+                          </ImageBackground>
+                        )}
                       </View>
                     </View>
                   </TouchableOpacity>
@@ -418,8 +458,8 @@ const Categories = () => {
               const ad = item.data;
               return (
                 <View key={`ad-${idx}`} style={styles.adBanner}>
-                  <Image 
-                    source={ad.image} 
+                  <Image
+                    source={ad.image}
                     style={styles.adBannerImage}
                     resizeMode="contain"
                   />
@@ -450,17 +490,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    flexDirection: 'row',
+         flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-start',
-    height: verticalScale(120),
+    height: verticalScale(80),
     position: 'relative',
-    paddingHorizontal: scale(16),
+    paddingHorizontal: scale(18),
+    marginTop: verticalScale(20),
   },
   backBtn: {
-    width: 40,
-    height: 56,
-    alignItems: 'center',
+   width: scale(40),
+    height: scale(40),
     justifyContent: 'center',
     zIndex: 1,
   },
@@ -475,8 +515,8 @@ const styles = StyleSheet.create({
     fontSize: moderateScale(28),
     color: '#fff',
     fontFamily: 'Sigmar',
-    letterSpacing: moderateScale(1),
-    lineHeight: 56, 
+    letterSpacing: 1,
+    lineHeight: verticalScale(55),
   },
   tabsWrap: {
     alignItems: 'center',
@@ -521,7 +561,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: colors.secondary,
-    borderRadius: moderateScale(12),
+    borderRadius: moderateScale(10),
     paddingHorizontal: moderateScale(3),
     paddingVertical: verticalScale(2),
     marginTop: verticalScale(-8),
@@ -529,26 +569,28 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: moderateScale(1) },
     shadowOpacity: 0.08,
     shadowRadius: moderateScale(2),
-    height: verticalScale(80)
+    height: verticalScale(40)
   },
   footerLeft: {
     flex: 1,
   },
   cardTitle: {
     fontFamily: 'InterBold',
-    fontSize: moderateScale(13),
+    fontSize: moderateScale(10),
+    lineHeight: moderateScale(12),
     color: colors.textSecondary,
     marginBottom: 0,
   },
-  cardRating: {
-    fontSize: moderateScale(12),
-    color: colors.textSecondary,
-    fontFamily: 'InterRegular',
-    marginBottom: 0,
-  },
+  // cardRating: {
+  //   fontSize: moderateScale(12),
+  //   lineHeight: moderateScale(5),
+  //   color: colors.textSecondary,
+  //   fontFamily: 'InterRegular',
+  //   marginBottom: 0,
+  // },
   ptsBadge: {
     width: moderateScale(50),
-    height: moderateScale(40),
+    height: moderateScale(50),
     borderRadius: moderateScale(6),
     alignItems: 'center',
     justifyContent: 'center',
@@ -557,12 +599,12 @@ const styles = StyleSheet.create({
   ptsText: {
     color: '#fff',
     fontFamily: 'PoppinsSemi',
-    fontSize: moderateScale(13),
+    fontSize: moderateScale(12),
     textAlign: 'center',
     lineHeight: moderateScale(15),
   },
   productCard: {
-    borderRadius: moderateScale(18),
+   borderRadius: moderateScale(18),
     width: '100%',
     paddingTop: verticalScale(18),
     paddingBottom: 0,
@@ -576,16 +618,16 @@ const styles = StyleSheet.create({
     top: verticalScale(10),
     right: scale(10),
     zIndex: 2,
-    backgroundColor: '#E53935', // revert to red
+    backgroundColor: '#E53935', 
     borderRadius: moderateScale(16),
-    padding: moderateScale(4),
+    padding: scale(4),
   },
   adBanner: {
     width: '100%',
-    height: verticalScale(120),
+    height: verticalScale(90),
     borderRadius: moderateScale(16),
     overflow: 'hidden',
-    marginBottom: verticalScale(15),
+    marginBottom: verticalScale(30),
     position: 'relative',
   },
 
@@ -626,7 +668,7 @@ const styles = StyleSheet.create({
     marginHorizontal: moderateScale(4),
   },
   adIndicatorActive: {
-    backgroundColor: '#AE2125',
+    backgroundColor: 'white',
     width: moderateScale(10),
     height: moderateScale(10),
     borderRadius: moderateScale(15),

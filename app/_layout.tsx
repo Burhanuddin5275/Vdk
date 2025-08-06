@@ -40,6 +40,7 @@ export default function RootLayout() {
             <Stack.Screen name="BestSeller" options={{ headerShown: false }} />
             <Stack.Screen name="Mall" options={{ headerShown: false }} />
             <Stack.Screen name="Redeem" options={{ headerShown: false }} />
+            <Stack.Screen name="Redeemed" options={{ headerShown: false }} />
             <Stack.Screen name="Products" options={{ headerShown: false }} />
             <Stack.Screen name="Checkout" options={{ headerShown: false }} />
             <Stack.Screen name="ShippingAddress" options={{ headerShown: false }} />

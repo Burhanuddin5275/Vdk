@@ -1,15 +1,26 @@
 import { Button } from '@/components/Button';
 import { colors } from '@/theme/colors';
-import { useFonts } from 'expo-font';
 import { useRouter } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
 import React from 'react';
-import { Dimensions, Image, ImageBackground, StyleSheet, Text, View } from 'react-native';
-import { moderateScale, verticalScale } from 'react-native-size-matters';
-const { width } = Dimensions.get('window');
+import {
+  Dimensions,
+  Image,
+  ImageBackground,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import {
+  moderateScale,
+  verticalScale
+} from 'react-native-size-matters';
+
+const { width, height } = Dimensions.get('window');
 
 export default function Splash() {
   const router = useRouter();
+
+
   return (
     <ImageBackground
       source={require('../assets/images/ss1.png')}
@@ -17,21 +28,20 @@ export default function Splash() {
       resizeMode="cover"
     >
       <View style={styles.container}>
-        {/* Mandala background (placeholder with red and patterns) */}
         <View style={styles.mandalaBackground} />
-        {/* Family illustration placeholder */}
+
         <View style={styles.illustrationContainer}>
           <Image
-            source={require('../assets/images/family.png')} // Placeholder for family illustration
+            source={require('../assets/images/family.png')}
             style={styles.illustration}
             resizeMode="contain"
           />
         </View>
-        {/* Welcome Text */}
+
         <View style={styles.textContainer}>
           <Text style={styles.welcome}>Welcome!</Text>
           <Text style={styles.startJourney}>Start Your Journey</Text>
-          <Button variant="primary" onPress={() => { router.push('/Home') }}>
+          <Button variant="primary" onPress={() => router.push('/Home')}>
             Get Started
           </Button>
         </View>
@@ -49,43 +59,51 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: verticalScale(20),
   },
   mandalaBackground: {
     backgroundColor: 'transparent',
-    // You can add SVG or ImageBackground for mandala pattern here
   },
   illustrationContainer: {
     alignItems: 'center',
-    marginTop: verticalScale(50),
+    marginTop: verticalScale(40),
     zIndex: 1,
   },
   illustration: {
-    width: width,
-    height: verticalScale(300),
+    width: width * 0.85,
+    height: verticalScale(280),
     borderRadius: moderateScale(20),
-    marginTop: verticalScale(20)
+    marginTop: verticalScale(20),
   },
   textContainer: {
     width: '100%',
     alignItems: 'center',
     paddingTop: verticalScale(20),
-    paddingBottom: verticalScale(60),
+    paddingBottom: verticalScale(80),
     borderTopLeftRadius: moderateScale(40),
     borderTopRightRadius: moderateScale(40),
     zIndex: 2,
+    // Remove margin or spacing between texts
+    gap: 0, // Ensure no gap if using React Native 0.71+
   },
   welcome: {
-    fontSize: moderateScale(50),
+    fontSize: moderateScale(52),
     color: colors.white,
     fontFamily: 'Sacramento',
-    height: verticalScale(42),
-    textAlign: "center"
+    textAlign: 'center',
+    marginBottom: 0, // Remove any margin below welcome
+    lineHeight: moderateScale(53), // Set lineHeight to match fontSize
+    padding: 0, // Remove any padding
   },
   startJourney: {
-    fontSize: moderateScale(30),
+    fontSize: moderateScale(32),
     color: colors.white,
     fontFamily: 'Sigmar',
-    textAlign: "center"
+    textAlign: 'center',
+    marginBottom: 0, // Remove margin below startJourney
+    marginTop: 0, // Remove margin above startJourney
+    lineHeight: moderateScale(34), // Set lineHeight to match fontSize
+    padding: 0, // Remove any padding
   },
 });

@@ -54,7 +54,7 @@ const ShippingAddress = () => {
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={28} color={colors.white} />
+            <Ionicons name="arrow-back" size={moderateScale(24)}color={colors.white} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Shipping Address</Text>
         </View>
@@ -118,17 +118,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-  flexDirection: 'row',
-     alignItems: 'center',
-     justifyContent: 'flex-start',
-     height: verticalScale(120),
-     position: 'relative',
-     paddingHorizontal: scale(16)
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    height: verticalScale(80),
+    position: 'relative',
+    paddingHorizontal: scale(18),
+    marginTop: verticalScale(20),
   },
   backBtn: {
-   width: 40,
-    height: 56,
-    alignItems: 'center',
+    width: scale(40),
+    height: scale(40),
     justifyContent: 'center',
     zIndex: 1,
   },
@@ -140,17 +140,17 @@ const styles = StyleSheet.create({
     bottom: 0,
     textAlign: 'center',
     textAlignVertical: 'center',
-    fontSize: moderateScale(24),
+    fontSize: moderateScale(28),
     color: '#fff',
     fontFamily: 'Sigmar',
     letterSpacing: 1,
-    lineHeight: 56,
+    lineHeight: verticalScale(55),
   },
   addressRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 18,
-    paddingHorizontal: 20,
+    paddingVertical: verticalScale(18),
+    paddingHorizontal: scale(20),
     backgroundColor: 'transparent',
   },
   addressLabel: {
@@ -196,13 +196,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 8,
+    height:verticalScale(100),
   },
   applyBtn: {
     width: width - 64,
+    height: verticalScale(50),
     borderRadius: 22,
     backgroundColor: colors.primary,
     alignSelf: 'center',
-    paddingVertical: 14,
+    paddingVertical: moderateScale(12),
   },
 });
 

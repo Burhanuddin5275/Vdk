@@ -12,7 +12,7 @@ const PAYMENT_METHODS = [
     {
         id: 'card',
         label: 'Add Card',
-        icon: <Ionicons name="card-outline" size={28} color={colors.primary} />, // Placeholder icon
+        icon: <Ionicons name="card-outline" size={moderateScale(25)}color={colors.primary} />, // Placeholder icon
         type: 'card',
     },
 ];
@@ -49,7 +49,7 @@ const Payment = () => {
                 {/* Header */}
                 <View style={styles.header}>
                     <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-                        <Ionicons name="arrow-back" size={28} color={colors.white} />
+                        <Ionicons name="arrow-back" size={moderateScale(28)} color={colors.white} />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>Payment Method</Text>
                 </View>
@@ -112,17 +112,17 @@ const styles = StyleSheet.create({
     
     },
     header: {
-      flexDirection: 'row',
-       alignItems: 'center',
-       justifyContent: 'flex-start',
-       height: verticalScale(120),
-       position: 'relative',
-       paddingHorizontal: scale(16),
+     flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    height: verticalScale(80),
+    position: 'relative',
+    paddingHorizontal: scale(18),
+    marginTop: verticalScale(20),
     },
     backBtn: {
-       width: 40,
-    height: 56,
-    alignItems: 'center',
+     width: scale(40),
+    height: scale(40),
     justifyContent: 'center',
     zIndex: 1,
     },
@@ -134,15 +134,15 @@ const styles = StyleSheet.create({
     bottom: 0,
     textAlign: 'center',
     textAlignVertical: 'center',
-    fontSize: moderateScale(24),
+    fontSize: moderateScale(28),
     color: '#fff',
     fontFamily: 'Sigmar',
     letterSpacing: 1,
-    lineHeight: 56,
+    lineHeight: verticalScale(55),
     },
     sectionTitle: {
         color: colors.white,
-        fontSize: 18,
+        fontSize: moderateScale(18),
         fontFamily: 'PoppinsSemi',
         marginTop: 8,
         marginBottom: 8,
@@ -152,9 +152,9 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         backgroundColor: colors.white,
         borderRadius: 12,
-        paddingVertical: 14,
-        paddingHorizontal: 16,
-        marginBottom: 12,
+        paddingVertical: verticalScale(12),
+        paddingHorizontal: scale(14),
+        marginBottom: verticalScale(12),
         shadowColor: colors.primaryDark,
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.08,
@@ -165,15 +165,14 @@ const styles = StyleSheet.create({
         borderColor: colors.primary,
     },
     iconBox: {
-        width: 36,
-        height: 36,
-        alignItems: 'center',
+        width: scale(26),
+        height: verticalScale(26),
         justifyContent: 'center',
         marginRight: 12,
     },
     cardLabel: {
         color: colors.primary,
-        fontSize: 16,
+        fontSize: moderateScale(14),
         fontFamily: 'PoppinsSemi',
     },
     optionRow: {
@@ -190,13 +189,13 @@ const styles = StyleSheet.create({
         shadowRadius: 4,
     },
     optionIcon: {
-        width: 32,
-        height: 32,
+        width: scale(32),
+        height: verticalScale(32),
         marginRight: 12,
     },
     optionLabel: {
         color: colors.primary,
-        fontSize: 16,
+        fontSize: moderateScale(14),
         fontFamily: 'PoppinsSemi',
     },
     footer: {
@@ -207,7 +206,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         paddingHorizontal: 20,
-        height: "16%",
+        height: verticalScale(100),
     },
     confirmBtn: {
         width: '100%',

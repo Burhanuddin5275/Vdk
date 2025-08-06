@@ -2,8 +2,9 @@ import { colors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Dimensions, Image, ImageBackground, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Dimensions, Image, ImageBackground, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 
 const { width } = Dimensions.get('window');
 
@@ -39,7 +40,9 @@ const Card = () => {
                     />
                 </View>
                 {/* Form */}
-                <View style={styles.form}>
+                  <ScrollView style={styles.Card} contentContainerStyle={{ paddingBottom: verticalScale(100) } } showsVerticalScrollIndicator={false}>
+
+                    <View style={styles.form}>  
                     <Text style={styles.label}>Card Holder Name*</Text>
                     <TextInput
                         style={styles.input}
@@ -91,6 +94,8 @@ const Card = () => {
                         <Text style={styles.saveLabel}>Save Card</Text>
                     </View>
                 </View>
+                  </ScrollView>
+            
                 {/* Add Card Button Footer */}
                 <View style={[styles.footer, { paddingBottom: insets.bottom || 16 }]}>
                     <TouchableOpacity style={styles.addBtn}>
@@ -110,34 +115,35 @@ const styles = StyleSheet.create({
     },
     container: {
         flex: 1,
-        paddingHorizontal: 16,
-        paddingTop: 48,
     },
     header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'flex-start',
-        position: 'relative',
-        height: 56,
+      flexDirection: 'row',
+       alignItems: 'center',
+       justifyContent: 'flex-start',
+       height: verticalScale(80),
+       position: 'relative',
+       paddingHorizontal: scale(18),
+       marginTop: verticalScale(20),
     },
     backBtn: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 1,
-        width: 40,
-        height: 56,
+        width: scale(40),
+    height: scale(40),
+    justifyContent: 'center',
+    zIndex: 1,
     },
     headerTitle: {
-        position: 'absolute',
-        left: 0,
-        right: 0,
-        top: 0,
-        bottom: 0,
-        textAlign: 'center',
-        color: colors.white,
-        fontSize: 25,
-        fontFamily: 'Sigmar',
-        lineHeight: 56,
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    textAlign: 'center',
+    textAlignVertical: 'center',
+    fontSize: moderateScale(28),
+    color: '#fff',
+    fontFamily: 'Sigmar',
+    letterSpacing: 1,
+    lineHeight: verticalScale(55),
     },
     cardImageWrap: {
         alignItems: 'center',
@@ -146,8 +152,14 @@ const styles = StyleSheet.create({
         width: "100%",
         borderRadius: 16,
     },
+      Card: {
+    flex: 1,
+    paddingHorizontal: scale(20),
+    height: verticalScale(2022),
+  },
     form: {
-
+        paddingHorizontal: scale(16),
+        paddingTop: verticalScale(20)
     },
     label: {
         color: colors.white,
@@ -195,23 +207,21 @@ const styles = StyleSheet.create({
         fontFamily: 'PoppinsMedium',
     },
     footer: {
-        position: 'absolute',
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: colors.secondaryLight,
-        borderTopLeftRadius: 32,
-        borderTopRightRadius: 32,
-        padding: 18,
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginHorizontal: 0,
-        // paddingBottom will be set dynamically
+    backgroundColor: colors.secondaryLight,
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    padding: 24,
+    paddingBottom: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
+    height: verticalScale(100),
     },
     addBtn: {
         width: '100%',
+        height: verticalScale(50),
         borderRadius: 16,
-        paddingVertical: 14,
+        paddingVertical: verticalScale(12),
         backgroundColor: colors.primary,
         alignItems: 'center',
         justifyContent: 'center',

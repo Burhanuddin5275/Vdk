@@ -1,15 +1,35 @@
-import { Tabs } from 'expo-router';
-import React from 'react';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import TabBarBackground from '@/components/ui/TabBarBackground';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { Text } from 'react-native';
-import { scale } from 'react-native-size-matters';
+import { Tabs } from 'expo-router';
+import React from 'react';
+import { Dimensions, Image, Text } from 'react-native';
+import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
+  const { width: screenWidth } = Dimensions.get('window');
+  
+  // Responsive sizing based on screen width
+  const getIconSize = (focused: boolean) => {
+    const baseSize = screenWidth < 350 ? 20 : screenWidth < 400 ? 28 : 24;
+    return focused ? moderateScale(baseSize + 4) : moderateScale(baseSize);
+  };
+  
+  const getFontSize = (focused: boolean) => {
+    const baseSize = screenWidth < 350 ? 11 : screenWidth < 400 ? 8 : 10;
+    return focused ? moderateScale(baseSize + 2) : moderateScale(baseSize);
+  };
+  
+  const getTabBarHeight = () => { 
+    return screenWidth < 350 ? verticalScale(75) : screenWidth < 400 ? verticalScale(80) : verticalScale(85);
+  };
+  
+  const getVerticalSpacing = () => {
+    return screenWidth < 350 ? verticalScale(4) : screenWidth < 400 ? verticalScale(4) : verticalScale(5);
+  };
   return (
     <Tabs
       initialRouteName="Home"
@@ -17,16 +37,24 @@ export default function TabLayout() {
         tabBarActiveTintColor: colors.tabRedActive,
         tabBarInactiveTintColor: colors.tabRedInactive,
         headerShown: false,
-        tabBarLabelStyle: {
-          fontWeight: 'bold',
-          fontSize: 15,
-        },
         tabBarStyle: {
           backgroundColor: 'transparent',
           position: 'absolute',
-          height: scale(85),
-          borderTopLeftRadius: 32,
-          borderTopRightRadius: 32,
+          paddingTop: verticalScale(8),
+          paddingBottom: verticalScale(4),
+          paddingHorizontal: scale(8),
+          height: getTabBarHeight(),
+          borderTopLeftRadius: moderateScale(32),
+          borderTopRightRadius: moderateScale(32),
+          justifyContent: 'center',
+          alignItems: 'center',
+        },
+        tabBarItemStyle: {
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          paddingVertical: verticalScale(4),
+          marginHorizontal: scale(2),
         },
         tabBarBackground: () => <TabBarBackground />, 
       }}>
@@ -34,9 +62,25 @@ export default function TabLayout() {
         name="Home"
         options={{ 
           title: 'Home',
-          tabBarIcon: ({ color, focused }) => <IconSymbol size={focused ? 32 : 30} name="house.fill" color={color} />, 
+          tabBarIcon: ({ color, focused }) => (
+            <IconSymbol 
+              size={getIconSize(focused)} 
+              name="house.fill" 
+              color={color} 
+              style={{
+                lineHeight: scale(25),
+              }} 
+            />
+          ), 
           tabBarLabel: ({ color, focused }) => (
-            <Text style={{ color, fontWeight: '500', fontSize: focused ? 15 : 14, marginTop: 4 }}>Home</Text>
+            <Text style={{ 
+              color, 
+              fontWeight: '500', 
+              fontSize: getFontSize(focused), 
+              marginTop: getVerticalSpacing(),
+              lineHeight: getFontSize(focused),
+              textAlign: 'center'
+            }}>Home</Text>
           ),
         }}
       />
@@ -44,9 +88,25 @@ export default function TabLayout() {
         name="Cart"
         options={{
           title: 'Cart',
-          tabBarIcon: ({ color, focused }) => <IconSymbol size={focused ? 32 : 30} name="cart.fill" color={color} />, 
+          tabBarIcon: ({ color, focused }) => (
+            <IconSymbol 
+              size={getIconSize(focused)} 
+              name="cart.fill" 
+              color={color} 
+              style={{
+                lineHeight: scale(25),
+              }}
+            />
+          ), 
           tabBarLabel: ({ color, focused }) => (
-            <Text style={{ color, fontWeight: '500', fontSize: focused ? 15 : 14, marginTop: 4 }}>Cart</Text>
+            <Text style={{ 
+              color, 
+              fontWeight: '500', 
+              fontSize: getFontSize(focused), 
+              marginTop: getVerticalSpacing(),
+              lineHeight: getFontSize(focused) + 2,
+              textAlign: 'center'
+            }}>Cart</Text>
           ),
         }}
       />
@@ -54,9 +114,26 @@ export default function TabLayout() {
         name="Orders"
         options={{
           title: 'Orders',
-          tabBarIcon: ({ color, focused }) => <IconSymbol size={focused ? 32 : 30} name="book.fill" color={color} />, 
+          tabBarIcon: ({ color, focused }) => (
+            <Image
+              source={require('../../assets/Icon/order.png')}
+              style={{
+                width: getIconSize(focused),
+                height: getIconSize(focused),
+                tintColor: color,
+                resizeMode: 'contain'
+              }}
+            />
+          ),
           tabBarLabel: ({ color, focused }) => (
-            <Text style={{ color, fontWeight: '500', fontSize: focused ? 15 : 14, marginTop: 4 }}>Orders</Text>
+            <Text style={{ 
+              color, 
+              fontWeight: '500', 
+              fontSize: getFontSize(focused), 
+              marginTop: getVerticalSpacing(),
+              lineHeight: getFontSize(focused) + 2,
+              textAlign: 'center'
+            }}>Orders</Text>
           ),
         }}
       />
@@ -64,9 +141,26 @@ export default function TabLayout() {
         name="Rewards"
         options={{
           title: 'Rewards',
-          tabBarIcon: ({ color, focused }) => <IconSymbol size={focused ? 32 : 30} name="bag.fill" color={color} />, 
+          tabBarIcon: ({ color, focused }) => (
+            <Image
+              source={require('../../assets/Icon/reward.png')}
+              style={{
+                width: getIconSize(focused),
+                height: getIconSize(focused),
+                tintColor: color,
+                resizeMode: 'contain'
+              }}
+            />
+          ),
           tabBarLabel: ({ color, focused }) => (
-            <Text style={{ color, fontWeight: '500', fontSize: focused ? 15 : 14, marginTop: 4 }}>Rewards</Text>
+            <Text style={{ 
+              color, 
+              fontWeight: '500', 
+              fontSize: getFontSize(focused), 
+              marginTop: getVerticalSpacing(),
+              lineHeight: getFontSize(focused) + 2,
+              textAlign: 'center'
+            }}>Rewards</Text>
           ),
         }}
       />
@@ -74,9 +168,25 @@ export default function TabLayout() {
         name="Profile"
         options={{
           title: 'Profile',
-          tabBarIcon: ({ color, focused }) => <IconSymbol size={focused ? 32 : 30} name="person.fill" color={color} />, 
+          tabBarIcon: ({ color, focused }) => (
+            <IconSymbol 
+              size={getIconSize(focused)} 
+              name="person.fill" 
+              color={color} 
+              style={{
+                lineHeight: scale(25),
+              }}
+            />
+          ), 
           tabBarLabel: ({ color, focused }) => (
-            <Text style={{ color, fontWeight: '500', fontSize: focused ? 15 : 14, marginTop: 4 }}>Profile</Text>
+            <Text style={{ 
+              color, 
+              fontWeight: '500', 
+              fontSize: getFontSize(focused), 
+              marginTop: getVerticalSpacing(),
+              lineHeight: getFontSize(focused) + 2,
+              textAlign: 'center'
+            }}>Profile</Text>
           ),
         }}
       />
