@@ -91,7 +91,12 @@ const Redeemed = () => {
                 <View style={styles.cardContent}>
                   <Text style={styles.cardName}>{item.name}</Text>
                   <Text style={styles.cardPoints}>{item.points} Points</Text>
-                  <Text style={styles.cardStatus}>{item.Status}</Text>
+                  <Text style={[
+                    styles.cardStatus,
+                    item.Status === 'In Progress' ? styles.statusInProgress : styles.statusCompleted
+                  ]}>
+                    {item.Status}
+                  </Text>
                 </View>
               </View>
             ))}
@@ -142,7 +147,7 @@ const styles = StyleSheet.create({
   tabsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    backgroundColor: colors.secondary,
+    backgroundColor: '#A01D20',
     borderRadius: moderateScale(25),
     marginHorizontal: scale(20),
     marginVertical: verticalScale(10),
@@ -192,10 +197,15 @@ const styles = StyleSheet.create({
     fontFamily: 'PoppinsSemi',
   },
   cardStatus: {
-    color: colors.white,
     fontSize: moderateScale(14),
     fontFamily: 'Poppins',
     marginBottom: verticalScale(2),
+  },
+  statusInProgress: {
+    color: '#FFD700',
+  },
+  statusCompleted: {
+    color: '#00FF00', 
   },
   cardPoints: {
     color: colors.white,

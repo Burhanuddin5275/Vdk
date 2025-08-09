@@ -413,7 +413,7 @@ underline: {
   },
   ordersList: {
     paddingHorizontal: scale(9),
-    paddingBottom: verticalScale(58),
+    paddingBottom: verticalScale(62),
   },
   orderCard: {
     flexDirection: 'row',

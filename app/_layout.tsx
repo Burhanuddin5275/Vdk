@@ -25,7 +25,7 @@ export default function RootLayout() {
   });
 
   if (!fontsLoaded) {
-    return null; // Or a splash/loading component
+    return null; 
   }
 
   return (

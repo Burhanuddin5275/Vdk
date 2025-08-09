@@ -16,7 +16,7 @@ const brands = [
   { name: 'Josh', image: require('../../assets/images/josh.png') },
   { name: 'OK', image: require('../../assets/images/ok.png') },
   { name: 'Vida', image: require('../../assets/images/vidafem.png') },
-  // Add more brands as needed
+
 ];
 
 
@@ -63,8 +63,6 @@ const SalePopup = ({ visible, onClose }: SalePopupProps) => {
             resizeMode="cover"
           />
         )}
-
-        {/* 🎁 Zoom In Popup */}
         <Animated.View
           style={[
             popupStyles.popupBox,
@@ -97,7 +95,6 @@ const SalePopup = ({ visible, onClose }: SalePopupProps) => {
   );
 };
 
-
 export default function HomeScreen() {
   const [showPopup, setShowPopup] = useState(false);
   const wishlistItems = useWishlistStore((state: { items: { id: string }[] }) => state.items);
@@ -106,9 +103,8 @@ export default function HomeScreen() {
   const removeFromWishlist = useWishlistStore((state) => state.removeFromWishlist);
 
   useEffect(() => {
-    if (true) { // Always true as fonts are loaded globally
-      // Show popup after 7 seconds
-      const timer = setTimeout(() => setShowPopup(true), 2000);
+    if (true) {
+      const timer = setTimeout(() => setShowPopup(true), 1500);
       return () => clearTimeout(timer);
     }
   }, []);
@@ -297,7 +293,6 @@ export default function HomeScreen() {
                 </TouchableOpacity>
               ))}
           </ScrollView>
-
         </ScrollView>
       </ImageBackground>
     </>
@@ -321,8 +316,8 @@ const popupStyles = StyleSheet.create({
   },
 
   popupBox: {
-    width:"90%",
-    height:"45%",
+    width: "90%",
+    height: "46%",
     backgroundColor: '#FFE2E2',
     borderRadius: moderateScale(24),
     alignItems: 'center',
@@ -367,8 +362,8 @@ const popupStyles = StyleSheet.create({
     alignSelf: 'center',
   },
   discountText: {
-    fontSize: moderateScale(30),
-    lineHeight: moderateScale(24),
+    fontSize: moderateScale(28),
+    lineHeight: moderateScale(22),
     color: '#E53935',
     fontFamily: 'PoppinsRegular',
   },
