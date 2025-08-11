@@ -4,11 +4,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Dimensions, ImageBackground, KeyboardAvoidingView, Platform, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 
 const { width } = Dimensions.get('window');
 
 const Address = () => {
+  const insets = useSafeAreaInsets();
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
   const [street, setStreet] = useState('');
@@ -16,12 +18,12 @@ const Address = () => {
   const [saveCard, setSaveCard] = useState(false);
 
   return (
+          <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
     <ImageBackground
       source={require('../assets/images/ss1.png')}
       style={{ flex: 1 }}
       resizeMode="cover"
     >
-      <SafeAreaView style={{ flex: 1 }}>
         <KeyboardAvoidingView
           style={{ flex: 1 }}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -110,8 +112,8 @@ const Address = () => {
                      </Button>
           </View>
         </KeyboardAvoidingView>
-      </SafeAreaView>
     </ImageBackground>
+          </SafeAreaView>
   );
 };
 

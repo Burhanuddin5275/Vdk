@@ -2,7 +2,7 @@ import { colors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Dimensions, Image, ImageBackground, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Dimensions, Image, ImageBackground, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 
@@ -18,12 +18,13 @@ const Card = () => {
     const [save, setSave] = useState(true);
 
     return (
-        <ImageBackground
-            source={require('../assets/images/ss1.png')}
-            style={styles.background}
-            resizeMode="cover"
-        >
-            <View style={styles.container}>
+        <SafeAreaView style={{flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4))}}>
+            <ImageBackground
+                source={require('../assets/images/ss1.png')}
+                style={styles.background}
+                resizeMode="cover"
+            >
+                <View style={styles.container}>
                 {/* Header */}
                 <View style={styles.header}>
                     <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
@@ -104,6 +105,7 @@ const Card = () => {
                 </View>
             </View>
         </ImageBackground>
+        </SafeAreaView>
     );
 };
 
@@ -213,9 +215,8 @@ const styles = StyleSheet.create({
     padding: 24,
     paddingBottom: 32,
     alignItems: 'center',
-    justifyContent: 'center',
     marginTop: 8,
-    height: verticalScale(100),
+    height: verticalScale(85),
     },
     addBtn: {
         width: '100%',

@@ -6,7 +6,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Dimensions, Image, ImageBackground, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Dimensions, Image, ImageBackground, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { Product, PRODUCTS } from '../constants/products';
 import { useWishlistStore } from './Wishlist';
@@ -37,7 +38,7 @@ const bannerAds = [
     image: require("../assets/images/okWanna.png"),
   },
   {
-    brand: "Vida",
+    brand: "Vidafem",
     category: "Medicine",
     image: require("../assets/images/Heer.png"),
   },
@@ -116,7 +117,7 @@ const Brands = () => {
       (!brand || p.brand === brand)
   );
 
-  const isVidaBrand = displayList.length > 0 && displayList.every(item => item.brand === "Vida");
+  const isVidaBrand = displayList.length > 0 && displayList.every(item => item.brand === "Vidafem");
 
   // 🔁 Auto-slide banner ads
   useEffect(() => {
@@ -163,12 +164,15 @@ const Brands = () => {
   }, [displayList]);
 
   // 🔽 Start rendering
+  const insets = useSafeAreaInsets();
+
   return (
-    <ImageBackground
-      source={brand === 'Vida' ? require('../assets/images/ss2.png') : require('../assets/images/ss1.png')}
-      style={styles.container}
-      resizeMode="cover"
-    >
+    <SafeAreaView style={{flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4))}}>
+      <ImageBackground
+        source={brand === 'Vidafem' ? require('../assets/images/ss2.png') : require('../assets/images/ss1.png')}
+        style={styles.container}
+        resizeMode="cover"
+      >
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: "20%" }}>
         {/* 🔙 Header */}
         <View style={styles.header}>
@@ -231,11 +235,11 @@ const Brands = () => {
                   onPress={() => router.push({ pathname: '/Products', params: { id: prod.id, data: JSON.stringify(prod) } })}
                 >
                   <LinearGradient
-                    colors={prod.brand === 'Vida' ? ['#C3FFFA', '#C3FFFA'] : ['#FFD600', '#FF9800']}
+                    colors={prod.brand === 'Vidafem' ? ['#C3FFFA', '#C3FFFA'] : ['#FFD600', '#FF9800']}
                     style={styles.productCard}
                   >
                     <TouchableOpacity
-                      style={[styles.heartWrap, prod.brand === 'Vida' && { backgroundColor: '#006400' }]}
+                      style={[styles.heartWrap, prod.brand === 'Vidafem' && { backgroundColor: '#006400' }]}
                       onPress={async () => {
                         if (!isAuthenticated) {
                           setWishlistMessage('Please log in to use wishlist.');
@@ -274,17 +278,17 @@ const Brands = () => {
                     styles.cardFooter,
                     prod.brand === 'Josh' && { backgroundColor: '#FBF4E4' },
                     prod.brand === 'OK' && { backgroundColor: colors.secondary },
-                    prod.brand === 'Vida' && { backgroundColor: '#C3FFFA' }
+                    prod.brand === 'Vidafem' && { backgroundColor: '#C3FFFA' }
                   ]}>
                     <View style={styles.footerLeft}>
-                      <Text style={[styles.cardTitle, prod.brand === 'Vida' && { color: '#006400' }]} numberOfLines={3}>
+                      <Text style={[styles.cardTitle, prod.brand === 'Vidafem' && { color: '#006400' }]} numberOfLines={3}>
                         {prod.name}
                       </Text>
                       <Text style={styles.cardRating}>Ratings <Text style={{ color: '#FFD600' }}>{'★'.repeat(prod.rating)}</Text></Text>
                     </View>
                     <ImageBackground
                       source={
-                        prod.brand === 'Vida'
+                        prod.brand === 'Vidafem'
                           ? require('../assets/images/VectorGreen.png')
                           : require('../assets/images/VectorRed.png')
                       }
@@ -322,6 +326,7 @@ const Brands = () => {
         </View>
       )}
     </ImageBackground>
+    </SafeAreaView>
   );
 };
 // styles must be defined before use

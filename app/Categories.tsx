@@ -5,7 +5,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Dimensions, Image, ImageBackground, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Dimensions, Image, ImageBackground, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { Product, PRODUCTS } from "../constants/products";
 import { useWishlistStore } from './Wishlist';
@@ -55,7 +56,7 @@ const bannerAds = [
     image: require("../assets/images/okWanna.png"),
   },
   {
-    brand: "Vida",
+    brand: "Vidafem",
     category: "Medicine",
     image: require("../assets/images/Heer.png"),
   },
@@ -101,7 +102,7 @@ const adsImages = [
   const [wishlistMessage, setWishlistMessage] = useState<string | null>(null);
   const [currentAdIndex, setCurrentAdIndex] = useState(0);
   const scrollViewRef = useRef<ScrollView>(null);
-
+  const insets = useSafeAreaInsets();
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
 
   // Only declare wishlistItems once, with explicit types
@@ -197,7 +198,7 @@ useEffect(() => {
   // --- Background based on brand (example logic from your code) ---
   const isVidaBrand =
     filtered.length > 0 &&
-    filtered.every((item) => "brand" in item && item.brand === "Vida");
+    filtered.every((item) => "brand" in item && item.brand === "Vidafem");
 
   const backgroundImage = isVidaBrand
     ? require("../assets/images/ss2.png")
@@ -210,6 +211,7 @@ useEffect(() => {
   };
 
   return (
+          <SafeAreaView style={{flex:1,paddingBottom: Math.max(insets.bottom, verticalScale(4))}}>
     <ImageBackground source={backgroundImage} style={styles.container} resizeMode="cover">
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: "10%" }}>
         {/* Header */}
@@ -480,6 +482,7 @@ useEffect(() => {
         </View>
       )}
     </ImageBackground>
+    </SafeAreaView>
   );
 };
 

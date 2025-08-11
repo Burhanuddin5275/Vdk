@@ -5,10 +5,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Dimensions, Image, ImageBackground, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Dimensions, Image, ImageBackground, ScrollView, StyleSheet, Text, TouchableOpacity, View, SafeAreaView } from 'react-native';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { Product, PRODUCTS } from '../constants/products';
 import { useWishlistStore } from './Wishlist';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 
 const screenWidth = Dimensions.get('window').width;
@@ -20,7 +21,7 @@ const BestSeller = () => {
   const { brand } = useLocalSearchParams();
   const [wishlistMessage, setWishlistMessage] = useState<string | null>(null);
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
-
+ const insets = useSafeAreaInsets();
 const adsImages = [
   {
     brand: "Josh",
@@ -43,13 +44,13 @@ const adsImages = [
     image: require("../assets/images/wanna.png"),
   },
   {
-    brand: "Vida",
+    brand: "Vidafem",
     category: "Devices",
     image: require("../assets/images/Heer.png"),
   },
 
   {
-    brand: "Vida",
+    brand: "Vidafem",
     category: "Medicine",
     image: require("../assets/images/Vidafem1.png"),
   },
@@ -88,8 +89,9 @@ const adsImages = [
   }, [displayList, adsImages]);
 
   return (
-    <ImageBackground
-      source={brand === 'Vida' ? require('../assets/images/seller.png') : require('../assets/images/ss1.png')}
+    <SafeAreaView style={{ flex: 1,paddingBottom: Math.max(insets.bottom, verticalScale(4))  }}>
+      <ImageBackground
+      source={brand === 'Vidafem' ? require('../assets/images/seller.png') : require('../assets/images/ss1.png')}
       style={styles.container}
       resizeMode="cover"
     >
@@ -115,13 +117,13 @@ const adsImages = [
                   onPress={() => router.push({ pathname: '/Products', params: { id: prod.id, data: JSON.stringify(prod) } })}
                 >
                   <LinearGradient
-                    colors={prod.brand === 'Vida' ? ['#C3FFFA', '#C3FFFA'] : ['#FFD600', '#FF9800']}
+                    colors={prod.brand === 'Vidafem' ? ['#C3FFFA', '#C3FFFA'] : ['#FFD600', '#FF9800']}
                     style={styles.productCard}
                   >
                     <TouchableOpacity
                       style={[
                         styles.heartWrap,
-                        prod.brand === 'Vida' && { backgroundColor: '#006400' }
+                        prod.brand === 'Vidafem' && { backgroundColor: '#006400' }
                       ]}
                       onPress={async () => {
                         if (!isAuthenticated) {
@@ -155,18 +157,18 @@ const adsImages = [
                     styles.cardFooter,
                     prod.brand === 'Josh' && { backgroundColor: '#FBF4E4' },
                     prod.brand === 'OK' && { backgroundColor: colors.secondary },
-                    prod.brand === 'Vida' && { backgroundColor: '#C3FFFA' }
+                    prod.brand === 'Vidafem' && { backgroundColor: '#C3FFFA' }
                   ]}>
                     <View style={styles.footerLeft}>
                       <Text style={[
                         styles.cardTitle,
-                        prod.brand === 'Vida' && { color: '#006400' }
+                        prod.brand === 'Vidafem' && { color: '#006400' }
                       ]} numberOfLines={3}>{prod.name}</Text>
                       <Text style={styles.cardRating}>Ratings <Text style={{ color: '#FFD600' }}>{'★'.repeat(prod.rating)}</Text></Text>
                     </View>
                     <View>
                       <ImageBackground
-                        source={prod.brand === 'Vida'
+                        source={prod.brand === 'Vidafem'
                           ? require('../assets/images/VectorGreen.png')
                           : require('../assets/images/VectorRed.png')}
                         style={[styles.ptsBadge, { justifyContent: 'center', alignItems: 'center' }]}
@@ -195,6 +197,7 @@ const adsImages = [
           })}
         </View>
       </ScrollView>
+    
 
       {wishlistMessage && (
         <View style={{ position: 'absolute', top: 80, left: 0, right: 0, alignItems: 'center', zIndex: 20 }}>
@@ -203,7 +206,9 @@ const adsImages = [
           </View>
         </View>
       )}
-    </ImageBackground>
+      </ImageBackground>
+    </SafeAreaView>
+   
   );
 };
 

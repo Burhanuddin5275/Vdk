@@ -1,9 +1,10 @@
+import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import React from 'react';
-import { Dimensions, FlatList, Image, ImageBackground, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Dimensions, FlatList, Image, ImageBackground, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import TabLayout from './(tabs)/_layout';
-import { moderateScale, s, scale, verticalScale } from 'react-native-size-matters';
-import { Ionicons } from '@expo/vector-icons';
 
 const bgImage = require('../assets/images/ss1.png');
 const products = [
@@ -39,9 +40,11 @@ const statusSteps = [
 
 const OrderTracker = () => {
   const { id } = useLocalSearchParams();
+  const insets = useSafeAreaInsets();
   return (
-    <ImageBackground source={bgImage} style={styles.background} resizeMode="cover">
-      <View style={styles.container}>
+    <SafeAreaView style={{flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4))}}>
+      <ImageBackground source={bgImage} style={styles.background} resizeMode="cover">
+        <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity style={styles.backBtn} onPress={router.back}>
@@ -94,6 +97,7 @@ const OrderTracker = () => {
       </View>
       <TabLayout />
     </ImageBackground>
+    </SafeAreaView>
   );
 };
 

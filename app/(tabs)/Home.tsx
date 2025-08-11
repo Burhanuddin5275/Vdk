@@ -2,20 +2,19 @@ import { colors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import React, { useEffect, useState } from 'react';
-import { Dimensions, Image, ImageBackground, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import LottieView from 'lottie-react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Animated, Easing, Image, ImageBackground, Modal, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { useWishlistStore } from '../../app/Wishlist';
 import { PRODUCTS } from '../../constants/products';
-import { useRef } from 'react';
-import LottieView from 'lottie-react-native';
-import { Animated, Easing } from 'react-native';
 
 
 const brands = [
   { name: 'Josh', image: require('../../assets/images/josh.png') },
   { name: 'OK', image: require('../../assets/images/ok.png') },
-  { name: 'Vida', image: require('../../assets/images/vidafem.png') },
+  { name: 'Vidafem', image: require('../../assets/images/vidafem.png') },
 
 ];
 
@@ -101,7 +100,7 @@ export default function HomeScreen() {
   const isInWishlist = (id: string) => wishlistItems.some((w: { id: string }) => w.id === id);
   const addToWishlist = useWishlistStore((state) => state.addToWishlist);
   const removeFromWishlist = useWishlistStore((state) => state.removeFromWishlist);
-
+  const insets = useSafeAreaInsets();
   useEffect(() => {
     if (true) {
       const timer = setTimeout(() => setShowPopup(true), 1500);
@@ -130,7 +129,8 @@ export default function HomeScreen() {
 
   return (
     <>
-      <SalePopup visible={showPopup} onClose={() => setShowPopup(false)} />
+      <SafeAreaView style={{flex:1,paddingBottom: Math.max(insets.bottom, verticalScale(4))}}>
+        <SalePopup visible={showPopup} onClose={() => setShowPopup(false)} />
       <ImageBackground
         source={require('../../assets/images/home.jpg')}
         style={styles.background}
@@ -150,7 +150,7 @@ export default function HomeScreen() {
                   </Text><Text style={styles.rewardPts}>PTS</Text>
                 </View>
               </View>
-              <View style={{ flex: 1, alignItems: 'flex-end', }}>
+              <View style={{ flex: 1, alignItems: 'flex-end', paddingLeft: scale(5) }}>
                 <Image
                   source={require('../../assets/images/family2.png')}
                   style={styles.familyImg}
@@ -295,6 +295,7 @@ export default function HomeScreen() {
           </ScrollView>
         </ScrollView>
       </ImageBackground>
+      </SafeAreaView>
     </>
   );
 }

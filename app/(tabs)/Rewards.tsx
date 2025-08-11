@@ -2,9 +2,9 @@ import { colors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from 'react';
-import { Dimensions, Image, ImageBackground, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Dimensions, Image, ImageBackground, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
-
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 const rewards = [
   {
     name: 'Dining Set',
@@ -44,13 +44,15 @@ const pointsBadges = [
     label: 'PTS',
     footer: 'YOUR POINTS',
   },
-  // Add more badges here if needed
+ 
 ];
 
 export default function RewardsScreen() {
+    const insets = useSafeAreaInsets();
   const router = useRouter();
   return (
-    <ImageBackground
+          <SafeAreaView style={{flex:1,paddingBottom: Math.max(insets.bottom, verticalScale(4))}}>
+            <ImageBackground
       source={require('../../assets/images/ss1.png')}
       style={styles.background}
       resizeMode="cover"
@@ -114,6 +116,8 @@ export default function RewardsScreen() {
         </View>
       </ScrollView>
     </ImageBackground>
+          </SafeAreaView>
+   
   );
 }
 

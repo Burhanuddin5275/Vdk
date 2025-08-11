@@ -2,10 +2,9 @@ import { IconSymbol } from '@/components/ui/IconSymbol';
 import TabBarBackground from '@/components/ui/TabBarBackground';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import * as NavigationBar from 'expo-navigation-bar';
 import { Tabs } from 'expo-router';
-import React, { useEffect } from 'react';
-import { Dimensions, Image, Platform, StatusBar, Text } from 'react-native';
+import React from 'react';
+import { Dimensions, Image, Platform, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 
@@ -15,20 +14,6 @@ export default function TabLayout() {
   const { width: screenWidth } = Dimensions.get('window');
   const insets = useSafeAreaInsets();
 
-  useEffect(() => {
-    if (Platform.OS === 'android') {
-      NavigationBar.setVisibilityAsync('hidden');
-      NavigationBar.setBehaviorAsync('overlay-swipe');
-    }
-  }, []);
-
-  useEffect(() => {
-    if (Platform.OS === 'android') {
-      StatusBar.setTranslucent(true);
-      StatusBar.setHidden(true);
-    }
-  }, []);
-
   // Responsive sizing based on screen width
   const getIconSize = (focused: boolean) => {
     const baseSize = screenWidth < 350 ? 20 : screenWidth < 400 ? 28 : 24;
@@ -36,7 +21,7 @@ export default function TabLayout() {
   };
 
   const getFontSize = (focused: boolean) => {
-    const baseSize = screenWidth < 350 ? 11 : screenWidth < 400 ? 8 : 10;
+    const baseSize = screenWidth < 360 ? 11 : screenWidth < 400 ? 8 : 10;
     return focused ? moderateScale(baseSize + 2) : moderateScale(baseSize);
   };
 
@@ -55,14 +40,17 @@ export default function TabLayout() {
         tabBarInactiveTintColor: colors.tabRedInactive,
         headerShown: false,
         tabBarStyle: {
-          marginBottom:verticalScale(15),
+          marginBottom:verticalScale(10),
           backgroundColor: 'transparent',
           paddingTop: verticalScale(8),
+          position: 'absolute',
+          bottom: 0,      
           paddingBottom: Math.max(insets.bottom, verticalScale(4)),
           paddingHorizontal: scale(8),
           height: getTabBarHeight() + (Platform.OS === 'android' ? insets.bottom : 0),
           borderTopLeftRadius: moderateScale(32),
           borderTopRightRadius: moderateScale(32),
+          borderTopWidth: 0,
           justifyContent: 'center',
           alignItems: 'center',
         },

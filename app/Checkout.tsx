@@ -1,18 +1,21 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useEffect } from 'react';
-import { Dimensions, FlatList, Image, ImageBackground, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Dimensions, FlatList, Image, ImageBackground, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { Button } from '../components/Button';
 import { IconSymbol } from '../components/ui/IconSymbol';
 import { useAddressStore } from '../store/addressStore';
 import { CartItem, useCartStore } from '../store/cartStore';
 import { useShippingStore } from '../store/shippingStore';
 import { colors } from '../theme/colors';
-import { moderateScale, s, scale, verticalScale } from 'react-native-size-matters';
 
 const { width, height } = Dimensions.get('window');
 
 const Checkout = () => {
+    const insets = useSafeAreaInsets();
+
     useEffect(() => {
         // No font loading needed here as fonts are now global
         return () => {
@@ -48,11 +51,12 @@ const Checkout = () => {
     );
 
     return (
-        <ImageBackground
-            source={require('../assets/images/ss1.png')}
-            style={styles.bg}
-        >
-            <View style={styles.container}>
+        <SafeAreaView style={{flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4))}}>
+            <ImageBackground
+                source={require('../assets/images/ss1.png')}
+                style={styles.bg}
+            >
+                <View style={styles.container}>
                 {/* Header */}
                 <View style={styles.headerRow}>
                     <TouchableOpacity style={styles.backBtn} onPress={router.back}>
@@ -106,6 +110,7 @@ const Checkout = () => {
                 </View>
             </View>
         </ImageBackground>
+        </SafeAreaView>
     );
 };
 

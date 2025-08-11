@@ -2,7 +2,8 @@ import { colors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Dimensions, Image, ImageBackground, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Dimensions, Image, ImageBackground, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 
 const screenWidth = Dimensions.get('window').width;
@@ -49,16 +50,18 @@ const TABS = ['In Progress', 'Completed'];
 
 const Redeemed = () => {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState(TABS[0]);
 
   const filteredData = redeemed.filter((item) => item.Status === activeTab);
 
   return (
-    <ImageBackground
-      source={require('../assets/images/ss1.png')}
-      style={styles.background}
-      resizeMode="cover"
-    >
+    <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
+      <ImageBackground
+        source={require('../assets/images/ss1.png')}
+        style={styles.background}
+        resizeMode="cover"
+      >
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
@@ -103,6 +106,7 @@ const Redeemed = () => {
         </ScrollView>
       </View>
     </ImageBackground>
+    </SafeAreaView>
   );
 };
 

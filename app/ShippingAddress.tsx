@@ -7,12 +7,14 @@ import React, { useEffect, useState } from 'react';
 import {
     Dimensions,
     ImageBackground,
+    SafeAreaView,
     ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
     View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { useAddressStore } from '../store/addressStore';
 
@@ -26,6 +28,7 @@ const ADDRESSES = [
 
 const ShippingAddress = () => {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { selectedAddress } = useAddressStore();
   const initialIndex = selectedAddress
     ? ADDRESSES.findIndex(
@@ -45,7 +48,8 @@ const ShippingAddress = () => {
   }, [selectedAddress]);
 
   return (
-    <ImageBackground
+    <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
+      <ImageBackground
       source={require('../assets/images/ss1.png')}
       style={styles.background}
       resizeMode="cover"
@@ -105,6 +109,7 @@ const ShippingAddress = () => {
         </View>
       </View>
     </ImageBackground>
+    </SafeAreaView>
   );
 };
 

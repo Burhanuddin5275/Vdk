@@ -5,10 +5,10 @@ import { colors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Image, ImageBackground, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Image, ImageBackground, Modal, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { useCartStore } from '../../store/cartStore';
-
 interface CartItem {
   id: string;
   name: string;
@@ -33,10 +33,7 @@ export default function CartScreen() {
   const [selectedSize, setSelectedSize] = useState('Pack of 3');
   const [qty, setQty] = useState(1);
   const [emptyCartMessage, setEmptyCartMessage] = useState('');
-  // Remove: useFonts import and usage, and useEffect for loaded
-
-  // Remove: migrateCartItems function
-  // Remove: useEffect for migrateCartItems
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     if (phone) {
@@ -47,7 +44,13 @@ export default function CartScreen() {
   }, [phone]);
 
   if (loading) {
-    return <View style={{flex:1,justifyContent:'center',alignItems:'center'}}><Text>Loading...</Text></View>;
+    return (
+      <SafeAreaView style={{ flex: 1 }}>
+        <View style={{flex:1,justifyContent:'center',alignItems:'center'}}>
+          <Text>Loading...</Text>
+        </View>
+      </SafeAreaView>
+    );
   }
 
   const sizes = [
@@ -63,7 +66,8 @@ export default function CartScreen() {
   const totalCost = subTotal + deliveryFee - discount;
 
   return (
-    <ImageBackground
+          <SafeAreaView style={{flex:1,paddingBottom: Math.max(insets.bottom, verticalScale(4))}}>
+            <ImageBackground
       source={require('../../assets/images/Cart.jpg')}
       style={styles.background}
       resizeMode="cover"
@@ -327,6 +331,8 @@ export default function CartScreen() {
 
       </View>
     </ImageBackground>
+          </SafeAreaView>
+   
   );
 }
 
@@ -460,6 +466,7 @@ const styles = StyleSheet.create({
   checkoutContainer: {
     paddingHorizontal: scale(25),
     paddingVertical: verticalScale(60),
+    marginBottom: verticalScale(20),
   },
   checkoutButton: {
     backgroundColor: 'white',

@@ -1,16 +1,20 @@
 import { colors } from '@/theme/colors';
 import React, { useEffect, useState } from 'react';
-import { Image, ImageBackground, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Image, ImageBackground, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { verticalScale } from 'react-native-size-matters';
 
 const Signup = () => {
   const [phone, setPhone] = useState('');
+  const insets = useSafeAreaInsets();
   
     useEffect(() => {
   return;
     }, []);
 
   return (
-    <ImageBackground source={require('../assets/images/ss1.png')} style={styles.bg} resizeMode="cover">
+    <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
+      <ImageBackground source={require('../assets/images/ss1.png')} style={styles.bg} resizeMode="cover">
         <View style={styles.container}>
           {/* Logo */}
           <Image source={require('../assets/images/dkt.png')} style={styles.logo} resizeMode="contain" />
@@ -41,7 +45,8 @@ const Signup = () => {
             <Text style={styles.link}>Terms & conditions</Text> and <Text style={styles.link}>Privacy policy</Text>.
           </Text>
         </View>
-    </ImageBackground>
+      </ImageBackground>
+    </SafeAreaView>
   );
 };
 

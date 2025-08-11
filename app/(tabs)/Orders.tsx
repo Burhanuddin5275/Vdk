@@ -2,8 +2,8 @@ import { colors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Image, ImageBackground, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-
+import { Image, ImageBackground, Modal, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 const TABS = ['All', 'Active', 'Completed', 'Cancelled'];
 const ORDERS = [
@@ -18,7 +18,6 @@ const ORDERS = [
 
 export default function OrdersScreen() {
   useEffect(() => {
-    // No-op, as fonts are now loaded globally
   }, [])
   const [activeTab, setActiveTab] = useState(0);
   const [startDate, setStartDate] = useState<Date | null>(null);
@@ -26,9 +25,8 @@ export default function OrdersScreen() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectingStartDate, setSelectingStartDate] = useState(true);
   const [currentViewDate, setCurrentViewDate] = useState(new Date());
+  const insets = useSafeAreaInsets();
 
-
-  // Filter orders based on active tab
   let filteredOrders = ORDERS;
   if (activeTab === 1) filteredOrders = ORDERS.filter(o => o.status === 'Track Order');
   else if (activeTab === 2) filteredOrders = ORDERS.filter(o => o.status === 'Leave Review');
@@ -36,7 +34,9 @@ export default function OrdersScreen() {
 const [tabLayouts, setTabLayouts] = useState<{ x: number; width: number }[]>([]);
 
   return (
-    <ImageBackground
+          <SafeAreaView style={{flex:1,paddingBottom: Math.max(insets.bottom, verticalScale(4))}}>
+           
+             <ImageBackground
       source={require('../../assets/images/ss1.png')}
       style={styles.container}
       resizeMode="cover"
@@ -299,6 +299,8 @@ const [tabLayouts, setTabLayouts] = useState<{ x: number; width: number }[]>([])
         ))}
       </ScrollView>
     </ImageBackground>
+          </SafeAreaView>
+
   );
 }
 

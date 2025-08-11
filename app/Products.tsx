@@ -4,7 +4,8 @@ import { colors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Image, ImageBackground, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, ImageBackground, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { useCartStore } from '../store/cartStore';
 import { useWishlistStore } from './Wishlist';
@@ -72,8 +73,10 @@ const Products = () => {
         setTimeout(() => setShowSuccess(false), 2000);
     };
 
+    const insets = useSafeAreaInsets();
+
     return (
-        <>
+        <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
             <ImageBackground source={bgKey ? backgroundImages[bgKey] : require('../assets/images/ss1.png')} style={{ flex: 1 }} resizeMode="cover">
                 <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
                     <View style={styles.header}>
@@ -159,12 +162,12 @@ const Products = () => {
             </ImageBackground>
             {/* Add to Cart Modal */}
             {modalVisible && (
-                <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.3)', zIndex: 10 }}>
+                <View style={{ paddingBottom: Math.max(insets.bottom, verticalScale(4)),position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 10 }}>
                     <View style={{ backgroundColor: '#FBF4E4', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, width: '100%', maxWidth: '100%' }}>
                         <Text style={{ color: mainColor, fontFamily: 'PoppinsRegular', fontSize: moderateScale(15), marginBottom: 10 }}>Sizes</Text>
                         <View style={{ flexDirection: 'row', marginBottom: 16 }}>
                             {sizes.map((s, i) => (
-                                <TouchableOpacity
+                                <TouchableOpacity 
                                     key={s.label}
                                     onPress={() => setSelectedSize(s.label)}
                                     style={{
@@ -244,7 +247,7 @@ const Products = () => {
                     </View>
                 </View>
             )}
-        </>
+        </SafeAreaView>
     );
 };
 

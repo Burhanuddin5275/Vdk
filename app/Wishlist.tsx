@@ -5,10 +5,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
 import { FlatList, Image, ImageBackground, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { moderateScale, s, scale, verticalScale } from 'react-native-size-matters';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { create } from 'zustand';
 import { Colors } from '../constants/Colors';
-import { colors } from '@/theme/colors';
 
 
 export type WishlistItem = {
@@ -86,9 +86,11 @@ const Wishlist: React.FC = () => {
       </TouchableOpacity>
     </View>
   );
+  const insets = useSafeAreaInsets();
+
   return (
+          <SafeAreaView style={[styles.container, { paddingBottom: Math.max(insets.bottom, verticalScale(4)) }]}>
     <ImageBackground source={require('../assets/images/wishlist.jpg')} style={{ flex: 1 }} resizeMode="cover">
-      <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={28} color="#fff" />
@@ -103,8 +105,9 @@ const Wishlist: React.FC = () => {
           ItemSeparatorComponent={() => <View style={styles.separator} />}
           showsVerticalScrollIndicator={false}
         />
+        </ImageBackground>
       </SafeAreaView>
-    </ImageBackground>
+    
   );
 };
 

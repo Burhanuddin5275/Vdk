@@ -1,10 +1,10 @@
 import { AntDesign, Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import React from 'react';
-import { Dimensions, FlatList, Image, ImageBackground, KeyboardAvoidingView, Modal, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Dimensions, FlatList, Image, ImageBackground, KeyboardAvoidingView, Modal, Platform, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import TabLayout from './(tabs)/_layout';
-import { s } from 'react-native-size-matters';
 
 const bgImage = require('../assets/images/ss1.png');
 const products = [
@@ -43,10 +43,12 @@ const OrderReview = () => {
   const [modalVisible, setModalVisible] = React.useState(true);
   const [reviewText, setReviewText] = React.useState('');
   const [rating, setRating] = React.useState(0);
+  const insets = useSafeAreaInsets();
 
   return (
-    <ImageBackground source={bgImage} style={styles.background} resizeMode="cover">
-      <View style={styles.container}>
+    <SafeAreaView style={{flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4))}}>
+      <ImageBackground source={bgImage} style={styles.background} resizeMode="cover">
+        <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity style={styles.backBtn} onPress={router.back}>
@@ -146,6 +148,7 @@ const OrderReview = () => {
       </Modal>
       <TabLayout />
     </ImageBackground>
+    </SafeAreaView>
   );
 };
 

@@ -2,14 +2,16 @@ import { useAuth } from '@/hooks/useAuth';
 import { colors } from '@/theme/colors';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Image, ImageBackground, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { moderateScale, scale } from 'react-native-size-matters';
+import { Image, ImageBackground, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 
 const Login = () => {
   const [phone, setPhone] = useState('');
   const router = useRouter();
   const { returnTo } = useLocalSearchParams();
   const { login } = useAuth();
+  const insets = useSafeAreaInsets();
   const allowedPhones = ['3239339045', '3001234567', '3123456789']; // Example numbers
 
   const handleLogin = async () => {
@@ -28,7 +30,8 @@ const Login = () => {
     }, []);
 
   return (
-    <ImageBackground source={require('../assets/images/ss1.png')} style={styles.bg} resizeMode="cover">
+    <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
+      <ImageBackground source={require('../assets/images/ss1.png')} style={styles.bg} resizeMode="cover">
         <View style={styles.container}>
           {/* Logo */}
           <Image source={require('../assets/images/dkt.png')} style={styles.logo} resizeMode="contain" />
@@ -59,7 +62,8 @@ const Login = () => {
             <Text style={styles.link}>Terms & conditions</Text> and <Text style={styles.link}>Privacy policy</Text>.
           </Text>
         </View>
-    </ImageBackground>
+      </ImageBackground>
+    </SafeAreaView>
   );
 };
 

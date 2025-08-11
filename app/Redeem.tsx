@@ -2,19 +2,23 @@ import { colors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from 'react';
-import { Dimensions, Image, ImageBackground, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { moderateScale, s, scale, verticalScale } from 'react-native-size-matters';
+import { Dimensions, Image, ImageBackground, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 
 const { width } = Dimensions.get('window');
 
 const Redeem = () => {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  
   return (
-    <ImageBackground
-      source={require('../assets/images/ss1.png')}
-      style={styles.background}
-      resizeMode="cover"
-    >
+    <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
+      <ImageBackground
+        source={require('../assets/images/ss1.png')}
+        style={styles.background}
+        resizeMode="cover"
+      >
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
@@ -42,6 +46,7 @@ Sent Successful!`}</Text>
         </TouchableOpacity>
       </View>
     </ImageBackground>
+    </SafeAreaView>
   );
 };
 

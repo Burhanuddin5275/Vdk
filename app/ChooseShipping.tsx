@@ -4,15 +4,17 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  Dimensions,
-  Image,
-  ImageBackground,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Dimensions,
+    Image,
+    ImageBackground,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { useShippingStore } from '../store/shippingStore';
 
@@ -45,6 +47,7 @@ const ChooseShipping = () => {
   }, []);
 
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { selectedShipping } = useShippingStore();
   const initialIndex = selectedShipping
     ? SHIPPING_OPTIONS.findIndex(
@@ -66,70 +69,72 @@ const ChooseShipping = () => {
 
 
   return (
-    <ImageBackground
-      source={require('../assets/images/ss1.png')}
-      style={styles.background}
-      resizeMode="cover"
-    >
-      <View style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={moderateScale(28)} color={colors.white} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Choose Shipping</Text>
-        </View>
-
-        <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
-          <View style={{ marginTop: 16 }}>
-            {SHIPPING_OPTIONS.map((option, idx) => (
-              <View key={option.id}>
-                <TouchableOpacity
-                  style={styles.shippingRow}
-                  activeOpacity={0.8}
-                  onPress={() => setSelected(idx)}
-                >
-                  <Image 
-                    source={option.image} 
-                    style={{
-                      width: moderateScale(28),
-                      height: moderateScale(28),
-                      marginRight: 12,
-                      tintColor: colors.white
-                    }} 
-                    resizeMode="contain"
-                  />
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.shippingLabel}>{option.label}</Text>
-                    <Text style={styles.shippingDesc}>{option.desc}</Text>
-                  </View>
-                  <Ionicons
-                    name={selected === idx ? 'radio-button-on' : 'radio-button-off'}
-                    size={26}
-                    color={selected === idx ? colors.white : colors.secondaryDark}
-                  />
-                </TouchableOpacity>
-                {idx < SHIPPING_OPTIONS.length - 1 && <View style={styles.divider} />}
-              </View>
-            ))}
+    <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
+      <ImageBackground
+        source={require('../assets/images/ss1.png')}
+        style={styles.background}
+        resizeMode="cover"
+      >
+        <View style={styles.container}>
+          {/* Header */}
+          <View style={styles.header}>
+            <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+              <Ionicons name="arrow-back" size={moderateScale(28)} color={colors.white} />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Choose Shipping</Text>
           </View>
-        </ScrollView>
 
-        {/* Apply Button */}
-        <View style={styles.applyContainer}>
-          <Button
-            variant="secondary"
-            style={[styles.applyBtn, { alignItems: 'center', justifyContent: 'center' }]}
-            onPress={() => {
-              useShippingStore.getState().setSelectedShipping(SHIPPING_OPTIONS[selected]);
-              router.back();
-            }}
-          >
-            Apply
-          </Button>
+          <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
+            <View style={{ marginTop: 16 }}>
+              {SHIPPING_OPTIONS.map((option, idx) => (
+                <View key={option.id}>
+                  <TouchableOpacity
+                    style={styles.shippingRow}
+                    activeOpacity={0.8}
+                    onPress={() => setSelected(idx)}
+                  >
+                    <Image 
+                      source={option.image} 
+                      style={{
+                        width: moderateScale(28),
+                        height: moderateScale(28),
+                        marginRight: 12,
+                        tintColor: colors.white
+                      }} 
+                      resizeMode="contain"
+                    />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.shippingLabel}>{option.label}</Text>
+                      <Text style={styles.shippingDesc}>{option.desc}</Text>
+                    </View>
+                    <Ionicons
+                      name={selected === idx ? 'radio-button-on' : 'radio-button-off'}
+                      size={26}
+                      color={selected === idx ? colors.white : colors.secondaryDark}
+                    />
+                  </TouchableOpacity>
+                  {idx < SHIPPING_OPTIONS.length - 1 && <View style={styles.divider} />}
+                </View>
+              ))}
+            </View>
+          </ScrollView>
+
+          {/* Apply Button */}
+          <View style={styles.applyContainer}>
+            <Button
+              variant="secondary"
+              style={[styles.applyBtn, { alignItems: 'center', justifyContent: 'center' }]}
+              onPress={() => {
+                useShippingStore.getState().setSelectedShipping(SHIPPING_OPTIONS[selected]);
+                router.back();
+              }}
+            >
+              Apply
+            </Button>
+          </View>
         </View>
-      </View>
-    </ImageBackground>
+      </ImageBackground>
+    </SafeAreaView>
   );
 };
 

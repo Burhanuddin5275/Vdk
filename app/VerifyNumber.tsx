@@ -1,10 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ImageBackground, Keyboard, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ImageBackground, Keyboard, Platform, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { verticalScale } from 'react-native-size-matters';
 
 const OTP_LENGTH = 4;
 const RESEND_TIME = 19; // seconds
 
 const VerifyNumber = () => {
+  const insets = useSafeAreaInsets();
   const [otp, setOtp] = useState<string[]>(Array(OTP_LENGTH).fill(''));
   const [timer, setTimer] = useState<number>(RESEND_TIME);
   const inputRefs = useRef<Array<TextInput | null>>([]);
@@ -47,11 +50,12 @@ const VerifyNumber = () => {
   };
 
   return (
-    <ImageBackground source={require('../assets/images/ss1.png')}
-      style={styles.background}
-      resizeMode="cover"
-    >
-      <View style={styles.container}>
+    <SafeAreaView style={{flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4))}}>
+      <ImageBackground source={require('../assets/images/ss1.png')}
+        style={styles.background}
+        resizeMode="cover"
+      >
+        <View style={styles.container}>
         {/* Logo and DKT Pakistan */}
         <View style={styles.logoContainer}>
           <Text style={styles.logoText}>dkt</Text>
@@ -89,6 +93,7 @@ const VerifyNumber = () => {
         </Text>
       </View>
     </ImageBackground>
+    </SafeAreaView>
   );
 };
 
