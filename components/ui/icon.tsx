@@ -1,6 +1,7 @@
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { LucideProps } from 'lucide-react-native';
 import React from 'react';
+import { scale } from 'react-native-size-matters';
 
 export type Props = LucideProps & {
   lightColor?: string;
@@ -13,7 +14,7 @@ export function Icon({
   darkColor,
   name: IconComponent,
   color,
-  size = 24,
+  size = scale(18),
   strokeWidth = 1.8,
   ...rest
 }: Props) {

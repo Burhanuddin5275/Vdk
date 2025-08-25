@@ -129,172 +129,172 @@ export default function HomeScreen() {
 
   return (
     <>
-      <SafeAreaView style={{flex:1,paddingBottom: Math.max(insets.bottom, verticalScale(4))}}>
+      <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
         <SalePopup visible={showPopup} onClose={() => setShowPopup(false)} />
-      <ImageBackground
-        source={require('../../assets/images/home.jpg')}
-        style={styles.background}
-        resizeMode="cover"
-      >
-        <ScrollView contentContainerStyle={{ paddingBottom: "20%" }}>
+        <ImageBackground
+          source={require('../../assets/images/home.jpg')}
+          style={styles.background}
+          resizeMode="cover"
+        >
+          <ScrollView contentContainerStyle={{ paddingBottom: "20%" }}>
 
-          {/* Header Section */}
-          <View style={styles.headerBg}>
-            <View style={styles.headerRow}>
-              <View style={{ width: scale(140), paddingLeft: scale(16) }}>
-                <Text style={styles.hello}>Hello!{"\n"}Hussain</Text>
-                <Text style={styles.subtext}>What would you like to buy?</Text>
-                <View style={styles.rewardBox}>
-                  <Text style={styles.rewardLabel}>Reward</Text>
-                  <Text style={styles.rewardPoints}>1273{''}
-                  </Text><Text style={styles.rewardPts}>PTS</Text>
+            {/* Header Section */}
+            <View style={styles.headerBg}>
+              <View style={styles.headerRow}>
+                <View style={{ width: scale(140), paddingLeft: scale(16) }}>
+                  <Text style={styles.hello}>Hello!{"\n"}Hussain</Text>
+                  <Text style={styles.subtext}>What would you like to buy?</Text>
+                  <View style={styles.rewardBox}>
+                    <Text style={styles.rewardLabel}>Reward</Text>
+                    <Text style={styles.rewardPoints}>1273{''}
+                    </Text><Text style={styles.rewardPts}>PTS</Text>
+                  </View>
                 </View>
-              </View>
-              <View style={{ flex: 1, alignItems: 'flex-end', paddingLeft: scale(5) }}>
-                <Image
-                  source={require('../../assets/images/family2.png')}
-                  style={styles.familyImg}
-                  resizeMode="contain"
-                />
-              </View>
-            </View>
-          </View>
-
-          {/* Categories Section */}
-          <Text style={styles.sectionTitle}>Categories</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.categoriesSlider}
-          >
-            {categories.map((category, idx) => (
-              <TouchableOpacity
-                key={idx}
-                onPress={() => router.push({ pathname: '/Categories', params: { category: category.label } })}
-                style={styles.categoryCard}
-              >
-                <LinearGradient colors={['#FFFFFF', '#E82A2F']} style={styles.categoryCard}>
+                <View style={{ flex: 1, alignItems: 'flex-end', }}>
                   <Image
-                    source={category.image}
-                    style={styles.categoryImg}
+                    source={require('../../assets/images/family2.png')}
+                    style={styles.familyImg}
                     resizeMode="contain"
                   />
-                  <Text style={styles.categoryLabel}>{category.label}</Text>
-                </LinearGradient>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+                </View>
+              </View>
+            </View>
 
-          {/* Banner Section */}
-          <View style={styles.bannerCard}>
-            <Image
-              source={require('../../assets/images/wanna.png')}
-              style={styles.bannerCard}
-              resizeMode="cover"
-            />
-          </View>
-
-          {/* Brands Section */}
-          <Text style={styles.sectionTitle}>Our Brands</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.brandSlider}
-          >
-            {brands.map((brand, idx) => (
-              <TouchableOpacity key={idx} style={styles.brandCard} onPress={() => router.push({ pathname: '/Brands', params: { brand: brand.name } })}>
-                <Image
-                  source={brand.image}
-                  style={styles.brandImg}
-                  resizeMode="contain"
-                />
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-
-          {/* Best Seller Section */}
-          <View style={styles.bestSellerRow}>
-            <Text style={styles.sectionTitle}>Best Seller</Text>
-            <Text style={styles.seeAll} onPress={() => { router.push('/BestSeller') }}>See All</Text>
-          </View>
-          <Text style={styles.bestSellerSubtext}>Find the top most popular items in DKT best sellers.</Text>
-
-          {/* Best Seller Product Slider */}
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={{ marginTop: 10, marginBottom: 24, height: verticalScale(260) }}
-            contentContainerStyle={{ paddingHorizontal: 16 }}
-          >
-            {PRODUCTS.filter(p => 'rating' in p)
-              .sort((a, b) => (b.rating || 0) - (a.rating || 0))
-              .slice(0, 4)
-              .map((product, idx) => (
+            {/* Categories Section */}
+            <Text style={styles.sectionTitle}>Categories</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.categoriesSlider}
+            >
+              {categories.map((category, idx) => (
                 <TouchableOpacity
-                  key={product.id}
-                  style={[bestSellerStyles.productCard, idx === 3 && { marginRight: 0 }]}
-                  activeOpacity={0.8}
-                  onPress={() => router.push({ pathname: '/Products', params: { id: product.id, data: JSON.stringify(product) } })}
+                  key={idx}
+                  onPress={() => router.push({ pathname: '/Categories', params: { category: category.label } })}
+                  style={styles.categoryCard}
                 >
-                  <LinearGradient
-                    colors={["#FFD600", "#FF9800"]}
-                    style={bestSellerStyles.gradient}
-                  >
-                    {/* Wishlist Button */}
-                    <TouchableOpacity
-                      style={bestSellerStyles.wishlistBtn}
-                      onPress={async () => {
-                        if (isInWishlist(product.id)) {
-                          await removeFromWishlist(product.id);
-                        } else {
-                          await addToWishlist({
-                            id: product.id,
-                            name: product.name,
-                            price: product.price,
-                            image: product.img,
-                          });
-                        }
-                      }}
-                    >
-                      <Ionicons
-                        name={isInWishlist(product.id) ? "heart" : "heart-outline"}
-                        size={moderateScale(20)}
-                        color="#fff"
-                      />
-                    </TouchableOpacity>
+                  <LinearGradient colors={['#FFFFFF', '#E82A2F']} style={styles.categoryCard}>
                     <Image
-                      source={product.img}
-                      style={bestSellerStyles.productImg}
+                      source={category.image}
+                      style={styles.categoryImg}
+                      resizeMode="contain"
                     />
+                    <Text style={styles.categoryLabel}>{category.label}</Text>
                   </LinearGradient>
-                  {/* Footer */}
-                  <View style={bestSellerStyles.cardFooter}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={bestSellerStyles.cardTitle}>{product.name}</Text>
-                      <Text style={{ fontSize: moderateScale(10) }}>
-                        Ratings <Text style={bestSellerStyles.rating}>{"★".repeat(Math.round(product.rating || 0))}</Text>
-                      </Text>
-                    </View>
-                    <ImageBackground
-                      source={require('../../assets/images/VectorRed.png')}
-                      style={[bestSellerStyles.ptsBadge, { justifyContent: 'center', alignItems: 'center' }]}
-                    >
-                      <Text
-                        style={[
-                          bestSellerStyles.ptsText,
-                          { color: 'white' },
-                        ]}
-                      >
-                        {product.pts}
-                        {'\n'}PTS
-                      </Text>
-                    </ImageBackground>
-                  </View>
                 </TouchableOpacity>
               ))}
+            </ScrollView>
+
+            {/* Banner Section */}
+            <View style={styles.bannerCard}>
+              <Image
+                source={require('../../assets/images/wanna.png')}
+                style={styles.bannerCard}
+                resizeMode="cover"
+              />
+            </View>
+
+            {/* Brands Section */}
+            <Text style={styles.sectionTitle}>Our Brands</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.brandSlider}
+            >
+              {brands.map((brand, idx) => (
+                <TouchableOpacity key={idx} style={styles.brandCard} onPress={() => router.push({ pathname: '/Brands', params: { brand: brand.name } })}>
+                  <Image
+                    source={brand.image}
+                    style={styles.brandImg}
+                    resizeMode="contain"
+                  />
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            {/* Best Seller Section */}
+            <View style={styles.bestSellerRow}>
+              <Text style={styles.sectionTitle}>Best Seller</Text>
+              <Text style={styles.seeAll} onPress={() => { router.push('/BestSeller') }}>See All</Text>
+            </View>
+            <Text style={styles.bestSellerSubtext}>Find the top most popular items in DKT best sellers.</Text>
+
+            {/* Best Seller Product Slider */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={{ marginTop: 10, marginBottom: 24, height: verticalScale(260) }}
+              contentContainerStyle={{ paddingHorizontal: 16 }}
+            >
+              {PRODUCTS.filter(p => 'rating' in p)
+                .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+                .slice(0, 4)
+                .map((product, idx) => (
+                  <TouchableOpacity
+                    key={product.id}
+                    style={[bestSellerStyles.productCard, idx === 3 && { marginRight: 0 }]}
+                    activeOpacity={0.8}
+                    onPress={() => router.push({ pathname: '/Products', params: { id: product.id, data: JSON.stringify(product) } })}
+                  >
+                    <LinearGradient
+                      colors={["#FFD600", "#FF9800"]}
+                      style={bestSellerStyles.gradient}
+                    >
+                      {/* Wishlist Button */}
+                      <TouchableOpacity
+                        style={bestSellerStyles.wishlistBtn}
+                        onPress={async () => {
+                          if (isInWishlist(product.id)) {
+                            await removeFromWishlist(product.id);
+                          } else {
+                            await addToWishlist({
+                              id: product.id,
+                              name: product.name,
+                              price: product.price,
+                              image: product.img,
+                            });
+                          }
+                        }}
+                      >
+                        <Ionicons
+                          name={isInWishlist(product.id) ? "heart" : "heart-outline"}
+                          size={moderateScale(20)}
+                          color="#fff"
+                        />
+                      </TouchableOpacity>
+                      <Image
+                        source={product.img}
+                        style={bestSellerStyles.productImg}
+                      />
+                    </LinearGradient>
+                    {/* Footer */}
+                    <View style={bestSellerStyles.cardFooter}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={bestSellerStyles.cardTitle}>{product.name}</Text>
+                        <Text style={{ fontSize: moderateScale(10) }}>
+                          Ratings <Text style={bestSellerStyles.rating}>{"★".repeat(Math.round(product.rating || 0))}</Text>
+                        </Text>
+                      </View>
+                      <ImageBackground
+                        source={require('../../assets/images/VectorRed.png')}
+                        style={[bestSellerStyles.ptsBadge, { justifyContent: 'center', alignItems: 'center' }]}
+                      >
+                        <Text
+                          style={[
+                            bestSellerStyles.ptsText,
+                            { color: 'white' },
+                          ]}
+                        >
+                          {product.pts}
+                          {'\n'}PTS
+                        </Text>
+                      </ImageBackground>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+            </ScrollView>
           </ScrollView>
-        </ScrollView>
-      </ImageBackground>
+        </ImageBackground>
       </SafeAreaView>
     </>
   );
@@ -318,7 +318,7 @@ const popupStyles = StyleSheet.create({
 
   popupBox: {
     width: "90%",
-    height: "46%",
+    height: "auto",
     backgroundColor: '#FFE2E2',
     borderRadius: moderateScale(24),
     alignItems: 'center',

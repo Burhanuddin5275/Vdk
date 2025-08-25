@@ -66,7 +66,7 @@ const Products = () => {
             points: product.pts,
             quantity: qty,
             image: selectedImg,
-            user: phone, // Add user field
+            user: phone, 
         });
         setModalVisible(false);
         setShowSuccess(true);

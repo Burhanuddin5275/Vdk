@@ -72,9 +72,9 @@ export default function RewardsScreen() {
             {pointsBadges.map((badge, idx) => (
               <View style={styles.pointsBadgeOuter} key={idx}>
                 <View style={{
-                  width: "98%",
-                  height: verticalScale(147),
-                  borderRadius: scale(150),
+                  width:verticalScale(140),
+                  height:verticalScale(140),
+                  borderRadius:verticalScale(140) / 2,
                   backgroundColor: '#FFC4C6',
                   borderWidth: scale(2),
                   borderColor: '#660101', 
@@ -166,11 +166,10 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   pointsBadgeOuter: {
-    width: "50%",
-    height: verticalScale(155),
     borderRadius: scale(150),
     backgroundColor: '#FFC4C6',
     borderWidth: scale(3),
+    padding:scale(2),
     borderColor: '#660101',
     alignItems: 'center',
     justifyContent: 'center',

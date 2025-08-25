@@ -9,30 +9,32 @@ import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 
 const { width, height } = Dimensions.get('window');
 
-const PAYMENT_METHODS = [
+const PAYMENT_METHODS =
+[
     {
         id: 'card',
         label: 'Add Card',
-        icon: <Ionicons name="card-outline" size={moderateScale(25)}color={colors.primary} />, // Placeholder icon
+        icon: <Ionicons name="card-outline" size={moderateScale(25)}color={colors.primary} />,
         type: 'card',
     },
 ];
 
-const MORE_OPTIONS = [
+const MORE_OPTIONS = 
+[
     {
         id: 'easypaisa',
         label: 'Easypaisa',
-        icon: require('../assets/images/easypaisa.png'), // Placeholder, replace with actual
+        icon: require('../assets/images/easypaisa.png'), 
     },
     {
-        id: 'jazzcash',
+        id: 'jazzcash', 
         label: 'Jazzcash',
-        icon: require('../assets/images/jazzcash.png'), // Placeholder, replace with actual
+        icon: require('../assets/images/jazzcash.png'),
     },
     {
         id: 'cod',
         label: 'Cash on Delivery',
-        icon: require('../assets/images/cash.png'), // Placeholder, replace with actual
+        icon: require('../assets/images/cash.png'),
     },
 ];
 
@@ -57,7 +59,6 @@ const Payment = () => {
                     <Text style={styles.headerTitle}>Payment Method</Text>
                 </View>
                 <ScrollView contentContainerStyle={{ flexGrow:1, paddingHorizontal: 16, justifyContent: 'flex-start', }} showsVerticalScrollIndicator={false}>
-                    {/* Credit & Debit Card */}
                     <Text style={styles.sectionTitle}>Credit & Debit Card</Text>
                     <TouchableOpacity
                         style={[

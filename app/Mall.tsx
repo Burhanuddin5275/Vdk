@@ -2,7 +2,7 @@ import { colors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React from 'react';
-import { Dimensions, ImageBackground, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Dimensions, ImageBackground, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 
@@ -66,8 +66,9 @@ const Mall = () => {
           </View>
         )}
       </View>
-      {/* Product Card */}
-      <View style={styles.cardWrap}>
+     <ScrollView >
+       {/* Product Card */}
+       <View style={styles.cardWrap}>
         <Text style={styles.category}>Crockery Dining Set</Text>
         <Text style={styles.title}>{name}</Text>
         <Text style={styles.sectionLabel}>Product Details</Text>
@@ -79,6 +80,7 @@ const Mall = () => {
           <Text style={styles.rating}>4.5</Text>
         </View>
       </View>
+     </ScrollView>
       {/* Bottom Bar */}
       <View style={styles.footer}>
         <View style={styles.pointsWrap}>
@@ -178,6 +180,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 4,
+    marginBottom: verticalScale(100),
   },
   stars: {
     color: '#FFD600',
