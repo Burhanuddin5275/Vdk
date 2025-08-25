@@ -1,4 +1,5 @@
 import { selectIsAuthenticated } from '@/store/authSlice';
+import { Product } from '@/services/products';
 import { useAppSelector } from '@/store/hooks';
 import { colors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,7 +9,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Dimensions, Image, ImageBackground, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
-import { Product, PRODUCTS } from "../constants/products";
+import {  fetchProducts } from '../services/products';
 import { useWishlistStore } from './Wishlist';
 
 const TABS = ['All'];
@@ -104,20 +105,23 @@ const adsImages = [
   const scrollViewRef = useRef<ScrollView>(null);
   const insets = useSafeAreaInsets();
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
-
+  const [Products, setProducts] = useState<any[]>([]);
   // Only declare wishlistItems once, with explicit types
   const wishlistItems = useWishlistStore((state: { items: { id: string }[] }) => state.items);
 
   // Helper to determine if a product is in the wishlist
   const isInWishlist = (id: string) => wishlistItems.some((w: { id: string }) => w.id === id);
-
-  let filtered = PRODUCTS;
+  useEffect(() => {
+    (async () => {
+      const products = await fetchProducts();
+      setProducts(products);
+    })();
+  }, []);
+  let filtered = Products;
   if (selectedCategory) {
     const cat = String(selectedCategory).toLowerCase();
-    filtered = PRODUCTS.filter(p => {
-      if (!('Category' in p)) return false;
-      const prodCat = String(p.Category).toLowerCase();
-      // Match exact, or singular/plural
+    filtered = Products.filter(p => {
+      const prodCat = p.Category.toLowerCase();
       return (
         prodCat === cat ||
         prodCat === cat + 's' ||
@@ -310,7 +314,7 @@ useEffect(() => {
           {mergedData.map((item, idx) => {
             if (item.type === "product") {
               const p = item.data;
-              if ('id' in p && 'name' in p && 'price' in p && 'img' in p) {
+              if ('id' in p && 'name' in p && 'regular_price' in p && 'img' in p) {
                 const prod = p as Exclude<Product, { banner: string }>;
                 return (
                   <TouchableOpacity
@@ -361,7 +365,7 @@ useEffect(() => {
                             await useWishlistStore.getState().addToWishlist({
                               id: prod.id,
                               name: prod.name,
-                              price: prod.price,
+                              regular_price: prod.regular_price,
                               image: prod.img,
                               pack: "",
                             });

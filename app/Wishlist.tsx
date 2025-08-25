@@ -15,7 +15,8 @@ export type WishlistItem = {
   id: string;
   name: string;
   pack?: string;
-  price: number;
+  regular_price: number;
+  // sale_price: number;
   image: any;
 };
 
@@ -79,7 +80,7 @@ const Wishlist: React.FC = () => {
       <View style={styles.infoWrap}>
         <Text style={styles.productName}>{item.name}</Text>
         <Text style={styles.productPack}>{item.pack || 'Pack of 3'}</Text>
-        <Text style={styles.productPrice}>Pkr {item.price.toLocaleString()}</Text>
+        <Text style={styles.productPrice}>Pkr {item.regular_price.toLocaleString()}</Text>
       </View>
       <TouchableOpacity style={styles.removeBtn} onPress={async () => await removeFromWishlist(item.id)}>
         <Text style={styles.removeText}>Remove</Text>

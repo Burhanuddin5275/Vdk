@@ -4,12 +4,13 @@ import { colors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Dimensions, Image, ImageBackground, ScrollView, StyleSheet, Text, TouchableOpacity, View, SafeAreaView } from 'react-native';
-import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
-import { Product, PRODUCTS } from '../constants/products';
-import { useWishlistStore } from './Wishlist';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Dimensions, Image, ImageBackground, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
+import { Product } from '../constants/products';
+import { fetchProducts } from '../services/products';
+import { useWishlistStore } from './Wishlist';
 
 
 const screenWidth = Dimensions.get('window').width;
@@ -59,16 +60,26 @@ const adsImages = [
 
   const wishlistItems = useWishlistStore((state: { items: { id: string }[] }) => state.items);
 
-  const displayList = PRODUCTS.filter(
-    (p): p is Product & { id: string; name: string; brand: string; price: number; img: any; rating: number; pts: number } =>
-      'brand' in p &&
-      'id' in p &&
-      'name' in p &&
-      'price' in p &&
-      'img' in p &&
-      'rating' in p &&
-      'pts' in p
-  );
+  const [displayList, setDisplayList] = useState<(
+    Product & { id: string; name: string; brand: string; price: number; img: any; rating: number; pts: number }
+  )[]>([]);
+
+  useEffect(() => {
+    (async () => {
+      const products = await fetchProducts();
+      const list = products.filter(
+        (p): p is Product & { id: string; name: string; brand: string; price: number; img: any; rating: number; pts: number } =>
+          'brand' in p &&
+          'id' in p &&
+          'name' in p &&
+          'price' in p &&
+          'img' in p &&
+          'rating' in p &&
+          'pts' in p
+      );
+      setDisplayList(list);
+    })();
+  }, []);
 
   const mergedData = useMemo(() => {
     const data: any[] = [];

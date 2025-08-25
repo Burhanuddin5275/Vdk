@@ -8,7 +8,8 @@ import { Animated, Easing, Image, ImageBackground, Modal, SafeAreaView, ScrollVi
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { useWishlistStore } from '../../app/Wishlist';
-import { PRODUCTS } from '../../constants/products';
+import { fetchCategories, type CategoryItem } from '../../services/categories';
+import { fetchProducts } from '../../services/products';
 
 
 const brands = [
@@ -96,6 +97,8 @@ const SalePopup = ({ visible, onClose }: SalePopupProps) => {
 
 export default function HomeScreen() {
   const [showPopup, setShowPopup] = useState(false);
+  const [apiProducts, setApiProducts] = useState<any[]>([]);
+  const [apiCategories, setApiCategories] = useState<CategoryItem[]>([]);
   const wishlistItems = useWishlistStore((state: { items: { id: string }[] }) => state.items);
   const isInWishlist = (id: string) => wishlistItems.some((w: { id: string }) => w.id === id);
   const addToWishlist = useWishlistStore((state) => state.addToWishlist);
@@ -108,24 +111,19 @@ export default function HomeScreen() {
     }
   }, []);
 
-  const categories = [
-    {
-      label: 'Condoms',
-      image: require('../../assets/images/condom.png'),
-    },
-    {
-      label: 'Lubricant',
-      image: require('../../assets/images/Lubricants.png'),
-    },
-    {
-      label: 'Devices',
-      image: require('../../assets/images/Devices.png'),
-    },
-    {
-      label: 'Medicine',
-      image: require('../../assets/images/medicine.png'),
-    },
-  ];
+  useEffect(() => {
+    (async () => {
+      const products = await fetchProducts();
+      setApiProducts(products);
+    })();
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      const categories = await fetchCategories();
+      setApiCategories(categories);
+    })();
+  }, []);
 
   return (
     <>
@@ -167,7 +165,7 @@ export default function HomeScreen() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.categoriesSlider}
             >
-              {categories.map((category, idx) => (
+              {apiCategories.map((category, idx) => (
                 <TouchableOpacity
                   key={idx}
                   onPress={() => router.push({ pathname: '/Categories', params: { category: category.label } })}
@@ -226,7 +224,7 @@ export default function HomeScreen() {
               style={{ marginTop: 10, marginBottom: 24, height: verticalScale(260) }}
               contentContainerStyle={{ paddingHorizontal: 16 }}
             >
-              {PRODUCTS.filter(p => 'rating' in p)
+              {apiProducts.filter(p => 'rating' in p)
                 .sort((a, b) => (b.rating || 0) - (a.rating || 0))
                 .slice(0, 4)
                 .map((product, idx) => (
@@ -396,7 +394,7 @@ const bestSellerStyles = StyleSheet.create({
     padding: moderateScale(4),
   },
   productImg: {
-    width: scale(78),
+    width: "100%",
     height: verticalScale(130),
     borderRadius: moderateScale(10),
     resizeMode: 'contain',
@@ -533,7 +531,7 @@ const styles = StyleSheet.create({
     elevation: 4
   },
   categoryImg: {
-    width: scale(280),
+    width: "100%",
     height: verticalScale(160),
   },
   categoryLabel: {

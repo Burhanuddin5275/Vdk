@@ -9,7 +9,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Dimensions, Image, ImageBackground, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
-import { Product, PRODUCTS } from '../constants/products';
+import { Product } from '../constants/products';
+import { fetchProducts } from '../services/products';
 import { useWishlistStore } from './Wishlist';
 
 const screenWidth = Dimensions.get('window').width;
@@ -90,11 +91,20 @@ const Brands = () => {
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const wishlistItems = useWishlistStore((state: { items: { id: string }[] }) => state.items);
 
+  // Load products from API
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  useEffect(() => {
+    (async () => {
+      const data = await fetchProducts();
+      setAllProducts(data);
+    })();
+  }, []);
+
   // Filter products by brand and category
-  let filtered = PRODUCTS;
+  let filtered = allProducts;
   if (selectedCategory) {
     const cat = String(selectedCategory).toLowerCase();
-    filtered = PRODUCTS.filter(p => {
+    filtered = allProducts.filter(p => {
       if (!('Category' in p)) return false;
       const prodCat = String(p.Category).toLowerCase();
       return (
