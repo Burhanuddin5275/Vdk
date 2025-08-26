@@ -8,12 +8,13 @@ export type Product =
     pts: number;
     rating: number;
     regular_price: number;
+    sale_price: number;
     description?: string;
     ingredients?: string[];
   }
   | { banner: string };
 
-const API_URL = "http://192.168.1.106:8000/api/products/";
+const API_URL = "http://192.168.1.109:8000/api/products/";
 
 type ApiProduct = any;
 
@@ -26,9 +27,9 @@ function toProduct(item: ApiProduct): Product {
   const img = imageUrl ? { uri: String(imageUrl) } : require("../assets/images/card.png");
   const rating = Number(item.rating ?? item.stars ?? 5);
   const pts = Number(item.pts ?? item.points ?? 29);
-  const regular_price = Number(item.price ?? item.amount ?? 0);
+  const regular_price = Number(item.regular_price ?? item.amount ?? 0);
   const sale_price = Number(item.sale_price ?? item.discounted_price ?? 0);
-  const description = item.description ?? item.desc ?? undefined;
+  const description = item.short_description ?? item.desc ?? undefined;
   const ingredients = item.ingredients ?? undefined;
 
   return {
@@ -39,7 +40,8 @@ function toProduct(item: ApiProduct): Product {
     img,
     pts,
     rating,
-   regular_price, // Use regular_price as price
+   regular_price,
+   sale_price,
     description,
     ingredients,
   };

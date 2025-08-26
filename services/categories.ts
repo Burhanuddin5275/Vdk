@@ -5,11 +5,11 @@ export type CategoryItem = {
   image: any;
 };
 
-const API_URL = "http://192.168.1.106:8000/api/categories/";
+const API_URL = "http://192.168.1.109:8000/api/categories/";
 
 function toCategory(item: ApiCategory): CategoryItem {
-  const label = String(item.name ?? item.title ?? item.label ?? "Category");
-  const imageUrl = item.image?.url ?? item.image ?? item.icon ?? item.thumbnail ?? null;
+  const label = String(item.name ?? item.label ?? "Category");
+  const imageUrl = item.image?.url ?? item.image ?? null;
   const image = imageUrl ? { uri: String(imageUrl) } : undefined;
   return { label, image: image ?? require("../assets/images/Devices.png") };
 }

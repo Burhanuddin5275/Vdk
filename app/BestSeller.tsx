@@ -8,7 +8,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Dimensions, Image, ImageBackground, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
-import { Product } from '../constants/products';
+import { Product } from '../services/products';
 import { fetchProducts } from '../services/products';
 import { useWishlistStore } from './Wishlist';
 
@@ -72,7 +72,7 @@ const adsImages = [
           'brand' in p &&
           'id' in p &&
           'name' in p &&
-          'price' in p &&
+          'regular_price' in p &&
           'img' in p &&
           'rating' in p &&
           'pts' in p
@@ -151,7 +151,7 @@ const adsImages = [
                           await useWishlistStore.getState().addToWishlist({
                             id: prod.id,
                             name: prod.name,
-                            price: prod.price,
+                            regular_price: prod.regular_price,
                             image: prod.img,
                             pack: '',
                           });

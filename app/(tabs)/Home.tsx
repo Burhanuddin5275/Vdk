@@ -2,22 +2,17 @@ import { colors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import LottieView from 'lottie-react-native';
 import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Image, ImageBackground, Modal, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { useWishlistStore } from '../../app/Wishlist';
+import { fetchBrands, type BrandItem } from '../../services/brands';
 import { fetchCategories, type CategoryItem } from '../../services/categories';
 import { fetchProducts } from '../../services/products';
 
 
-const brands = [
-  { name: 'Josh', image: require('../../assets/images/josh.png') },
-  { name: 'OK', image: require('../../assets/images/ok.png') },
-  { name: 'Vidafem', image: require('../../assets/images/vidafem.png') },
-
-];
+// Brands now loaded from API
 
 
 type SalePopupProps = {
@@ -26,7 +21,6 @@ type SalePopupProps = {
 };
 
 const SalePopup = ({ visible, onClose }: SalePopupProps) => {
-  const lottieRef = useRef<LottieView>(null);
   const [showGiftAnimation, setShowGiftAnimation] = useState(true);
   const scaleAnim = useRef(new Animated.Value(0)).current;
 
@@ -99,6 +93,7 @@ export default function HomeScreen() {
   const [showPopup, setShowPopup] = useState(false);
   const [apiProducts, setApiProducts] = useState<any[]>([]);
   const [apiCategories, setApiCategories] = useState<CategoryItem[]>([]);
+  const [apiBrands, setApiBrands] = useState<BrandItem[]>([]);
   const wishlistItems = useWishlistStore((state: { items: { id: string }[] }) => state.items);
   const isInWishlist = (id: string) => wishlistItems.some((w: { id: string }) => w.id === id);
   const addToWishlist = useWishlistStore((state) => state.addToWishlist);
@@ -122,6 +117,13 @@ export default function HomeScreen() {
     (async () => {
       const categories = await fetchCategories();
       setApiCategories(categories);
+    })();
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      const brands = await fetchBrands();
+      setApiBrands(brands);
     })();
   }, []);
 
@@ -199,8 +201,8 @@ export default function HomeScreen() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.brandSlider}
             >
-              {brands.map((brand, idx) => (
-                <TouchableOpacity key={idx} style={styles.brandCard} onPress={() => router.push({ pathname: '/Brands', params: { brand: brand.name } })}>
+              {apiBrands.map((brand, idx) => (
+                <TouchableOpacity key={idx} style={styles.brandCard} onPress={() => router.push({ pathname: '/Brands', params: { brand: brand.name, image: brand.image } })}>
                   <Image
                     source={brand.image}
                     style={styles.brandImg}
@@ -248,7 +250,7 @@ export default function HomeScreen() {
                             await addToWishlist({
                               id: product.id,
                               name: product.name,
-                              price: product.price,
+                              regular_price: product.regular_price,
                               image: product.img,
                             });
                           }
@@ -355,8 +357,8 @@ const popupStyles = StyleSheet.create({
     fontFamily: 'Sigmar',
   },
   productImg: {
-    width: moderateScale(186),
-    height: moderateScale(186),
+    width: "100%",
+    height: verticalScale(186),
     marginVertical: verticalScale(20),
     alignSelf: 'center',
   },
@@ -502,8 +504,8 @@ const styles = StyleSheet.create({
     fontFamily: 'PoppinsBold',
   },
   familyImg: {
-    width: scale(225),
-    height: verticalScale(232),
+    width: "100%",
+    height: verticalScale(240),
     resizeMode: "contain",
   },
   sectionTitle: {
@@ -562,7 +564,7 @@ const styles = StyleSheet.create({
     height: verticalScale(150),
   },
   brandImg: {
-    width: scale(98),
+    width: "100%",
     height: verticalScale(46),
   },
   bestSellerRow: {

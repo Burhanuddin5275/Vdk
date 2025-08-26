@@ -9,76 +9,14 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Dimensions, Image, ImageBackground, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
-import { Product } from '../constants/products';
+import { Product } from '../services/products';
 import { fetchProducts } from '../services/products';
 import { useWishlistStore } from './Wishlist';
-
+import { BannerItem, fetchBanners } from '../services/banner';
+import { type AdsItem, fetchAds } from '@/services/ads';
 const screenWidth = Dimensions.get('window').width;
 const COLUMN_GAP = scale(12);
 const CARD_WIDTH = (screenWidth - COLUMN_GAP * 3) / 2;
-// ✅ Banner ads for top slider
-const bannerAds = [
-  {
-    brand: "Josh",
-    category: "Lubricant",
-    image: require("../assets/images/lubricantSlider.png"),
-  },
-  {
-    brand: "Josh",
-    category: "Condoms",
-    image: require("../assets/images/Pyasa.png"),
-  },
-  {
-    brand: "Josh",
-    category: "Condoms",
-    image: require("../assets/images/Anam.png"),
-  },
-  {
-    brand: "OK",
-    category: "Condoms",
-    image: require("../assets/images/okWanna.png"),
-  },
-  {
-    brand: "Vidafem",
-    category: "Medicine",
-    image: require("../assets/images/Heer.png"),
-  },
-];
-
-// ✅ Inline ads for between product cards
-const inlineAds = [
-  {
-    brand: "Josh",
-    category: "Lubricant",
-    image: require("../assets/images/lubricant.png"),
-  },
-  {
-    brand: "Josh",
-    category: "Condoms",
-    image: require("../assets/images/lahoriTikka.png"),
-  },
-  {
-    brand: "OK",
-    category: "Condoms",
-    image: require("../assets/images/okBanner.png"),
-  },
-  {
-    brand: "OK",
-    category: "Condoms",
-    image: require("../assets/images/wanna.png"),
-  },
-  {
-    brand: "Vida",
-    category: "Devices",
-    image: require("../assets/images/Heer.png"),
-  },
-
-  {
-    brand: "Vida",
-    category: "Medicine",
-    image: require("../assets/images/Vidafem1.png"),
-  },
-];
 
 const Brands = () => {
   const router = useRouter();
@@ -90,9 +28,21 @@ const Brands = () => {
   const scrollViewRef = useRef<ScrollView>(null);
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const wishlistItems = useWishlistStore((state: { items: { id: string }[] }) => state.items);
-
-  // Load products from API
+ const [banner, setBanner] = useState<BannerItem[]>([]);
+   const [ads, setAds] = useState<AdsItem[]>([]); 
   const [allProducts, setAllProducts] = useState<Product[]>([]);
+    useEffect(() => {
+      (async () => {
+        const banners = await fetchBanners();
+        setBanner(banners);
+      })(); 
+    }, []); 
+        useEffect(() => {
+      (async () => {
+        const Ads = await fetchAds();
+        setAds(Ads);
+      })(); 
+    }, []); 
   useEffect(() => {
     (async () => {
       const data = await fetchProducts();
@@ -115,23 +65,38 @@ const Brands = () => {
     });
   }
 
-  const displayList = filtered.filter(
-    (p): p is Product & { id: string; name: string; brand: string; price: number; img: any; rating: number; pts: number } =>
+  const displayList = filtered.filter((p) => {
+    const hasRequiredFields = 
       'brand' in p &&
       'id' in p &&
       'name' in p &&
-      'price' in p &&
+      'regular_price' in p &&
       'img' in p &&
       'rating' in p &&
       'pts' in p &&
-      (!brand || p.brand === brand)
-  );
+      (!selectedBrand || p.brand === selectedBrand);
+    
+    if (!hasRequiredFields) {
+      console.log('Product missing required fields:', {
+        id: 'id' in p ,
+        name: 'name' in p,
+        brand: 'brand' in p,
+        regular_price: 'regular_price' in p,
+        img: 'img' in p,
+        rating: 'rating' in p,
+        pts: 'pts' in p,
+        matchesBrand: selectedBrand ? ('brand' in p ? p.brand === selectedBrand : 'NO BRAND') : 'N/A'
+      });
+    }
+    
+    return hasRequiredFields;
+  }) as (Product & { id: string; name: string; brand: string; regular_price: number; img: any; rating: number; pts: number })[];
 
   const isVidaBrand = displayList.length > 0 && displayList.every(item => item.brand === "Vidafem");
 
-  // 🔁 Auto-slide banner ads
+  // Auto-slide banner ads
   useEffect(() => {
-    const filteredBannerAds = bannerAds.filter(ad =>
+    const filteredBannerAds = banner.filter(ad =>
       displayList.some(product => product.brand === ad.brand)
     );
 
@@ -143,7 +108,7 @@ const Brands = () => {
     }
   }, [displayList]);
 
-  // 🔁 Scroll to current banner
+  // Scroll to current banner
   useEffect(() => {
     if (scrollViewRef.current) {
       scrollViewRef.current.scrollTo({
@@ -162,7 +127,7 @@ const Brands = () => {
       data.push({ type: "product", data: product });
 
       if ((i + 1) % 4 === 0) {
-        const brandAds = inlineAds.filter(ad => ad.brand === product.brand);
+        const brandAds = ads.filter(ad => ad.brand === product.brand);
         if (brandAds.length > 0) {
           const ad = brandAds[adIndex % brandAds.length];
           data.push({ type: "ad", data: ad });
@@ -173,7 +138,6 @@ const Brands = () => {
     return data;
   }, [displayList]);
 
-  // 🔽 Start rendering
   const insets = useSafeAreaInsets();
 
   return (
@@ -184,15 +148,12 @@ const Brands = () => {
         resizeMode="cover"
       >
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: "20%" }}>
-        {/* 🔙 Header */}
         <View style={styles.header}>
           <TouchableOpacity style={styles.backBtn} onPress={router.back}>
             <Ionicons name="arrow-back" size={28} color="white" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>{brand || 'Brands'}</Text>
         </View>
-
-        {/* 🖼️ Top Banner Ad Slider */}
         <View style={styles.adSliderContainer}>
           <ScrollView
             horizontal
@@ -204,7 +165,7 @@ const Brands = () => {
             }}
             ref={scrollViewRef}
           >
-            {bannerAds
+            {banner
               .filter(ad => displayList.some(p => p.brand === ad.brand))
               .map((ad, index) => (
                 <View key={index} style={styles.adSlide}>
@@ -213,9 +174,8 @@ const Brands = () => {
               ))}
           </ScrollView>
 
-          {/* 🔘 Indicators */}
           <View style={styles.adIndicators}>
-            {bannerAds
+            {banner
               .filter(ad => displayList.some(p => p.brand === ad.brand))
               .map((_, index) => (
                 <View
@@ -228,8 +188,7 @@ const Brands = () => {
               ))}
           </View>
         </View>
-
-        {/* 🛒 Product Grid with inline ads */}
+        
         <View style={styles.gridWrap}>
           {mergedData.map((item, idx) => {
             if (item.type === "product") {
@@ -242,7 +201,22 @@ const Brands = () => {
                     marginBottom: verticalScale(32),
                   }}
                   activeOpacity={0.8}
-                  onPress={() => router.push({ pathname: '/Products', params: { id: prod.id, data: JSON.stringify(prod) } })}
+                  onPress={() => {
+                    // Ensure all required fields are included in the product data
+                    const productData = {
+                      ...prod,
+                      regular_price: prod.regular_price || 0, // Ensure regular_price is included
+                    };
+                    router.push({ 
+                      pathname: '/Products', 
+                      params: { 
+                        id: prod.id, 
+                        data: JSON.stringify(productData),
+                        category: prod.Category || '',
+                        backgroundImage: prod.brand === 'Vidafem' ? 'ss2' : 'ss1'
+                      } 
+                    });
+                  }}
                 >
                   <LinearGradient
                     colors={prod.brand === 'Vidafem' ? ['#C3FFFA', '#C3FFFA'] : ['#FFD600', '#FF9800']}
@@ -271,7 +245,7 @@ const Brands = () => {
                           await useWishlistStore.getState().addToWishlist({
                             id: prod.id,
                             name: prod.name,
-                            price: prod.price,
+                            regular_price: prod.regular_price,
                             image: prod.img,
                             pack: '',
                           });
@@ -282,7 +256,7 @@ const Brands = () => {
                     >
                       <Ionicons name={wishlistItems.some(w => w.id === prod.id) ? 'heart' : 'heart-outline'} size={20} color="#fff" />
                     </TouchableOpacity>
-                    <Image source={prod.img} style={{ width: '100%', height: 150, borderRadius: 10, resizeMode: 'contain' }} />
+                    <Image source={prod.img} style={{ width: '100%', height: verticalScale(150), borderRadius: 10, resizeMode: 'contain' }} />
                   </LinearGradient>
                   <View style={[
                     styles.cardFooter,

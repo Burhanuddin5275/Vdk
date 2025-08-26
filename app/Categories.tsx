@@ -10,6 +10,8 @@ import { Dimensions, Image, ImageBackground, SafeAreaView, ScrollView, StyleShee
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import {  fetchProducts } from '../services/products';
+import { type BannerItem, fetchBanners } from '../services/banner';
+import { type AdsItem, fetchAds } from '@/services/ads';
 import { useWishlistStore } from './Wishlist';
 
 const TABS = ['All'];
@@ -18,86 +20,11 @@ const screenWidth = Dimensions.get('window').width;
 const COLUMN_GAP = scale(12);
 const CARD_WIDTH = (screenWidth - COLUMN_GAP * 3) / 2;
 
-
-
-
-const categoryImageMap = {
-  'Condoms': require('../assets/images/condom.png'),
-  'Lubricant': require('../assets/images/Lubricants.png'),
-  'Devices': require('../assets/images/Devices.png'),
-  'Medicine': require('../assets/images/medicine.png'),
-};
-
 const Categories = () => {
 
   const router = useRouter();
   const { category } = useLocalSearchParams();
   const selectedCategory = category;
-
-// Slider banner ads
-const bannerAds = [
-  {
-    brand: "Josh",
-    category: "Lubricant",
-    image: require("../assets/images/lubricantSlider.png"),
-  },
-  {
-    brand: "Josh",
-    category: "Condoms",
-    image: require("../assets/images/Pyasa.png"),
-  },
-   {
-    brand: "Josh",
-    category: "Condoms",
-    image: require("../assets/images/Anam.png"),
-  },
-     {
-    brand: "OK",
-    category: "Condoms",
-    image: require("../assets/images/okWanna.png"),
-  },
-  {
-    brand: "Vidafem",
-    category: "Medicine",
-    image: require("../assets/images/Heer.png"),
-  },
-];
-
-// Inter-product brand ads
-const adsImages = [
-  {
-    brand: "Josh",
-    category: "Lubricant",
-    image: require("../assets/images/lubricant.png"),
-  },
-    {
-    brand: "Josh",
-    category: "Condoms",
-    image: require("../assets/images/lahoriTikka.png"),
-  },
-  {
-    brand: "OK",
-    category: "Condoms",
-    image: require("../assets/images/okBanner.png"),
-  },
-    {
-    brand: "OK",
-    category: "Condoms",
-    image: require("../assets/images/wanna.png"),
-  },
-  {
-    brand: "Vida",
-    category: "Devices",
-    image: require("../assets/images/Heer.png"),
-  },
-
-  {
-    brand: "Vida",
-    category: "Medicine",
-    image: require("../assets/images/Vidafem1.png"),
-  },
-];
-
 
   const [activeTab, setActiveTab] = useState(0);
   const [wishlistMessage, setWishlistMessage] = useState<string | null>(null);
@@ -106,11 +33,22 @@ const adsImages = [
   const insets = useSafeAreaInsets();
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const [Products, setProducts] = useState<any[]>([]);
-  // Only declare wishlistItems once, with explicit types
+  const [banner, setBanner] = useState<BannerItem[]>([]);
+  const [ads, setAds] = useState<AdsItem[]>([]);
   const wishlistItems = useWishlistStore((state: { items: { id: string }[] }) => state.items);
-
-  // Helper to determine if a product is in the wishlist
   const isInWishlist = (id: string) => wishlistItems.some((w: { id: string }) => w.id === id);
+  useEffect(() => {
+    (async () => {
+      const banners = await fetchBanners();
+      setBanner(banners);
+    })(); 
+  }, []); 
+    useEffect(() => {
+    (async () => {
+      const Ads = await fetchAds();
+      setAds(Ads);
+    })(); 
+  }, []);  
   useEffect(() => {
     (async () => {
       const products = await fetchProducts();
@@ -129,8 +67,6 @@ const adsImages = [
       );
     });
   }
-
-  // If in category mode, check for multiple brands
   let categoryBrands: string[] = [];
   if (selectedCategory) {
     categoryBrands = Array.from(new Set(filtered.map(p => ('brand' in p && p.brand ? p.brand : undefined)).filter((b): b is string => Boolean(b))));
@@ -140,12 +76,11 @@ const adsImages = [
   if (selectedCategory && categoryBrands.length > 1 && brandTab !== 'All') {
     displayList = filtered.filter(p => 'brand' in p && p.brand === brandTab);
   } else if (!selectedCategory) {
-    // Insert banner ad after 6th product or alternate banners for non-category mode
     displayList = [...filtered];
   }
 
 useEffect(() => {
-  const filteredBanners = bannerAds.filter(ad =>
+  const filteredBanners = banner.filter(ad =>
     displayList.some(product =>
       'brand' in product &&
       'Category' in product &&
@@ -161,10 +96,8 @@ useEffect(() => {
 
     return () => clearInterval(interval);
   }
-}, [displayList, bannerAds, selectedCategory]);
+}, [displayList, banner, selectedCategory]);
 
-
-  // Auto-scroll to current index
   useEffect(() => {
     if (scrollViewRef.current) {
       scrollViewRef.current.scrollTo({
@@ -174,7 +107,6 @@ useEffect(() => {
     }
   }, [currentAdIndex]);
 
-  // --- Merge Products + Brand Ads ---
   const mergedData = useMemo(() => {
     const data: any[] = [];
     let adIndex = 0;
@@ -184,7 +116,7 @@ useEffect(() => {
       data.push({ type: "product", data: product });
 
       if ('brand' in product && 'Category' in product && (i + 1) % 4 === 0) {
-        const brandAds = adsImages.filter((ad) =>
+        const brandAds = ads.filter((ad) =>
           ad.brand === product.brand &&
           ad.category.toLowerCase() === String(selectedCategory).toLowerCase()
         );
@@ -197,9 +129,8 @@ useEffect(() => {
     }
 
     return data;
-  }, [displayList, adsImages, selectedCategory]);
+  }, [displayList, ads, selectedCategory]);
 
-  // --- Background based on brand (example logic from your code) ---
   const isVidaBrand =
     filtered.length > 0 &&
     filtered.every((item) => "brand" in item && item.brand === "Vidafem");
@@ -237,7 +168,7 @@ useEffect(() => {
     }}
     ref={scrollViewRef}
   >
-    {bannerAds
+    {banner
       .filter(ad => displayList.some(product =>
         'brand' in product &&
         'Category' in product &&
@@ -256,7 +187,7 @@ useEffect(() => {
   </ScrollView>
 
   <View style={styles.adIndicators}>
-    {bannerAds
+    {banner
       .filter(ad => displayList.some(product =>
         'brand' in product &&
         'Category' in product &&
@@ -275,8 +206,6 @@ useEffect(() => {
   </View>
 </View>
 
-
-        {/* Banner and Tabs logic */}
         {!selectedCategory ? (
           <>
             <View style={styles.tabsWrap}>
@@ -309,7 +238,6 @@ useEffect(() => {
           )
         )}
 
-        {/* Product Grid */}
         <View style={styles.gridWrap}>
           {mergedData.map((item, idx) => {
             if (item.type === "product") {
@@ -384,7 +312,7 @@ useEffect(() => {
                       <Image
                         source={prod.img}
                         style={{
-                          width: "80%",
+                          width: "100%",
                           height: verticalScale(150),
                           marginBottom: verticalScale(8),
                           borderRadius: moderateScale(10),

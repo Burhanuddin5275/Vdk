@@ -19,16 +19,16 @@ const Products = () => {
     const router = useRouter();
     const { id, data, category, backgroundImage } = useLocalSearchParams();
     const product = data ? JSON.parse(data as string) : {};
-    // Use both img and img1 if available
+    console.log('Product data:', product); // Debug log
     const images = [product.img, product.img1, product.img2].filter(Boolean);
     const [selectedImg, setSelectedImg] = useState(images[0]);
     const [modalVisible, setModalVisible] = useState(false);
     const [selectedSize, setSelectedSize] = useState('Pack of 3');
     const [qty, setQty] = useState(1);
     const sizes = [
-        { label: 'Pack of 3', price: 200 },
-        { label: 'Pack of 7x4', price: 400 },
-        { label: 'Pack of 3x12', price: 600 },
+        { label: 'Pack of 3', regular_price: 200 },
+        { label: 'Pack of 7x4', regular_price: 400 },
+        { label: 'Pack of 3x12', regular_price: 600 },
     ];
     const addToCart = useCartStore((state: any) => state.addToCart);
     const [showSuccess, setShowSuccess] = useState(false);
@@ -38,7 +38,6 @@ const Products = () => {
     const isAuthenticated = useAppSelector(selectIsAuthenticated);
     const phone = useAppSelector(selectPhone);
 
-    // Ensure backgroundImage is a string (not string[])
     let bgKey: 'ss1' | 'ss2' | undefined;
     if (Array.isArray(backgroundImage)) {
         if (backgroundImage[0] === 'ss1' || backgroundImage[0] === 'ss2') bgKey = backgroundImage[0];
@@ -46,7 +45,6 @@ const Products = () => {
         bgKey = backgroundImage;
     }
 
-    // Determine main color based on background
     const mainColor = bgKey === 'ss2' ? '#0B3D0B' : '#E53935';
 
 
@@ -62,7 +60,7 @@ const Products = () => {
             id: product.id,
             name: product.name,
             pack: selectedSize,
-            price: sizes.find(s => s.label === selectedSize)?.price ?? 0,
+            regular_price: sizes.find(s => s.label === selectedSize)?.regular_price ?? 0,
             points: product.pts,
             quantity: qty,
             image: selectedImg,
@@ -99,7 +97,7 @@ const Products = () => {
                                     await useWishlistStore.getState().addToWishlist({
                                         id: product.id,
                                         name: product.name,
-                                        price: product.price,
+                                        regular_price: product.regular_price,
                                         image: product.img || product.image || selectedImg,
                                         pack: '',
                                     });
@@ -111,7 +109,7 @@ const Products = () => {
                             <Ionicons name={wishlistItems.some((w: { id: string }) => w.id === product.id) ? 'heart' : 'heart-outline'} size={24} color={mainColor} />
                         </TouchableOpacity>
                     </View>
-                    {/* Product Image */}
+                    
                     <View style={styles.imageWrap}>
                         <Image source={selectedImg} style={styles.productImg} resizeMode="contain" />
                         {/* Thumbnails */}
@@ -142,9 +140,11 @@ const Products = () => {
                         <Text style={styles.sectionTitle}>Reviews</Text>
                         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
                             <Text style={{ color: '#FFD600', fontSize:moderateScale(15), marginRight: 4 }}>
-                                {'★'.repeat(product.rating || 0)}
+                                {typeof product.rating === 'number' ? Array(Math.max(0, Math.min(5, Math.round(product.rating)))).fill('★').join('') : '★★★★★'}
                             </Text>
-                            <Text style={{ color: colors.white, fontSize:moderateScale(15) }}>{product.rating}</Text>
+                            <Text style={{ color: colors.white, fontSize:moderateScale(15) }}>
+                                {typeof product.rating === 'number' ? product.rating.toFixed(1) : '5.0'}
+                            </Text>
                         </View>
                     </View>
                 </ScrollView>
@@ -152,7 +152,29 @@ const Products = () => {
                 <View style={styles.bottomBar}>
                     <View>
                         <Text style={[styles.priceLabel, { color: mainColor }]}>Total Price</Text>
-                        <Text style={[styles.price, { color: mainColor }]}>Pkr {product.price ? product.price : 0}</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <Text style={[
+                                styles.price, 
+                                { 
+                                    color: mainColor, 
+                                    textDecorationLine: product.sale_price ? 'line-through' : 'none', 
+                                    opacity: product.sale_price ? 0.7 : 1,
+                                    fontSize: product.sale_price ? moderateScale(15) : moderateScale(25),
+                                    fontFamily: product.sale_price ? 'PoppinsBold' : 'PoppinsBold'
+                                }
+                            ]}>
+                                {`Pkr ${product.regular_price || 0}`}
+                            </Text>
+                            {product.sale_price ? (
+                                <Text style={[styles.price, { 
+                                    color: '#E53935', 
+                                    fontSize: moderateScale(25),
+                                    fontFamily: 'PoppinsBold'
+                                }]}>
+                                    {` ${product.sale_price}`}
+                                </Text>
+                            ) : null}
+                        </View>
                     </View>
                     <TouchableOpacity style={[styles.cartBtn, { backgroundColor: mainColor }]} onPress={() => setModalVisible(true)}>
                         <Ionicons name="cart" size={18} color="#fff" style={{ marginRight: 6 }} />
@@ -209,9 +231,11 @@ const Products = () => {
                         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                             <View>
                                 <Text style={{ color: mainColor, fontFamily: 'PoppinsMedium', fontSize: moderateScale(15) }}>Total Price</Text>
-                                <Text style={{ color: mainColor, fontFamily: 'PoppinsBold', fontSize: moderateScale(25) }}>
-                                    Pkr {(product.price ? product.price : (sizes.find(s => s.label === selectedSize)?.price ?? 0)) * qty}/-
-                                </Text>
+                                <View>
+                                    <Text style={{ color: mainColor, fontFamily: 'PoppinsBold', fontSize: moderateScale(25) }}>
+                                        Pkr {(product.sale_price || product.regular_price || (sizes.find(s => s.label === selectedSize)?.regular_price ?? 0)) * qty}/-
+                                    </Text>
+                                </View>
                             </View>
                             <TouchableOpacity
                                 style={{ backgroundColor: mainColor, borderRadius: 24, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 22, paddingVertical: 12 }}
@@ -408,5 +432,6 @@ const styles = StyleSheet.create({
         fontSize: moderateScale(15),
     },
 });
+
 
 export default Products;
