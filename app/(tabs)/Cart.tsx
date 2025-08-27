@@ -14,10 +14,23 @@ interface CartItem {
   name: string;
   pack: string;
   price: number;
+  sale_price?: number;
   points: number;
   quantity: number;
   image: any;
+  variant?: {
+    price: number;
+    sale_price?: number;
+  };
 }
+
+interface SizeOption {
+  label: string;
+  value: string;
+  price: number;
+}
+
+const sizes: SizeOption[] = [];
 
 export default function CartScreen() {
   const router = useRouter();
@@ -53,11 +66,7 @@ export default function CartScreen() {
     );
   }
 
-  const sizes = [
-    { label: 'Pack of 3', price: 200 },
-    { label: 'Pack of 7x4', price: 400 },
-    { label: 'Pack of 3x12', price: 600 },
-  ];
+
 
   // Dynamic calculations
   const subTotal = cartItems.reduce((sum: number, item: CartItem) => sum + (item.price * item.quantity), 0);
@@ -84,8 +93,12 @@ export default function CartScreen() {
 
         {/* Cart Items */}
         <ScrollView style={styles.cartList} showsVerticalScrollIndicator={false}>
-          {cartItems.map((item: CartItem, index: number) => (
-            <View key={item.id + '-' + index}>
+          {cartItems.map((item: CartItem, index: number) => {
+            const variantKey = item.variant ? `-${JSON.stringify(item.variant)}` : '';
+            const uniqueKey = `${item.id}${variantKey}-${index}`;
+            
+            return (
+            <View key={uniqueKey}>
               <View style={styles.cartItem}>
                 <View style={styles.imageContainer}>
                   <Image source={item.image} style={styles.productImage} />
@@ -95,7 +108,19 @@ export default function CartScreen() {
                 <View style={styles.productInfo}>
                   <Text style={styles.productName}>{item.name}</Text>
                   {item.pack && <Text style={styles.productPack}>{item.pack}</Text>}
-                  <Text style={styles.productPrice}>Pkr {item.price.toLocaleString()}</Text>
+                  <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                    {item.sale_price ? (
+                      <>
+                        <Text style={[styles.productPrice, {color: 'white'}]}>
+                          Pkr {(item.sale_price || 0).toLocaleString()}
+                        </Text>
+                      </>
+                    ) : (
+                      <Text style={styles.productPrice}>
+                        Pkr {(item.price || 0).toLocaleString()}
+                      </Text>
+                    )}
+                  </View>
                 </View>
 
                 <View style={styles.rightSection}>
@@ -128,7 +153,8 @@ export default function CartScreen() {
               </View>
               {index < cartItems.length - 1 && <View style={styles.separator} />}
             </View>
-          ))}
+            );
+          })}
           {/* Checkout Button */}
           <View style={styles.checkoutContainer}>
             <Button
@@ -191,8 +217,6 @@ export default function CartScreen() {
             </View>
           </View>
         </Modal>
-
-        {/* Checkout Modal */}
         <Modal
           visible={checkoutModalVisible}
           transparent
@@ -216,8 +240,6 @@ export default function CartScreen() {
                   </TouchableOpacity>
                 </View>
               </View>
-
-              {/* Calculation Rows */}
               <View style={checkoutModalStyles.calcRow}>
                 <Text style={checkoutModalStyles.label}>Sub-Total</Text>
                 <Text style={checkoutModalStyles.valueBold}>Pkr {subTotal.toLocaleString()}</Text>
@@ -305,7 +327,7 @@ export default function CartScreen() {
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                 <View>
                   <Text style={{ color: '#E53935', fontFamily: 'PoppinsBold', fontSize: 24 }}>
-                    Pkr {(sizes.find(s => s.label === selectedSize)?.price ?? 0) * qty}/-
+                    Pkr {selectedItem ? (selectedItem.sale_price || selectedItem.price) * qty : 0}/-
                   </Text>
                 </View>
                 <TouchableOpacity

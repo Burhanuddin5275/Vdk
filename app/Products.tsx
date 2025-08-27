@@ -23,13 +23,51 @@ const Products = () => {
     const images = [product.img, product.img1, product.img2].filter(Boolean);
     const [selectedImg, setSelectedImg] = useState(images[0]);
     const [modalVisible, setModalVisible] = useState(false);
-    const [selectedSize, setSelectedSize] = useState('Pack of 3');
+    // Define Variant type
+    interface Variant {
+        label: string;
+        price: number;
+        sale_price?: number;
+    }
+
+    // Process variants from product data
+    const processVariants = (): Variant[] => {
+        const rawVariants = product.variant || product.variants || [];
+        if (!Array.isArray(rawVariants)) return [];
+
+        return rawVariants.flatMap((v: any) => {
+            // Handle variants with attributes/options
+            if (v?.attributes) {
+                const attributes = Array.isArray(v.attributes) ? v.attributes : [v.attributes];
+                return attributes.flatMap((attr: any) => {
+                    const options = attr?.options || {};
+                    const size = options.Size || options.size || Object.values(options)[0];
+                    if (!size) return [];
+
+                    return {
+                        label: String(size),
+                        price: Number(attr.regular_price || attr.price || v.price || 0),
+                        ...(attr.sale_price ? { sale_price: Number(attr.sale_price) } : {})
+                    };
+                });
+            }
+
+            // Handle simple variant objects
+            const label = v?.label || v?.name || v?.pack || String(v?.size || v?.title || '');
+            if (!label) return [];
+
+            return {
+                label,
+                price: Number(v.regular_price || v.price || v.amount || 0),
+                ...(v.sale_price ? { sale_price: Number(v.sale_price) } : {})
+            };
+        }).filter((v: any): v is Variant => v && v.label && !isNaN(v.price));
+    };
+
+    const variants = processVariants();
+
+    const [selectedSize, setSelectedSize] = useState(variants[0]?.label || '');
     const [qty, setQty] = useState(1);
-    const sizes = [
-        { label: 'Pack of 3', regular_price: 200 },
-        { label: 'Pack of 7x4', regular_price: 400 },
-        { label: 'Pack of 3x12', regular_price: 600 },
-    ];
     const addToCart = useCartStore((state: any) => state.addToCart);
     const [showSuccess, setShowSuccess] = useState(false);
     const wishlistItems = useWishlistStore(state => state.items);
@@ -56,15 +94,24 @@ const Products = () => {
             setTimeout(() => router.replace(`/Login?returnTo=${encodeURIComponent(currentRoute)}`), 1000);
             return;
         }
+        const selectedVariant = variants.find((v: any) => v.label === selectedSize);
+        const variantPrice = selectedVariant?.price ?? 0;
+        const variantSalePrice = selectedVariant?.sale_price;
+
         addToCart({
             id: product.id,
             name: product.name,
             pack: selectedSize,
-            regular_price: sizes.find(s => s.label === selectedSize)?.regular_price ?? 0,
+            price: variantSalePrice || variantPrice || product.sale_price || product.regular_price || 0,
+            sale_price: variantSalePrice || product.sale_price || undefined,
             points: product.pts,
             quantity: qty,
             image: selectedImg,
-            user: phone, 
+            user: phone,
+            variant: selectedVariant ? {
+                price: variantPrice,
+                sale_price: variantSalePrice
+            } : undefined
         });
         setModalVisible(false);
         setShowSuccess(true);
@@ -90,16 +137,30 @@ const Products = () => {
                                     setTimeout(() => router.replace(`/Login?returnTo=${encodeURIComponent(currentRoute)}`), 1000);
                                     return;
                                 }
-                                if (wishlistItems.some((w: { id: string }) => w.id === product.id)) {
+
+                                const inWishlist = wishlistItems.some((w: { id: string }) => w.id === product.id);
+
+                                if (inWishlist) {
                                     await useWishlistStore.getState().removeFromWishlist(product.id);
                                     setWishlistMessage('Removed from wishlist');
                                 } else {
+                                    // Find the selected variant based on the state
+                                    const selectedVariant = variants.find(v => v.label === selectedSize) || variants[0];
+                                    const selectedVariantLabel = (selectedVariant?.label || (selectedVariant as any)?.name || (selectedVariant as any)?.pack || selectedSize || variants[0]?.label || '').toString();
+
                                     await useWishlistStore.getState().addToWishlist({
                                         id: product.id,
                                         name: product.name,
-                                        regular_price: product.regular_price,
+                                        regular_price: selectedVariant?.price ?? product.regular_price,
+                                        sale_price: selectedVariant?.sale_price ?? product.sale_price,
                                         image: product.img || product.image || selectedImg,
-                                        pack: '',
+                                        pack: selectedVariantLabel,
+                                        category: product.Category || (category as string),
+                                        variant: selectedVariant ? {
+                                            label: selectedVariantLabel,
+                                            price: selectedVariant.price,
+                                            sale_price: selectedVariant.sale_price
+                                        } : undefined
                                     });
                                     setWishlistMessage('Added to wishlist');
                                 }
@@ -109,7 +170,7 @@ const Products = () => {
                             <Ionicons name={wishlistItems.some((w: { id: string }) => w.id === product.id) ? 'heart' : 'heart-outline'} size={24} color={mainColor} />
                         </TouchableOpacity>
                     </View>
-                    
+
                     <View style={styles.imageWrap}>
                         <Image source={selectedImg} style={styles.productImg} resizeMode="contain" />
                         {/* Thumbnails */}
@@ -139,10 +200,10 @@ const Products = () => {
                         <View style={styles.divider} />
                         <Text style={styles.sectionTitle}>Reviews</Text>
                         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-                            <Text style={{ color: '#FFD600', fontSize:moderateScale(15), marginRight: 4 }}>
+                            <Text style={{ color: '#FFD600', fontSize: moderateScale(15), marginRight: 4 }}>
                                 {typeof product.rating === 'number' ? Array(Math.max(0, Math.min(5, Math.round(product.rating)))).fill('★').join('') : '★★★★★'}
                             </Text>
-                            <Text style={{ color: colors.white, fontSize:moderateScale(15) }}>
+                            <Text style={{ color: colors.white, fontSize: moderateScale(15) }}>
                                 {typeof product.rating === 'number' ? product.rating.toFixed(1) : '5.0'}
                             </Text>
                         </View>
@@ -154,10 +215,10 @@ const Products = () => {
                         <Text style={[styles.priceLabel, { color: mainColor }]}>Total Price</Text>
                         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                             <Text style={[
-                                styles.price, 
-                                { 
-                                    color: mainColor, 
-                                    textDecorationLine: product.sale_price ? 'line-through' : 'none', 
+                                styles.price,
+                                {
+                                    color: mainColor,
+                                    textDecorationLine: product.sale_price ? 'line-through' : 'none',
                                     opacity: product.sale_price ? 0.7 : 1,
                                     fontSize: product.sale_price ? moderateScale(15) : moderateScale(25),
                                     fontFamily: product.sale_price ? 'PoppinsBold' : 'PoppinsBold'
@@ -166,8 +227,8 @@ const Products = () => {
                                 {`Pkr ${product.regular_price || 0}`}
                             </Text>
                             {product.sale_price ? (
-                                <Text style={[styles.price, { 
-                                    color: '#E53935', 
+                                <Text style={[styles.price, {
+                                    color: '#E53935',
                                     fontSize: moderateScale(25),
                                     fontFamily: 'PoppinsBold'
                                 }]}>
@@ -184,33 +245,77 @@ const Products = () => {
             </ImageBackground>
             {/* Add to Cart Modal */}
             {modalVisible && (
-                <View style={{ paddingBottom: Math.max(insets.bottom, verticalScale(4)),position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 10 }}>
-                    <View style={{ backgroundColor: '#FBF4E4', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, width: '100%', maxWidth: '100%' }}>
-                        <Text style={{ color: mainColor, fontFamily: 'PoppinsRegular', fontSize: moderateScale(15), marginBottom: 10 }}>Sizes</Text>
-                        <View style={{ flexDirection: 'row', marginBottom: 16 }}>
-                            {sizes.map((s, i) => (
-                                <TouchableOpacity 
-                                    key={s.label}
+                <View style={StyleSheet.absoluteFill}>
+                    <TouchableOpacity 
+                        style={styles.modalOverlay} 
+                        activeOpacity={1} 
+                        onPress={() => setModalVisible(false)}
+                    />
+                    <View style={{ 
+                        position: 'absolute', 
+                        left: 0, 
+                        right: 0, 
+                        bottom: 0, 
+                        zIndex: 10,
+                        paddingBottom: Math.max(insets.bottom, verticalScale(4)) 
+                    }}>
+                        <View style={{ 
+                            backgroundColor: '#FBF4E4', 
+                            borderTopLeftRadius: 24, 
+                            borderTopRightRadius: 24, 
+                            padding: 24, 
+                            width: '100%', 
+                            maxWidth: '100%' 
+                        }}>
+                        {variants.length > 0 && (
+                            <Text style={{ color: mainColor, fontFamily: 'PoppinsRegular', fontSize: moderateScale(15), marginBottom: 10 }}>Variants</Text>
+                        )}
+                        <View style={{ flexDirection: 'row', marginBottom: 16, flexWrap: 'wrap' }}>
+                            {variants.map((s: any, index: number) => (
+                                <TouchableOpacity
+                                    key={`${s.label}-${s.price}-${index}`}
                                     onPress={() => setSelectedSize(s.label)}
                                     style={{
                                         borderWidth: selectedSize === s.label ? 2 : 0,
                                         borderColor: mainColor,
                                         borderRadius: 12,
                                         marginRight: 16,
+                                        marginBottom: 8,
                                         padding: 8,
                                         alignItems: 'center',
-                                        width:scale(94),
-                                        height:verticalScale(100)
+                                        width: scale(94),
+                                        height: verticalScale(100)
                                     }}
                                 >
-                                    <View style={{ width: scale(65), height: verticalScale(65), backgroundColor: '#F2F2F2', borderRadius: 12, marginBottom: 6 }} />
-                                    <Text style={{ color: selectedSize === s.label ? mainColor : '#1A1A1A', fontFamily: 'PoppinsBold', fontSize:moderateScale(12) }}>{s.label}</Text>
+                                    <View style={{ width: scale(65), height: verticalScale(45), backgroundColor: '#F2F2F2', borderRadius: 12, marginBottom: 6 }} />
+                                    <Text style={{ color: selectedSize === s.label ? mainColor : '#1A1A1A', fontFamily: 'PoppinsBold', fontSize: moderateScale(12), marginBottom: 2 }}>
+                                        {s.label}
+                                    </Text>
+                                    {s.sale_price ? (
+                                        <View style={{ alignItems: 'center' }}>
+                                            <Text style={{
+                                                color: '#E53935',
+                                                fontFamily: 'PoppinsBold',
+                                                fontSize: moderateScale(12),
+                                            }}>
+                                                Pkr {s.sale_price}
+                                            </Text>
+                                        </View>
+                                    ) : (
+                                        <Text style={{
+                                            color: mainColor,
+                                            fontFamily: 'PoppinsBold',
+                                            fontSize: moderateScale(12)
+                                        }}>
+                                            Pkr {s.price}
+                                        </Text>
+                                    )}
                                 </TouchableOpacity>
                             ))}
                         </View>
-                        <View style={{ height: 1, backgroundColor: '#E5E5E5', marginVertical: 10 }} />
+                        {variants.length > 0 && <View style={{ height: 1, backgroundColor: '#E5E5E5', marginVertical: 10 }} />}
                         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                            <Text style={{ color: mainColor, fontFamily: 'PoppinsRegular', fontSize:moderateScale(15) }}>Quantity</Text>
+                            <Text style={{ color: mainColor, fontFamily: 'PoppinsRegular', fontSize: moderateScale(15) }}>Quantity</Text>
                             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                                 <TouchableOpacity
                                     style={{ backgroundColor: '#E5E5E5', borderRadius: 6, width: 32, height: 32, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}
@@ -231,10 +336,86 @@ const Products = () => {
                         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                             <View>
                                 <Text style={{ color: mainColor, fontFamily: 'PoppinsMedium', fontSize: moderateScale(15) }}>Total Price</Text>
-                                <View>
-                                    <Text style={{ color: mainColor, fontFamily: 'PoppinsBold', fontSize: moderateScale(25) }}>
-                                        Pkr {(product.sale_price || product.regular_price || (sizes.find(s => s.label === selectedSize)?.regular_price ?? 0)) * qty}/-
-                                    </Text>
+                                <View style={{ flexDirection: 'column' }}>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                        {(() => {
+
+                                            if (variants.length > 0) {
+                                                const selectedVariant = variants.find((v: Variant) => v.label === selectedSize);
+                                                if (!selectedVariant) return null;
+
+                                                const variantPrice = Number(selectedVariant.price) || 0;
+                                                const variantSalePrice = selectedVariant.sale_price ? Number(selectedVariant.sale_price) : null;
+                                                const displayPrice = variantSalePrice !== null ? variantSalePrice : variantPrice;
+                                                const isOnSale = variantSalePrice !== null && variantSalePrice < variantPrice;
+
+                                                return (
+                                                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                                        {isOnSale && (
+                                                            <Text style={[{
+                                                                color: mainColor,
+                                                                fontSize: moderateScale(15),
+                                                                textDecorationLine: 'line-through',
+                                                                opacity: 0.7,
+                                                                fontFamily: 'PoppinsBold',
+                                                                marginRight: 8
+                                                            }]}>
+                                                                Pkr {Math.round(selectedVariant.price * qty)}
+                                                            </Text>
+                                                        )}
+                                                        <Text style={[{
+                                                            color: isOnSale ? '#E53935' : mainColor,
+                                                            fontSize: moderateScale(25),
+                                                            fontFamily: 'PoppinsBold'
+                                                        }]}>
+                                                            {Math.round(displayPrice * qty)}/-
+                                                        </Text>
+                                                    </View>
+                                                );
+                                            }
+
+                                            // No variants, use product price
+                                            const hasSalePrice = product?.sale_price > 0;
+                                            const regularPrice = Number(product?.regular_price) || 0;
+                                            const salePrice = Number(product?.sale_price) || 0;
+                                            const displayPrice = hasSalePrice ? salePrice : regularPrice;
+                                            const isOnSale = hasSalePrice && salePrice < regularPrice;
+
+                                            return (
+                                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                                    {isOnSale ? (
+                                                        <>
+                                                            <Text style={[{
+                                                                color: mainColor,
+                                                                fontSize: moderateScale(15),
+                                                                textDecorationLine: 'line-through',
+                                                                opacity: 0.7,
+                                                                fontFamily: 'PoppinsBold',
+                                                                marginRight: 8
+                                                            }]}>
+                                                                Pkr {Math.round(product.regular_price * qty)}
+                                                            </Text>
+                                                            <Text style={[{
+                                                                color: '#E53935',
+                                                                fontSize: moderateScale(25),
+                                                                fontFamily: 'PoppinsBold'
+                                                            }]}>
+                                                                {Math.round(displayPrice * qty)}/-
+                                                            </Text>
+                                                        </>
+                                                    ) : (
+                                                        <Text style={[{
+                                                            color: mainColor,
+                                                            fontSize: moderateScale(25),
+                                                            fontFamily: 'PoppinsBold'
+                                                        }]}>
+                                                            Pkr {Math.round(displayPrice * qty)}/-
+                                                        </Text>
+                                                    )}
+                                                </View>
+                                            );
+                                        })()}
+                                    </View>
                                 </View>
                             </View>
                             <TouchableOpacity
@@ -242,12 +423,13 @@ const Products = () => {
                                 onPress={handleAddToCart}
                             >
                                 <Ionicons name="cart" size={scale(20)} color="#fff" style={{ marginRight: 8 }} />
-                                <Text style={{ color: '#fff', fontFamily: 'PoppinsMedium', fontSize:moderateScale(15) }}>Add to Cart</Text>
+                                <Text style={{ color: '#fff', fontFamily: 'PoppinsMedium', fontSize: moderateScale(15) }}>Add to Cart</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
                 </View>
-            )}
+            </View>
+        )}
             {/* Success Message */}
             {showSuccess && (
                 <View style={{ position: 'absolute', top: 80, left: 0, right: 0, alignItems: 'center', zIndex: 20 }}>
@@ -276,6 +458,11 @@ const Products = () => {
 };
 
 const styles = StyleSheet.create({
+    modalOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        zIndex: 5,
+    },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -300,8 +487,8 @@ const styles = StyleSheet.create({
         height: verticalScale(280),
         alignItems: 'center',
         justifyContent: 'center',
-        paddingTop:verticalScale(10),
-        paddingBottom:verticalScale(40),
+        paddingTop: verticalScale(10),
+        paddingBottom: verticalScale(40),
         backgroundColor: '#fff',
         borderBottomEndRadius: 32,
         borderBottomStartRadius: 32,
@@ -323,14 +510,14 @@ const styles = StyleSheet.create({
         padding: 2,
         backgroundColor: '#fff',
         marginHorizontal: 2,
-        marginTop:verticalScale(30)
+        marginTop: verticalScale(30)
     },
     thumbnailSelected: {
         borderColor: colors.primaryDark,
     },
     thumbnailImg: {
         width: scale(15),
-        height:verticalScale(15),
+        height: verticalScale(15),
         borderRadius: 6,
     },
     cardSection: {
@@ -362,7 +549,7 @@ const styles = StyleSheet.create({
     title: {
         color: '#fff',
         fontSize: moderateScale(38),
-        lineHeight:verticalScale(34),
+        lineHeight: verticalScale(34),
         fontFamily: 'Sigmar',
         marginTop: 8,
     },
@@ -370,7 +557,7 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: moderateScale(38),
         fontFamily: 'Sigmar',
-         lineHeight:verticalScale(36),
+        lineHeight: verticalScale(36),
     },
     sectionTitle: {
         color: '#fff',
@@ -394,7 +581,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
         borderTopLeftRadius: 24,
         borderTopRightRadius: 24,
-        height:verticalScale(85),
+        height: verticalScale(85),
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',

@@ -97,7 +97,10 @@ const Checkout = () => {
                 <FlatList
                     data={cartItems}
                     renderItem={renderCartItem}
-                    keyExtractor={item => item.id}
+                    keyExtractor={(item, index) => {
+                        const variantKey = item.variant ? `-${JSON.stringify(item.variant)}` : '';
+                        return `${item.id}${variantKey}-${index}`;
+                    }}
                     style={{ marginTop: 18, marginBottom: 18 }}
                     showsVerticalScrollIndicator={false}
                 />

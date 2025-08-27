@@ -16,8 +16,14 @@ export type WishlistItem = {
   name: string;
   pack?: string;
   regular_price: number;
-  // sale_price: number;
+  sale_price?: number;
   image: any;
+  category?: string; // Add category to wishlist item
+  variant?: {
+    price: number;
+    sale_price?: number;
+    label?: string;
+  };
 };
 
 interface WishlistState {
@@ -44,17 +50,23 @@ export const useWishlistStore = create<WishlistState>((set, get) => ({
   addToWishlist: async (item) => {
     const phone = get().phone || '';
     if (!phone) return;
-    set({ phone });
+
     const current = get().items;
-    const updated = current.some(i => i.id === item.id) ? current : [...current, item];
+    const isExisting = current.some(i => i.id === item.id);
+
+    if (isExisting) return; // Item already in wishlist
+
+    const updated = [...current, item];
     set({ items: updated });
     await AsyncStorage.setItem(`wishlistItems_${phone}`, JSON.stringify(updated));
   },
-  removeFromWishlist: async (id) => {
+  removeFromWishlist: async (id: string) => {
     const phone = get().phone || '';
     if (!phone) return;
-    set({ phone });
-    const updated = get().items.filter(i => i.id !== id);
+
+    const current = get().items;
+    const updated = current.filter(i => i.id !== id);
+
     set({ items: updated });
     await AsyncStorage.setItem(`wishlistItems_${phone}`, JSON.stringify(updated));
   },
@@ -74,19 +86,33 @@ const Wishlist: React.FC = () => {
       loadWishlist();
     }
   }, [phone]);
-  const renderItem = ({ item }: { item: WishlistItem }) => (
-    <View style={styles.card}>
-      <Image source={item.image} style={styles.productImg} resizeMode="cover" />
-      <View style={styles.infoWrap}>
-        <Text style={styles.productName}>{item.name}</Text>
-        <Text style={styles.productPack}>{item.pack || 'Pack of 3'}</Text>
-        <Text style={styles.productPrice}>Pkr {item.regular_price.toLocaleString()}</Text>
+  const renderItem = ({ item }: { item: WishlistItem }) => {
+    // Create a unique key for the item including variant info
+    const displayPrice = item.variant?.sale_price || item.variant?.price || item.sale_price || item.regular_price;
+    
+    return (
+      <View style={styles.card}>
+        <Image source={item.image} style={styles.productImg} resizeMode="cover" />
+        <View style={styles.infoWrap}>
+          <Text style={styles.productName}>{item.name}</Text>
+          {(() => {
+            const sizeLabel = item.variant?.label || (item as any).variant?.name || item.pack;
+            return sizeLabel ? (
+              <Text style={styles.productVariant}>{sizeLabel}</Text>
+            ) : null;
+          })()}
+
+          <Text style={styles.productPrice}>Pkr {displayPrice.toLocaleString()}</Text>
+        </View>
+        <TouchableOpacity 
+          style={styles.removeBtn} 
+          onPress={async () => await removeFromWishlist(item.id)}
+        >
+          <Text style={styles.removeText}>Remove</Text>
+        </TouchableOpacity>
       </View>
-      <TouchableOpacity style={styles.removeBtn} onPress={async () => await removeFromWishlist(item.id)}>
-        <Text style={styles.removeText}>Remove</Text>
-      </TouchableOpacity>
-    </View>
-  );
+    );
+  };
   const insets = useSafeAreaInsets();
 
   return (
@@ -166,10 +192,17 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: Colors.light.background,
   },
-  productPack: {
+  productVariant: {
     fontSize: moderateScale(13),
     color: Colors.light.background,
+    fontWeight: '600',
     marginTop: 2,
+  },
+  productPack: {
+    fontSize: moderateScale(12),
+    color: Colors.light.background,
+    marginTop: 2,
+    opacity: 0.8,
   },
   productPrice: {
     fontSize: moderateScale(18),
@@ -226,3 +259,4 @@ const styles = StyleSheet.create({
 });
 
 export default Wishlist;
+   

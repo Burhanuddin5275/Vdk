@@ -1,13 +1,22 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { PersistConfig } from 'redux-persist';
 
-interface AuthState {
+interface User {
+  name: string;
+  email?: string;
+}
+
+export interface AuthState {
   isAuthenticated: boolean;
   phone: string | null;
-  user: {
-    name: string;
-    email?: string;
-  } | null;
+  user: User | null;
 }
+
+// This is a partial config that will be extended in store.ts
+export const authPersistConfig = {
+  key: 'auth',
+  whitelist: ['isAuthenticated', 'phone', 'user'],
+};
 
 const initialState: AuthState = {
   isAuthenticated: false,
@@ -39,6 +48,6 @@ export const { login, logout, setUser } = authSlice.actions;
 export default authSlice.reducer;
 
 // Selectors
-export const selectIsAuthenticated = (state: { auth: AuthState }) => state.auth.isAuthenticated;
-export const selectPhone = (state: { auth: AuthState }) => state.auth.phone;
-export const selectUser = (state: { auth: AuthState }) => state.auth.user; 
+export const selectIsAuthenticated = (state: { auth: AuthState }) => state.auth?.isAuthenticated ?? false;
+export const selectPhone = (state: { auth: AuthState }) => state.auth?.phone ?? null;
+export const selectUser = (state: { auth: AuthState }) => state.auth?.user ?? null;

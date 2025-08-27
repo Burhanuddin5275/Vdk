@@ -7,6 +7,8 @@ import { Animated, Easing, Image, ImageBackground, Modal, SafeAreaView, ScrollVi
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { useWishlistStore } from '../../app/Wishlist';
+import { selectIsAuthenticated } from '@/store/authSlice';
+import { useAppSelector } from '@/store/hooks';
 import { fetchBrands, type BrandItem } from '../../services/brands';
 import { fetchCategories, type CategoryItem } from '../../services/categories';
 import { fetchProducts } from '../../services/products';
@@ -94,10 +96,33 @@ export default function HomeScreen() {
   const [apiProducts, setApiProducts] = useState<any[]>([]);
   const [apiCategories, setApiCategories] = useState<CategoryItem[]>([]);
   const [apiBrands, setApiBrands] = useState<BrandItem[]>([]);
-  const wishlistItems = useWishlistStore((state: { items: { id: string }[] }) => state.items);
-  const isInWishlist = (id: string) => wishlistItems.some((w: { id: string }) => w.id === id);
+  const wishlistItems = useWishlistStore((state) => state.items);
+  const isInWishlist = (productId: string) => {
+    return wishlistItems.some(item => {
+      const hasMatchingId = item.id === productId;
+      // If the item has no variants, match by ID only
+      if (!item.variant) return hasMatchingId;
+      
+      // For items with variants, we need to check if the exact variant exists
+      const product = apiProducts.find(p => p.id === productId);
+      const productVariants = product?.variants || [];
+      if (productVariants.length === 0) return hasMatchingId;
+      
+      // Check if any variant in the wishlist matches the product's first variant
+      return wishlistItems.some(wishItem => {
+        if (wishItem.id !== productId) return false;
+        if (!wishItem.variant) return true; // If wishlist item has no variant, consider it a match
+        
+        // Check if the first variant's label matches the wishlist item's variant label
+        const firstVariant = Array.isArray(productVariants) ? productVariants[0] : productVariants;
+        return wishItem.variant.label === (firstVariant?.label || firstVariant?.name || '');
+      });
+    });
+  };
   const addToWishlist = useWishlistStore((state) => state.addToWishlist);
   const removeFromWishlist = useWishlistStore((state) => state.removeFromWishlist);
+  const [wishlistMessage, setWishlistMessage] = useState<string | null>(null);
+  const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const insets = useSafeAreaInsets();
   useEffect(() => {
     if (true) {
@@ -243,23 +268,76 @@ export default function HomeScreen() {
                       {/* Wishlist Button */}
                       <TouchableOpacity
                         style={bestSellerStyles.wishlistBtn}
-                        onPress={async () => {
+                        onPress={async (e) => {
+                          e.stopPropagation(); // Prevent triggering the parent TouchableOpacity
+                          
+                          if (!isAuthenticated) {
+                            setWishlistMessage('Please log in to use wishlist.');
+                            setTimeout(() => setWishlistMessage(null), 1000);
+                            const currentRoute = `/?category=${product.category || ''}`;
+                            setTimeout(() => router.replace(`/Login?returnTo=${encodeURIComponent(currentRoute)}`), 1000);
+                            return;
+                          }
+                          
                           if (isInWishlist(product.id)) {
-                            await removeFromWishlist(product.id);
+                            await useWishlistStore.getState().removeFromWishlist(product.id);
+                            setWishlistMessage('Removed from wishlist');
                           } else {
-                            await addToWishlist({
+                            // Process variants 
+                            const processVariants = (): any[] => {
+                              const rawVariants = product.variants || [];
+                              if (!Array.isArray(rawVariants)) return [];
+
+                              return rawVariants.flatMap((v: any) => {
+                                // Handle variants with attributes/options
+                                if (v?.attributes) {
+                                  const attributes = Array.isArray(v.attributes) ? v.attributes : [v.attributes];
+                                  return attributes.flatMap((attr: any) => {
+                                    const options = attr?.options || {};
+                                    const size = options.Size || options.size || Object.values(options)[0];
+                                    if (!size) return [];
+
+                                    return {
+                                      label: String(size),
+                                      price: Number(attr.regular_price || attr.price || v.price || 0),
+                                      ...(attr.sale_price ? { sale_price: Number(attr.sale_price) } : {})
+                                    };
+                                  });
+                                }
+                                // Handle simple variants
+                                return {
+                                  label: v.label || v.name || '',
+                                  price: Number(v.price || 0),
+                                  ...(v.sale_price ? { sale_price: Number(v.sale_price) } : {})
+                                };
+                              });
+                            };
+
+                            const variants = processVariants();
+                            const firstVariant = variants[0];
+                            
+                            await useWishlistStore.getState().addToWishlist({
                               id: product.id,
                               name: product.name,
-                              regular_price: product.regular_price,
+                              regular_price: firstVariant?.price ?? product.regular_price,
+                              sale_price: firstVariant?.sale_price ?? product.sale_price,
                               image: product.img,
+                              pack: firstVariant?.label || '',
+                              variant: firstVariant ? {
+                                label: firstVariant.label,
+                                price: firstVariant.price,
+                                sale_price: firstVariant.sale_price
+                              } : undefined
                             });
+                            setWishlistMessage('Added to wishlist');
                           }
+                          setTimeout(() => setWishlistMessage(null), 2000);
                         }}
                       >
                         <Ionicons
                           name={isInWishlist(product.id) ? "heart" : "heart-outline"}
                           size={moderateScale(20)}
-                          color="#fff"
+                          color={isInWishlist(product.id) ? "#FF4081" : "#fff"}
                         />
                       </TouchableOpacity>
                       <Image

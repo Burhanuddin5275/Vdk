@@ -27,7 +27,7 @@ const Brands = () => {
   const [currentAdIndex, setCurrentAdIndex] = useState(0);
   const scrollViewRef = useRef<ScrollView>(null);
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
-  const wishlistItems = useWishlistStore((state: { items: { id: string }[] }) => state.items);
+  const wishlistItems = useWishlistStore((state) => state.items);
  const [banner, setBanner] = useState<BannerItem[]>([]);
    const [ads, setAds] = useState<AdsItem[]>([]); 
   const [allProducts, setAllProducts] = useState<Product[]>([]);
@@ -202,10 +202,9 @@ const Brands = () => {
                   }}
                   activeOpacity={0.8}
                   onPress={() => {
-                    // Ensure all required fields are included in the product data
                     const productData = {
                       ...prod,
-                      regular_price: prod.regular_price || 0, // Ensure regular_price is included
+                      regular_price: prod.regular_price || 0, 
                     };
                     router.push({ 
                       pathname: '/Products', 
@@ -242,12 +241,24 @@ const Brands = () => {
                           await useWishlistStore.getState().removeFromWishlist(prod.id);
                           setWishlistMessage('Removed from wishlist');
                         } else {
+                          // Get the first variant if available
+                          const variants = prod.variants || [];
+                          const firstVariant = variants.length > 0 ? variants[0] : null;
+                          const variantPrice = firstVariant?.price ?? prod.regular_price;
+                          const variantSalePrice = firstVariant?.sale_price ?? prod.sale_price;
+                          
                           await useWishlistStore.getState().addToWishlist({
                             id: prod.id,
                             name: prod.name,
-                            regular_price: prod.regular_price,
+                            regular_price: variantPrice,
+                            sale_price: variantSalePrice,
                             image: prod.img,
-                            pack: '',
+                            pack: firstVariant?.label || '',
+                            variant: firstVariant ? {
+                              label: firstVariant.label,
+                              price: variantPrice,
+                              sale_price: variantSalePrice
+                            } : undefined
                           });
                           setWishlistMessage('Added to wishlist');
                         }

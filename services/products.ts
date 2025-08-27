@@ -10,7 +10,7 @@ export type Product =
     regular_price: number;
     sale_price: number;
     description?: string;
-    ingredients?: string[];
+    variants?: any[];
   }
   | { banner: string };
 
@@ -30,7 +30,7 @@ function toProduct(item: ApiProduct): Product {
   const regular_price = Number(item.regular_price ?? item.amount ?? 0);
   const sale_price = Number(item.sale_price ?? item.discounted_price ?? 0);
   const description = item.short_description ?? item.desc ?? undefined;
-  const ingredients = item.ingredients ?? undefined;
+  const variants = item.variant ?? item.variants ?? [];
 
   return {
     id,
@@ -43,7 +43,7 @@ function toProduct(item: ApiProduct): Product {
    regular_price,
    sale_price,
     description,
-    ingredients,
+    variants,
   };
 }
 
