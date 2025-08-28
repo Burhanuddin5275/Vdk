@@ -6,7 +6,7 @@ export type AdsItem = {
   image: any;
 };
 
-const API_URL = "http://192.168.1.109:8000/api/ads/";
+const API_URL = "http://192.168.1.111:8000/api/ads/";
 
 function toAds(item: ApiAds): AdsItem {
   const brand = String(item.brand ?? "Ads");

@@ -241,23 +241,50 @@ const Brands = () => {
                           await useWishlistStore.getState().removeFromWishlist(prod.id);
                           setWishlistMessage('Removed from wishlist');
                         } else {
-                          // Get the first variant if available
-                          const variants = prod.variants || [];
-                          const firstVariant = variants.length > 0 ? variants[0] : null;
-                          const variantPrice = firstVariant?.price ?? prod.regular_price;
-                          const variantSalePrice = firstVariant?.sale_price ?? prod.sale_price;
-                          
+                          const processVariants = (): any[] => {
+                            const rawVariants = prod.variants || [];
+                            if (!Array.isArray(rawVariants)) return [];
+
+                            return rawVariants.flatMap((v: any) => {
+                              // Handle variants with attributes/options
+                              if (v?.attributes) {
+                                const attributes = Array.isArray(v.attributes) ? v.attributes : [v.attributes];
+                                return attributes.flatMap((attr: any) => {
+                                  const options = attr?.options || {};
+                                  const size = options.Size || options.size || Object.values(options)[0];
+                                  if (!size) return [];
+
+                                  return {
+                                    label: String(size),
+                                    price: Number(attr.regular_price || attr.price || v.price || 0),
+                                    ...(attr.sale_price ? { sale_price: Number(attr.sale_price) } : {})
+                                  };
+                                });
+                              }
+                              // Handle simple variants
+                              return {
+                                label: v.label || v.name || '',
+                                price: Number(v.price || 0),
+                                ...(v.sale_price ? { sale_price: Number(v.sale_price) } : {})
+                              };
+                            });
+                          };
+
+                          const variants = processVariants();
+                          const firstVariant = variants[0];
+
                           await useWishlistStore.getState().addToWishlist({
                             id: prod.id,
                             name: prod.name,
-                            regular_price: variantPrice,
-                            sale_price: variantSalePrice,
+                            regular_price: firstVariant?.price ?? prod.regular_price,
+                            sale_price: firstVariant?.sale_price ?? prod.sale_price,
                             image: prod.img,
                             pack: firstVariant?.label || '',
+                            category: prod.Category,
                             variant: firstVariant ? {
                               label: firstVariant.label,
-                              price: variantPrice,
-                              sale_price: variantSalePrice
+                              price: firstVariant.price,
+                              sale_price: firstVariant.sale_price
                             } : undefined
                           });
                           setWishlistMessage('Added to wishlist');

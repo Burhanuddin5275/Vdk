@@ -31,7 +31,7 @@ interface WishlistState {
   phone: string;
   setPhone: (phone: string) => void;
   addToWishlist: (item: WishlistItem) => Promise<void>;
-  removeFromWishlist: (id: string) => Promise<void>;
+  removeFromWishlist: (id: string, variantLabel?: string) => Promise<void>;
   loadWishlist: () => Promise<void>;
 }
 
@@ -52,20 +52,33 @@ export const useWishlistStore = create<WishlistState>((set, get) => ({
     if (!phone) return;
 
     const current = get().items;
-    const isExisting = current.some(i => i.id === item.id);
+    const isExisting = current.some(i => {
+      if (i.id !== item.id) return false;
+      if (!i.variant && !item.variant) return true;
+      if (!i.variant || !item.variant) return false;
+      return i.variant.label === item.variant.label;
+    });
 
-    if (isExisting) return; // Item already in wishlist
+    if (isExisting) return; // Item with same variant already in wishlist
 
     const updated = [...current, item];
     set({ items: updated });
     await AsyncStorage.setItem(`wishlistItems_${phone}`, JSON.stringify(updated));
   },
-  removeFromWishlist: async (id: string) => {
+  removeFromWishlist: async (id: string, variantLabel?: string) => {
     const phone = get().phone || '';
     if (!phone) return;
 
     const current = get().items;
-    const updated = current.filter(i => i.id !== id);
+    const updated = current.filter(i => {
+      if (i.id !== id) return true; // Keep items with different IDs
+      // If no variant label is provided, we assume the intention is to remove the non-variant item or first match.
+      if (!variantLabel) return false; 
+      // If the item in wishlist has no variant, it can't match a specific variant removal.
+      if (!i.variant) return true; 
+      // Keep the item if its variant label does not match the one to be removed.
+      return i.variant.label !== variantLabel;
+    });
 
     set({ items: updated });
     await AsyncStorage.setItem(`wishlistItems_${phone}`, JSON.stringify(updated));
@@ -106,7 +119,7 @@ const Wishlist: React.FC = () => {
         </View>
         <TouchableOpacity 
           style={styles.removeBtn} 
-          onPress={async () => await removeFromWishlist(item.id)}
+          onPress={async () => await removeFromWishlist(item.id, item.variant?.label)}
         >
           <Text style={styles.removeText}>Remove</Text>
         </TouchableOpacity>

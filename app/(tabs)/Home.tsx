@@ -3,7 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Image, ImageBackground, Modal, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, Dimensions, Easing, Image, ImageBackground, Modal, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { useWishlistStore } from '../../app/Wishlist';
@@ -12,15 +12,14 @@ import { useAppSelector } from '@/store/hooks';
 import { fetchBrands, type BrandItem } from '../../services/brands';
 import { fetchCategories, type CategoryItem } from '../../services/categories';
 import { fetchProducts } from '../../services/products';
-
-
-// Brands now loaded from API
-
+import { fetchAds, type AdsItem } from '../../services/ads';
 
 type SalePopupProps = {
   visible: boolean;
   onClose: () => void;
 };
+
+const screenWidth = Dimensions.get('window').width;
 
 const SalePopup = ({ visible, onClose }: SalePopupProps) => {
   const [showGiftAnimation, setShowGiftAnimation] = useState(true);
@@ -96,27 +95,15 @@ export default function HomeScreen() {
   const [apiProducts, setApiProducts] = useState<any[]>([]);
   const [apiCategories, setApiCategories] = useState<CategoryItem[]>([]);
   const [apiBrands, setApiBrands] = useState<BrandItem[]>([]);
+  const [ads, setAds] = useState<AdsItem[]>([]);
+  const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
+  const scrollViewRef = useRef<ScrollView>(null);
   const wishlistItems = useWishlistStore((state) => state.items);
-  const isInWishlist = (productId: string) => {
+  const isInWishlist = (productId: string, variantLabel?: string) => {
     return wishlistItems.some(item => {
-      const hasMatchingId = item.id === productId;
-      // If the item has no variants, match by ID only
-      if (!item.variant) return hasMatchingId;
-      
-      // For items with variants, we need to check if the exact variant exists
-      const product = apiProducts.find(p => p.id === productId);
-      const productVariants = product?.variants || [];
-      if (productVariants.length === 0) return hasMatchingId;
-      
-      // Check if any variant in the wishlist matches the product's first variant
-      return wishlistItems.some(wishItem => {
-        if (wishItem.id !== productId) return false;
-        if (!wishItem.variant) return true; // If wishlist item has no variant, consider it a match
-        
-        // Check if the first variant's label matches the wishlist item's variant label
-        const firstVariant = Array.isArray(productVariants) ? productVariants[0] : productVariants;
-        return wishItem.variant.label === (firstVariant?.label || firstVariant?.name || '');
-      });
+      if (item.id !== productId) return false;
+      if (!variantLabel) return true; 
+      return item.variant?.label === variantLabel;
     });
   };
   const addToWishlist = useWishlistStore((state) => state.addToWishlist);
@@ -151,6 +138,32 @@ export default function HomeScreen() {
       setApiBrands(brands);
     })();
   }, []);
+
+  useEffect(() => {
+    (async () => {
+      const adsData = await fetchAds();
+      setAds(adsData);
+    })();
+  }, []);
+
+  useEffect(() => {
+    if (ads.length > 1) {
+      const interval = setInterval(() => {
+        setCurrentBannerIndex(prev => (prev === ads.length - 1 ? 0 : prev + 1));
+      }, 3000); // Change slide every 3 seconds
+
+      return () => clearInterval(interval);
+    }
+  }, [ads]);
+
+  useEffect(() => {
+    if (scrollViewRef.current) {
+      scrollViewRef.current.scrollTo({
+        x: currentBannerIndex * screenWidth,
+        animated: true
+      });
+    }
+  }, [currentBannerIndex]);
 
   return (
     <>
@@ -211,12 +224,39 @@ export default function HomeScreen() {
             </ScrollView>
 
             {/* Banner Section */}
-            <View style={styles.bannerCard}>
-              <Image
-                source={require('../../assets/images/wanna.png')}
-                style={styles.bannerCard}
-                resizeMode="cover"
-              />
+            <View style={styles.adSliderContainer}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                pagingEnabled
+                onMomentumScrollEnd={(event) => {
+                  const index = Math.round(event.nativeEvent.contentOffset.x / screenWidth);
+                  setCurrentBannerIndex(index);
+                }}
+                ref={scrollViewRef}
+              >
+                {ads.map((ad, index) => (
+                  <View key={index} style={styles.adSlide}>
+                    <Image
+                      source={ad.image}
+                      style={styles.adSlideImage}
+                      resizeMode="contain"
+                    />
+                  </View>
+                ))}
+              </ScrollView>
+
+              <View>
+                {ads.map((_, index) => (
+                  <View
+                    key={index}
+                    style={[
+                  
+                      index === currentBannerIndex && styles.adIndicatorActive
+                    ]}
+                  />
+                ))}
+              </View>
             </View>
 
             {/* Brands Section */}
@@ -254,128 +294,129 @@ export default function HomeScreen() {
               {apiProducts.filter(p => 'rating' in p)
                 .sort((a, b) => (b.rating || 0) - (a.rating || 0))
                 .slice(0, 4)
-                .map((product, idx) => (
-                  <TouchableOpacity
-                    key={product.id}
-                    style={[bestSellerStyles.productCard, idx === 3 && { marginRight: 0 }]}
-                    activeOpacity={0.8}
-                    onPress={() => router.push({ pathname: '/Products', params: { id: product.id, data: JSON.stringify(product) } })}
-                  >
-                    <LinearGradient
-                      colors={["#FFD600", "#FF9800"]}
-                      style={bestSellerStyles.gradient}
+                .map((product, idx) => {
+                  const firstVariant = (product.variants && product.variants.length > 0) ? product.variants[0] : null;
+                  const variantLabel = firstVariant?.label || firstVariant?.name;
+
+                  return (
+                    <TouchableOpacity
+                      key={product.id}
+                      style={[bestSellerStyles.productCard, idx === 3 && { marginRight: 0 }]}
+                      activeOpacity={0.8}
+                      onPress={() => router.push({ pathname: '/Products', params: { id: product.id, data: JSON.stringify(product) } })}
                     >
-                      {/* Wishlist Button */}
-                      <TouchableOpacity
-                        style={bestSellerStyles.wishlistBtn}
-                        onPress={async (e) => {
-                          e.stopPropagation(); // Prevent triggering the parent TouchableOpacity
-                          
-                          if (!isAuthenticated) {
-                            setWishlistMessage('Please log in to use wishlist.');
-                            setTimeout(() => setWishlistMessage(null), 1000);
-                            const currentRoute = `/?category=${product.category || ''}`;
-                            setTimeout(() => router.replace(`/Login?returnTo=${encodeURIComponent(currentRoute)}`), 1000);
-                            return;
-                          }
-                          
-                          if (isInWishlist(product.id)) {
-                            await useWishlistStore.getState().removeFromWishlist(product.id);
-                            setWishlistMessage('Removed from wishlist');
-                          } else {
-                            // Process variants 
-                            const processVariants = (): any[] => {
-                              const rawVariants = product.variants || [];
-                              if (!Array.isArray(rawVariants)) return [];
+                      <LinearGradient
+                        colors={["#FFD600", "#FF9800"]}
+                        style={bestSellerStyles.gradient}
+                      >
+                        <TouchableOpacity
+                          style={bestSellerStyles.wishlistBtn}
+                          onPress={async () => {
+                            if (!isAuthenticated) {
+                              setWishlistMessage("Please log in to use wishlist.");
+                              setTimeout(() => setWishlistMessage(null), 1000);
+                              const currentRoute = `/?category=${product.category || ''}`;
+                              setTimeout(() => router.replace(`/Login?returnTo=${encodeURIComponent(currentRoute)}`), 1000);
+                              return;
+                            }
 
-                              return rawVariants.flatMap((v: any) => {
-                                // Handle variants with attributes/options
-                                if (v?.attributes) {
-                                  const attributes = Array.isArray(v.attributes) ? v.attributes : [v.attributes];
-                                  return attributes.flatMap((attr: any) => {
-                                    const options = attr?.options || {};
-                                    const size = options.Size || options.size || Object.values(options)[0];
-                                    if (!size) return [];
+                            if (isInWishlist(product.id, variantLabel)) {
+                              await removeFromWishlist(product.id, variantLabel);
+                              setWishlistMessage('Removed from wishlist');
+                            } else {
+                              const processVariants = (): any[] => {
+                                const rawVariants = product.variants || [];
+                                if (!Array.isArray(rawVariants)) return [];
 
-                                    return {
-                                      label: String(size),
-                                      price: Number(attr.regular_price || attr.price || v.price || 0),
-                                      ...(attr.sale_price ? { sale_price: Number(attr.sale_price) } : {})
-                                    };
-                                  });
-                                }
-                                // Handle simple variants
-                                return {
-                                  label: v.label || v.name || '',
-                                  price: Number(v.price || 0),
-                                  ...(v.sale_price ? { sale_price: Number(v.sale_price) } : {})
-                                };
+                                return rawVariants.flatMap((v: any) => {
+                                  if (v?.attributes) {
+                                    const attributes = Array.isArray(v.attributes) ? v.attributes : [v.attributes];
+                                    return attributes.flatMap((attr: any) => {
+                                      const options = attr?.options || {};
+                                      const size = options.Size || options.size || Object.values(options)[0];
+                                      if (!size) return [];
+
+                                      return {
+                                        label: String(size),
+                                        price: Number(attr.regular_price || attr.price || v.price || 0),
+                                        ...(attr.sale_price ? { sale_price: Number(attr.sale_price) } : {})
+                                      };
+                                    });
+                                  }
+                                  return {
+                                    label: v.label || v.name || '',
+                                    price: Number(v.price || 0),
+                                    ...(v.sale_price ? { sale_price: Number(v.sale_price) } : {})
+                                  };
+                                });
+                              };
+
+                              const variants = processVariants();
+                              const firstVariant = variants[0];
+
+                              await addToWishlist({
+                                id: product.id,
+                                name: product.name,
+                                regular_price: firstVariant?.price ?? product.regular_price,
+                                sale_price: firstVariant?.sale_price ?? product.sale_price,
+                                image: product.img,
+                                pack: firstVariant?.label || '',
+                                category: product.category,
+                                variant: firstVariant ? {
+                                  label: firstVariant.label,
+                                  price: firstVariant.price,
+                                  sale_price: firstVariant.sale_price
+                                } : undefined
                               });
-                            };
-
-                            const variants = processVariants();
-                            const firstVariant = variants[0];
-                            
-                            await useWishlistStore.getState().addToWishlist({
-                              id: product.id,
-                              name: product.name,
-                              regular_price: firstVariant?.price ?? product.regular_price,
-                              sale_price: firstVariant?.sale_price ?? product.sale_price,
-                              image: product.img,
-                              pack: firstVariant?.label || '',
-                              variant: firstVariant ? {
-                                label: firstVariant.label,
-                                price: firstVariant.price,
-                                sale_price: firstVariant.sale_price
-                              } : undefined
-                            });
-                            setWishlistMessage('Added to wishlist');
-                          }
-                          setTimeout(() => setWishlistMessage(null), 2000);
-                        }}
-                      >
-                        <Ionicons
-                          name={isInWishlist(product.id) ? "heart" : "heart-outline"}
-                          size={moderateScale(20)}
-                          color={isInWishlist(product.id) ? "#FF4081" : "#fff"}
-                        />
-                      </TouchableOpacity>
-                      <Image
-                        source={product.img}
-                        style={bestSellerStyles.productImg}
-                      />
-                    </LinearGradient>
-                    {/* Footer */}
-                    <View style={bestSellerStyles.cardFooter}>
-                      <View style={{ flex: 1 }}>
-                        <Text style={bestSellerStyles.cardTitle}>{product.name}</Text>
-                        <Text style={{ fontSize: moderateScale(10) }}>
-                          Ratings <Text style={bestSellerStyles.rating}>{"★".repeat(Math.round(product.rating || 0))}</Text>
-                        </Text>
-                      </View>
-                      <ImageBackground
-                        source={require('../../assets/images/VectorRed.png')}
-                        style={[bestSellerStyles.ptsBadge, { justifyContent: 'center', alignItems: 'center' }]}
-                      >
-                        <Text
-                          style={[
-                            bestSellerStyles.ptsText,
-                            { color: 'white' },
-                          ]}
+                              setWishlistMessage('Added to wishlist');
+                            }
+                            setTimeout(() => setWishlistMessage(null), 2000);
+                          }}
                         >
-                          {product.pts}
-                          {'\n'}PTS
-                        </Text>
-                      </ImageBackground>
-                    </View>
-                  </TouchableOpacity>
-                ))}
+                          <Ionicons
+                            name={isInWishlist(product.id, variantLabel) ? "heart" : "heart-outline"}
+                            size={moderateScale(20)}
+                            color="#fff"
+                          />
+                        </TouchableOpacity>
+                        <Image
+                          source={product.img}
+                          style={bestSellerStyles.productImg}
+                        />
+                      </LinearGradient>
+                      {/* Footer */}
+                      <View style={bestSellerStyles.cardFooter}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={bestSellerStyles.cardTitle}>{product.name}</Text>
+                          <Text style={{ fontSize: moderateScale(10) }}>
+                            Ratings <Text style={bestSellerStyles.rating}>{"★".repeat(Math.round(product.rating || 0))}</Text>
+                          </Text>
+                        </View>
+                        <ImageBackground
+                          source={require('../../assets/images/VectorRed.png')}
+                          style={[bestSellerStyles.ptsBadge, { justifyContent: 'center', alignItems: 'center' }]}
+                        >
+                          <Text
+                            style={[
+                              bestSellerStyles.ptsText,
+                              { color: 'white' },
+                            ]}
+                          >
+                            {product.pts}
+                            {'\n'}PTS
+                          </Text>
+                        </ImageBackground>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
             </ScrollView>
           </ScrollView>
         </ImageBackground>
       </SafeAreaView>
     </>
   );
+
 }
 
 const popupStyles = StyleSheet.create({
@@ -534,7 +575,7 @@ const styles = StyleSheet.create({
     height: verticalScale(280)
   },
   headerRow: {
-    marginTop: verticalScale(40),
+    marginTop: verticalScale(34),
     flexDirection: 'row',
     alignItems: 'center',
     overflow: "hidden",
@@ -620,12 +661,22 @@ const styles = StyleSheet.create({
     fontFamily: "Sigmar",
     lineHeight: moderateScale(36),
   },
-  bannerCard: {
-    marginTop: verticalScale(18),
-    borderRadius: moderateScale(26),
-    alignItems: 'center',
-    width: scale(340),
-    marginHorizontal: scale(4)
+  adSliderContainer: {
+    width: '100%',
+    height: verticalScale(140),
+    marginVertical: verticalScale(18),
+    position: 'relative',
+  },
+  adSlide: {
+    width: screenWidth,
+    height: '100%',
+  },
+  adSlideImage: {
+    width: '100%',
+    height: '100%',
+  },
+  adIndicatorActive: {
+    backgroundColor: 'white',
   },
   brandCard: {
     backgroundColor: '#FBF4E4',

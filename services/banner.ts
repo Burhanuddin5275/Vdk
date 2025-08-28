@@ -6,7 +6,7 @@ export type BannerItem = {
   image: any;
 };
 
-const API_URL = "http://192.168.1.109:8000/api/banners/";
+const API_URL = "http://192.168.1.111:8000/api/banners/";
 
 function toBanner(item: ApiBanner): BannerItem {
   const brand = String(item.brand ?? "Banner");

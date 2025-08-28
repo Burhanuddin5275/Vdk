@@ -5,7 +5,7 @@ export type BrandItem = {
   image: any;
 };
 
-const API_URL = "http://192.168.1.109:8000/api/brands/";
+const API_URL = "http://192.168.1.111:8000/api/brands/";
 
 function toBrand(item: ApiBrand): BrandItem {
   const name = String(item.name ?? item.title ?? item.label ?? "Brand");

@@ -14,7 +14,7 @@ export type Product =
   }
   | { banner: string };
 
-const API_URL = "http://192.168.1.109:8000/api/products/";
+const API_URL = "http://192.168.1.111:8000/api/products/";
 
 type ApiProduct = any;
 

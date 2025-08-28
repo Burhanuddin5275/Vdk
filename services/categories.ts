@@ -5,7 +5,7 @@ export type CategoryItem = {
   image: any;
 };
 
-const API_URL = "http://192.168.1.109:8000/api/categories/";
+const API_URL = "http://192.168.1.111:8000/api/categories/";
 
 function toCategory(item: ApiCategory): CategoryItem {
   const label = String(item.name ?? item.label ?? "Category");
