@@ -107,6 +107,12 @@ const Products = () => {
             setTimeout(() => router.replace(`/Login?returnTo=${encodeURIComponent(currentRoute)}`), 1000);
             return;
         }
+        // Stock check from product API
+        if (product?.stock_status === 'outofstock') {
+            setCartMessage('Product is out of stock.');
+            setTimeout(() => setCartMessage(null), 2000);
+            return;
+        }
         const selectedVariant = variants.find((v: any) => v.label === selectedSize);
         const variantPrice = selectedVariant?.price ?? 0;
         const variantSalePrice = selectedVariant?.sale_price;
@@ -306,7 +312,7 @@ const Products = () => {
                                         padding: 8,
                                         alignItems: 'center',
                                         width: scale(94),
-                                        height: verticalScale(100)
+                                        height: verticalScale(105)
                                     }}
                                 >
                                     <Image source={typeof s.image === 'string' ? { uri: s.image } : s.image} style={{ width: scale(65), height: verticalScale(45), borderRadius: 12, marginBottom: 6, resizeMode: 'contain' }} />
@@ -441,11 +447,22 @@ const Products = () => {
                                 </View>
                             </View>
                             <TouchableOpacity
-                                style={{ backgroundColor: mainColor, borderRadius: 24, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 22, paddingVertical: 12 }}
+                                disabled={product?.stock_status === 'outofstock'}
+                                style={{ 
+                                    backgroundColor: product?.stock_status === 'outofstock' ? '#9E9E9E' : mainColor, 
+                                    opacity: product?.stock_status === 'outofstock' ? 0.9 : 1,
+                                    borderRadius: 24, 
+                                    flexDirection: 'row', 
+                                    alignItems: 'center', 
+                                    paddingHorizontal: 22, 
+                                    paddingVertical: 12 
+                                }}
                                 onPress={handleAddToCart}
                             >
                                 <Ionicons name="cart" size={scale(20)} color="#fff" style={{ marginRight: 8 }} />
-                                <Text style={{ color: '#fff', fontFamily: 'PoppinsMedium', fontSize: moderateScale(15) }}>Add to Cart</Text>
+                                <Text style={{ color: '#fff', fontFamily: 'PoppinsMedium', fontSize: moderateScale(15) }}>
+                                    {product?.stock_status === 'outofstock' ? 'Out of Stock' : 'Add to Cart'}
+                                </Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -454,7 +471,7 @@ const Products = () => {
         )}
             {/* Success Message */}
             {showSuccess && (
-                <View style={{ position: 'absolute', top: 80, left: 0, right: 0, alignItems: 'center', zIndex: 20 }}>
+                <View style={{ position: 'absolute', top: 40, left: 0, right: 0, alignItems: 'center', zIndex: 20 }}>
                     <View style={{ backgroundColor: mainColor, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 24 }}>
                         <Text style={{ color: '#fff', fontFamily: 'PoppinsBold', fontSize: 16 }}>Product added to cart!</Text>
                     </View>
@@ -462,14 +479,14 @@ const Products = () => {
             )}
             {/* Snackbar/Toast */}
             {wishlistMessage && (
-                <View style={{ position: 'absolute', top: 80, left: 0, right: 0, alignItems: 'center', zIndex: 20 }}>
+                <View style={{ position: 'absolute', top: 40, left: 0, right: 0, alignItems: 'center', zIndex: 20 }}>
                     <View style={{ backgroundColor: mainColor, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 24 }}>
                         <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>{wishlistMessage}</Text>
                     </View>
                 </View>
-            )}
+            )} 
             {cartMessage && (
-                <View style={{ position: 'absolute', top: 120, left: 0, right: 0, alignItems: 'center', zIndex: 20 }}>
+                <View style={{ position: 'absolute', top: 40, left: 0, right: 0, alignItems: 'center', zIndex: 20 }}>
                     <View style={{ backgroundColor: mainColor, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 24 }}>
                         <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>{cartMessage}</Text>
                     </View>

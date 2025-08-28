@@ -10,6 +10,7 @@ export type Product =
     regular_price: number;
     sale_price: number;
     description?: string;
+    stock_status?: string;
     variants?: any[];
   }
   | { banner: string };
@@ -30,6 +31,7 @@ function toProduct(item: ApiProduct): Product {
   const regular_price = Number(item.regular_price ?? item.amount ?? 0);
   const sale_price = Number(item.sale_price ?? item.discounted_price ?? 0);
   const description = item.short_description ?? item.desc ?? undefined;
+  const stock_status = item.stock_status ?? undefined;
   const variants = item.variant ?? item.variants ?? [];
 
   return {
@@ -44,6 +46,7 @@ function toProduct(item: ApiProduct): Product {
    sale_price,
     description,
     variants,
+    stock_status
   };
 }
 
