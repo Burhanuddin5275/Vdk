@@ -28,6 +28,7 @@ const Products = () => {
         label: string;
         price: number;
         sale_price?: number;
+        image?: any;
     }
 
     // Process variants from product data
@@ -47,7 +48,8 @@ const Products = () => {
                     return {
                         label: String(size),
                         price: Number(attr.regular_price || attr.price || v.price || 0),
-                        ...(attr.sale_price ? { sale_price: Number(attr.sale_price) } : {})
+                        ...(attr.sale_price ? { sale_price: Number(attr.sale_price) } : {}),
+                        image: v.image || v.img || product.img
                     };
                 });
             }
@@ -59,12 +61,23 @@ const Products = () => {
             return {
                 label,
                 price: Number(v.regular_price || v.price || v.amount || 0),
-                ...(v.sale_price ? { sale_price: Number(v.sale_price) } : {})
+                ...(v.sale_price ? { sale_price: Number(v.sale_price) } : {}),
+                image: v.image || v.img || product.img
             };
         }).filter((v: any): v is Variant => v && v.label && !isNaN(v.price));
     };
 
     const variants = processVariants();
+
+    let priceRange: { min: number; max: number } | null = null;
+    if (variants.length > 1 && (!product.regular_price || product.regular_price === 0)) {
+        const prices = variants.map(v => v.sale_price ?? v.price);
+        const minPrice = Math.min(...prices);
+        const maxPrice = Math.max(...prices);
+        if (minPrice !== maxPrice) {
+            priceRange = { min: minPrice, max: maxPrice };
+        }
+    }
 
     const [selectedSize, setSelectedSize] = useState(variants[0]?.label || '');
     const [qty, setQty] = useState(1);
@@ -97,6 +110,7 @@ const Products = () => {
         const selectedVariant = variants.find((v: any) => v.label === selectedSize);
         const variantPrice = selectedVariant?.price ?? 0;
         const variantSalePrice = selectedVariant?.sale_price;
+        const imageForCart = selectedVariant?.image || selectedImg; // Use variant image if available
 
         addToCart({
             id: product.id,
@@ -106,7 +120,7 @@ const Products = () => {
             sale_price: variantSalePrice || product.sale_price || undefined,
             points: product.pts,
             quantity: qty,
-            image: selectedImg,
+            image: imageForCart,
             user: phone,
             variant: selectedVariant ? {
                 price: variantPrice,
@@ -172,7 +186,7 @@ const Products = () => {
                     </View>
 
                     <View style={styles.imageWrap}>
-                        <Image source={selectedImg} style={styles.productImg} resizeMode="contain" />
+                        <Image source={typeof selectedImg === 'string' ? { uri: selectedImg } : selectedImg} style={styles.productImg} resizeMode="contain" />
                         {/* Thumbnails */}
                         <View style={styles.thumbnailRow}>
                             {images.map((img: any, idx: any) => (
@@ -182,7 +196,7 @@ const Products = () => {
                                     style={[styles.thumbnailWrap, selectedImg === img && styles.thumbnailSelected]}
                                     activeOpacity={0.7}
                                 >
-                                    <Image source={img} style={styles.thumbnailImg} resizeMode="contain" />
+                                    <Image source={typeof img === 'string' ? { uri: img } : img} style={styles.thumbnailImg} resizeMode="contain" />
                                 </TouchableOpacity>
                             ))}
                         </View>
@@ -214,27 +228,35 @@ const Products = () => {
                     <View>
                         <Text style={[styles.priceLabel, { color: mainColor }]}>Total Price</Text>
                         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <Text style={[
-                                styles.price,
-                                {
-                                    color: mainColor,
-                                    textDecorationLine: product.sale_price ? 'line-through' : 'none',
-                                    opacity: product.sale_price ? 0.7 : 1,
-                                    fontSize: product.sale_price ? moderateScale(15) : moderateScale(25),
-                                    fontFamily: product.sale_price ? 'PoppinsBold' : 'PoppinsBold'
-                                }
-                            ]}>
-                                {`Pkr ${product.regular_price || 0}`}
-                            </Text>
-                            {product.sale_price ? (
-                                <Text style={[styles.price, {
-                                    color: '#E53935',
-                                    fontSize: moderateScale(25),
-                                    fontFamily: 'PoppinsBold'
-                                }]}>
-                                    {` ${product.sale_price}`}
+                            {priceRange ? (
+                                <Text style={[styles.price, { color: mainColor, fontSize: moderateScale(22) }]}>
+                                    {`Pkr ${priceRange.min} - ${priceRange.max}`}
                                 </Text>
-                            ) : null}
+                            ) : (
+                                <>
+                                    <Text style={[
+                                        styles.price,
+                                        {
+                                            color: mainColor,
+                                            textDecorationLine: product.sale_price ? 'line-through' : 'none',
+                                            opacity: product.sale_price ? 0.7 : 1,
+                                            fontSize: product.sale_price ? moderateScale(15) : moderateScale(25),
+                                            fontFamily: product.sale_price ? 'PoppinsBold' : 'PoppinsBold'
+                                        }
+                                    ]}>
+                                        {`Pkr ${product.regular_price || (variants[0]?.sale_price ?? variants[0]?.price) || 0}`}
+                                    </Text>
+                                    {product.sale_price ? (
+                                        <Text style={[styles.price, {
+                                            color: '#E53935',
+                                            fontSize: moderateScale(25),
+                                            fontFamily: 'PoppinsBold'
+                                        }]}>
+                                            {` ${product.sale_price}`}
+                                        </Text>
+                                    ) : null}
+                                </>
+                            )}
                         </View>
                     </View>
                     <TouchableOpacity style={[styles.cartBtn, { backgroundColor: mainColor }]} onPress={() => setModalVisible(true)}>
@@ -274,7 +296,7 @@ const Products = () => {
                             {variants.map((s: any, index: number) => (
                                 <TouchableOpacity
                                     key={`${s.label}-${s.price}-${index}`}
-                                    onPress={() => setSelectedSize(s.label)}
+                                    onPress={() => { setSelectedSize(s.label); setSelectedImg(s.image); }}
                                     style={{
                                         borderWidth: selectedSize === s.label ? 2 : 0,
                                         borderColor: mainColor,
@@ -287,7 +309,7 @@ const Products = () => {
                                         height: verticalScale(100)
                                     }}
                                 >
-                                    <View style={{ width: scale(65), height: verticalScale(45), backgroundColor: '#F2F2F2', borderRadius: 12, marginBottom: 6 }} />
+                                    <Image source={typeof s.image === 'string' ? { uri: s.image } : s.image} style={{ width: scale(65), height: verticalScale(45), borderRadius: 12, marginBottom: 6, resizeMode: 'contain' }} />
                                     <Text style={{ color: selectedSize === s.label ? mainColor : '#1A1A1A', fontFamily: 'PoppinsBold', fontSize: moderateScale(12), marginBottom: 2 }}>
                                         {s.label}
                                     </Text>

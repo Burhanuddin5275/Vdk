@@ -42,7 +42,7 @@ const Checkout = () => {
 
     const renderCartItem = ({ item }: { item: CartItem }) => (
         <View style={styles.cartItem}>
-            <Image source={item.image} style={styles.cartImage} resizeMode="cover" />
+            <Image source={typeof item.image === 'string' ? { uri: item.image } : item.image} style={styles.cartImage} resizeMode="cover" />
             <View style={{ flex: 1, marginLeft: 12 }}>
                 <Text style={styles.cartName}>{item.name} {'\n'}<Text style={styles.cartPack}>{item.pack || 3}</Text></Text>
                 <Text style={styles.cartPrice}>Pkr {item.price.toLocaleString()}</Text>

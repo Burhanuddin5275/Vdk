@@ -101,7 +101,7 @@ export default function CartScreen() {
             <View key={uniqueKey}>
               <View style={styles.cartItem}>
                 <View style={styles.imageContainer}>
-                  <Image source={item.image} style={styles.productImage} />
+                  <Image source={typeof item.image === 'string' ? { uri: item.image } : item.image} style={styles.productImage} />
                   <Text style={styles.productPoints}>{item.points} Pts</Text>
                 </View>
 
@@ -188,7 +188,7 @@ export default function CartScreen() {
               <View style={modalStyles.divider} />
               {selectedItem && (
                 <View style={modalStyles.itemRow}>
-                  <Image source={selectedItem.image} style={modalStyles.itemImage} />
+                  <Image source={selectedItem && typeof selectedItem.image === 'string' ? { uri: selectedItem.image } : selectedItem.image} style={modalStyles.itemImage} />
                   <View>
                     <Text style={modalStyles.itemName}>{selectedItem.name}</Text>
                     <Text style={modalStyles.itemPrice}>Pkr {selectedItem.price}</Text>
