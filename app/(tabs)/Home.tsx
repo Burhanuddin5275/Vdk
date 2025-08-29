@@ -13,7 +13,7 @@ import { fetchBrands, type BrandItem } from '../../services/brands';
 import { fetchCategories, type CategoryItem } from '../../services/categories';
 import { fetchProducts } from '../../services/products';
 import { fetchAds, type AdsItem } from '../../services/ads';
-
+import { fetchHeroes, type HeroItem } from '@/services/heroes';
 type SalePopupProps = {
   visible: boolean;
   onClose: () => void;
@@ -97,8 +97,26 @@ export default function HomeScreen() {
   const [apiBrands, setApiBrands] = useState<BrandItem[]>([]);
   const [ads, setAds] = useState<AdsItem[]>([]);
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
+  const [heroContent, setHeroContent] = useState<HeroItem[]>([]);
   const scrollViewRef = useRef<ScrollView>(null);
   const wishlistItems = useWishlistStore((state) => state.items);
+  
+  // Fetch hero content on component mount
+  useEffect(() => {
+    const loadHeroContent = async () => {
+      try {
+        const heroes = await fetchHeroes();
+        if (heroes.length > 0) {
+          setHeroContent(heroes);
+        }
+      } catch (error) {
+        console.error('Failed to load hero content:', error);
+      }
+    };
+
+    loadHeroContent();
+  }, []);
+
   const isInWishlist = (productId: string, variantLabel?: string) => {
     return wishlistItems.some(item => {
       if (item.id !== productId) return false;
@@ -150,7 +168,7 @@ export default function HomeScreen() {
     if (ads.length > 1) {
       const interval = setInterval(() => {
         setCurrentBannerIndex(prev => (prev === ads.length - 1 ? 0 : prev + 1));
-      }, 3000); // Change slide every 3 seconds
+      }, 12000); 
 
       return () => clearInterval(interval);
     }
@@ -176,21 +194,46 @@ export default function HomeScreen() {
         >
           <ScrollView contentContainerStyle={{ paddingBottom: "20%" }}>
 
-            {/* Header Section */}
+
             <View style={styles.headerBg}>
               <View style={styles.headerRow}>
                 <View style={{ width: scale(140), paddingLeft: scale(16) }}>
-                  <Text style={styles.hello}>Hello!{"\n"}Hussain</Text>
-                  <Text style={styles.subtext}>What would you like to buy?</Text>
+                  {heroContent.length > 0 ? (
+                    <>
+                      <Text style={styles.hello}>
+                        {heroContent[0].title}
+                      </Text>
+                      <Text 
+                        style={styles.subtext}
+                        numberOfLines={3}
+                        ellipsizeMode="tail"
+                      >
+                        {heroContent[0].subtext}
+                      </Text>
+                    </>
+                  ) : (
+                    <>
+                      <Text style={styles.hello}>
+                        Hello!{"\n"}Hussain
+                      </Text>
+                      <Text 
+                        style={styles.subtext}
+                        numberOfLines={5}
+                        ellipsizeMode="tail"
+                      >
+                        What would you like to buy?
+                      </Text>
+                    </>
+                  )}
                   <View style={styles.rewardBox}>
                     <Text style={styles.rewardLabel}>Reward</Text>
                     <Text style={styles.rewardPoints}>1273{''}
                     </Text><Text style={styles.rewardPts}>PTS</Text>
                   </View>
                 </View>
-                <View style={{ flex: 1, alignItems: 'flex-end', }}>
+                <View style={{ flex: 1, alignItems: 'flex-end' }}>
                   <Image
-                    source={require('../../assets/images/family2.png')}
+                    source={heroContent.length > 0 ? heroContent[0].image : require('../../assets/images/family2.png')}
                     style={styles.familyImg}
                     resizeMode="contain"
                   />
@@ -572,10 +615,10 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: moderateScale(32),
     paddingVertical: verticalScale(10),
     paddingTop: verticalScale(10),
-    height: verticalScale(280)
+    height:"auto"
   },
   headerRow: {
-    marginTop: verticalScale(34),
+    marginTop: verticalScale(30),
     flexDirection: 'row',
     alignItems: 'center',
     overflow: "hidden",
@@ -624,7 +667,7 @@ const styles = StyleSheet.create({
   },
   familyImg: {
     width: "100%",
-    height: verticalScale(240),
+    height: verticalScale(250),
     resizeMode: "contain",
   },
   sectionTitle: {
