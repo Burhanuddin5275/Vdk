@@ -326,7 +326,14 @@ export default function HomeScreen() {
               <Text style={styles.seeAll} onPress={() => { router.push('/BestSeller') }}>See All</Text>
             </View>
             <Text style={styles.bestSellerSubtext}>Find the top most popular items in DKT best sellers.</Text>
-
+     {/* Wishlist Snackbar */}
+        {wishlistMessage && (
+          <View style={{ position: "absolute", top: verticalScale(80), left: 0, right: 0, alignItems: "center", zIndex: 20 }}>
+            <View style={{ backgroundColor: "#E53935", paddingHorizontal: scale(24), paddingVertical: verticalScale(12), borderRadius: moderateScale(24) }}>
+              <Text style={{ color: "#fff", fontWeight: "bold", fontSize: moderateScale(16) }}>{wishlistMessage}</Text>
+            </View>
+          </View>
+        )} 
             {/* Best Seller Product Slider */}
             <ScrollView
               horizontal

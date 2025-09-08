@@ -11,7 +11,7 @@ import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { Product } from '../services/products';
 import { fetchProducts } from '../services/products';
 import { useWishlistStore } from './Wishlist';
-
+import { fetchAds, type AdsItem } from '../services/ads';
 
 const screenWidth = Dimensions.get('window').width;
 const CARD_WIDTH = (screenWidth - scale(48)) / 2;
@@ -23,40 +23,15 @@ const BestSeller = () => {
   const [wishlistMessage, setWishlistMessage] = useState<string | null>(null);
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
  const insets = useSafeAreaInsets();
-const adsImages = [
-  {
-    brand: "Josh",
-    category: "Lubricant",
-    image: require("../assets/images/lubricant.png"),
-  },
-    {
-    brand: "Josh",
-    category: "Condoms",
-    image: require("../assets/images/lahoriTikka.png"),
-  },
-  {
-    brand: "OK",
-    category: "Condoms",
-    image: require("../assets/images/okBanner.png"),
-  },
-    {
-    brand: "OK",
-    category: "Condoms",
-    image: require("../assets/images/wanna.png"),
-  },
-  {
-    brand: "Vidafem",
-    category: "Devices",
-    image: require("../assets/images/Heer.png"),
-  },
+   const [ads, setAds] = useState<AdsItem[]>([]);
 
-  {
-    brand: "Vidafem",
-    category: "Medicine",
-    image: require("../assets/images/Vidafem1.png"),
-  },
-];
 
+  useEffect(() => {
+    (async () => {
+      const adsData = await fetchAds();
+      setAds(adsData);
+    })();
+  }, []);
 
   const wishlistItems = useWishlistStore((state: { items: { id: string }[] }) => state.items);
 
@@ -89,15 +64,15 @@ const adsImages = [
       const product = displayList[i];
       data.push({ type: "product", data: product });
 
-      if ((i + 1) % 4 === 0 && adsImages.length > 0) {
-        const ad = adsImages[adIndex % adsImages.length];
+      if ((i + 1) % 4 === 0 && ads.length > 0) {
+        const ad = ads[adIndex % ads.length];
         data.push({ type: "ad", data: ad });
         adIndex++;
       }
     }
 
     return data;
-  }, [displayList, adsImages]);
+  }, [displayList, ads]);
 
   return (
     <SafeAreaView style={{ flex: 1,paddingBottom: Math.max(insets.bottom, verticalScale(4))  }}>

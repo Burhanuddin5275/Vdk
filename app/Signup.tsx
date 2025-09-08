@@ -1,16 +1,150 @@
 import { colors } from '@/theme/colors';
+import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Image, ImageBackground, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, ImageBackground, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { verticalScale } from 'react-native-size-matters';
 
 const Signup = () => {
   const [phone, setPhone] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   
     useEffect(() => {
   return;
     }, []);
+
+  const handleSendOtp = async () => {
+    if (isSubmitting) return;
+
+    // Normalize to E.164 for Pakistan (+92XXXXXXXXXX)
+    const digitsOnly = (phone || '').replace(/\D/g, '');
+    if (digitsOnly.length !== 10) {
+      Alert.alert('Invalid number', 'Please enter a valid 10-digit phone number.');
+      return;
+    }
+    // Force E.164: +92XXXXXXXXXX
+    const e164Phone = `+92${digitsOnly}`;
+
+    try {
+      setIsSubmitting(true);
+      const endpoint = 'http://192.168.1.111:8000/api/send-otp/';
+
+      const last10 = digitsOnly.slice(-10);
+      const phoneCandidates = [
+        `+92${last10}`,
+        `0${last10}`,
+        `92${last10}`,
+        last10,
+      ];
+      const keyCandidates: Array<'phone' | 'phone_number' | 'mobile' | 'mobile_number' | 'msisdn'> = [
+        'phone',
+        'phone_number',
+        'mobile',
+        'mobile_number',
+        'msisdn',
+      ];
+
+      const attemptJson = async (payloadKey: string, value: string) => {
+        return fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: JSON.stringify({ [payloadKey]: value }),
+        });
+      };
+
+      const attemptFormUrl = async (payloadKey: string, value: string) => {
+        const form = new URLSearchParams();
+        form.append(payloadKey, value);
+        return fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Accept': 'application/json, text/plain, */*',
+          },
+          body: form.toString(),
+        });
+      };
+
+      let response: Response | null = null;
+      let usedValue: string | undefined;
+      let errorMessage: string | undefined;
+
+      for (const key of keyCandidates) {
+        if (response) break;
+        for (const value of phoneCandidates) {
+          // Try JSON
+          try {
+            const resJson = await attemptJson(key, value);
+            if (resJson.ok) {
+              response = resJson;
+              usedValue = value;
+              break;
+            } else {
+              const text = await resJson.text();
+              if (text) {
+                try {
+                  const parsed = JSON.parse(text);
+                  errorMessage = parsed?.message || parsed?.detail || JSON.stringify(parsed);
+                } catch {
+                  errorMessage = text;
+                }
+              } else {
+                errorMessage = `Request failed (${resJson.status}).`;
+              }
+            }
+          } catch (e: any) {
+            errorMessage = e?.message || 'Network error';
+          }
+
+          if (response) break;
+
+          // Try x-www-form-urlencoded
+          try {
+            const resForm = await attemptFormUrl(key, value);
+            if (resForm.ok) {
+              response = resForm;
+              usedValue = value;
+              break;
+            } else {
+              const text = await resForm.text();
+              if (text) {
+                try {
+                  const parsed = JSON.parse(text);
+                  errorMessage = parsed?.message || parsed?.detail || JSON.stringify(parsed);
+                } catch {
+                  errorMessage = text;
+                }
+              } else {
+                errorMessage = `Request failed (${resForm.status}).`;
+              }
+            }
+          } catch (e: any) {
+            errorMessage = e?.message || 'Network error';
+          }
+        }
+      }
+
+      if (!response) {
+        Alert.alert('Error sending OTP', errorMessage || 'Phone number required');
+        return;
+      }
+
+      // Navigate to VerifyNumber page with the phone number as a parameter
+      router.push({
+        pathname: '/VerifyNumber',
+        params: { phone: usedValue || e164Phone }
+      });
+    } catch (error: any) {
+      Alert.alert('Network/Error', error?.message || 'Something went wrong. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
@@ -36,8 +170,12 @@ const Signup = () => {
             />
           </View>
           {/* Continue Button */}
-          <TouchableOpacity style={styles.continueBtn}>
-            <Text style={styles.continueText}>Continue</Text>
+          <TouchableOpacity style={[styles.continueBtn, isSubmitting && { opacity: 0.7 }]} onPress={handleSendOtp} disabled={isSubmitting}>
+            {isSubmitting ? (
+              <ActivityIndicator color={colors.textPrimary} />
+            ) : (
+              <Text style={styles.continueText}>Continue</Text>
+            )}
           </TouchableOpacity>
           {/* Terms */}
           <Text style={styles.terms}>

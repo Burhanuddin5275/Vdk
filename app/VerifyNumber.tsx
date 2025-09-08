@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ImageBackground, Keyboard, Platform, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, ImageBackground, Keyboard, Platform, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { verticalScale } from 'react-native-size-matters';
 
@@ -41,11 +41,42 @@ const VerifyNumber = () => {
     }
   };
 
-  const handleResend = () => {
+  const handleResend = async () => {
     if (timer === 0) {
-      setOtp(Array(OTP_LENGTH).fill(''));
-      setTimer(RESEND_TIME);
-      // Trigger resend logic here
+      try {
+        setOtp(Array(OTP_LENGTH).fill(''));
+        setTimer(RESEND_TIME);
+        
+        // Get the phone number from the URL params or use the one from the previous screen
+        const phoneNumber = '0323933904'; // Replace with actual phone number from params
+        const endpoint = 'http://192.168.1.111:8000/api/send-otp/';
+        
+        const attempt = async (payloadKey: 'phone' | 'phone_number') => {
+          const res = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            body: JSON.stringify({ [payloadKey]: `+92${phoneNumber}` }),
+          });
+          return res;
+        };
+
+        let response = await attempt('phone');
+        if (!response.ok) {
+          response = await attempt('phone_number');
+        }
+
+        if (!response.ok) {
+          throw new Error('Failed to resend OTP');
+        }
+
+        Alert.alert('Success', 'New OTP has been sent to your phone number');
+      } catch (error) {
+        console.error('Error resending OTP:', error);
+        Alert.alert('Error', 'Failed to resend OTP. Please try again.');
+      }
     }
   };
 
@@ -87,10 +118,18 @@ const VerifyNumber = () => {
         <TouchableOpacity style={styles.button}>
           <Text style={styles.buttonText}>Verify & proceed</Text>
         </TouchableOpacity>
-        {/* Resend Timer */}
-        <Text style={styles.resendText} onPress={handleResend}>
-          Resend code in {timer < 10 ? `00:0${timer}` : `00:${timer}`}
-        </Text>
+        {/* Resend Timer or Button */}
+        {timer > 0 ? (
+          <Text style={styles.resendText}>
+            Resend code in {timer < 10 ? `00:0${timer}` : `00:${timer}`}
+          </Text>
+        ) : (
+          <TouchableOpacity onPress={handleResend}>
+            <Text style={[styles.resendText, { textDecorationLine: 'underline' }]}>
+              Resend Code
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
     </ImageBackground>
     </SafeAreaView>

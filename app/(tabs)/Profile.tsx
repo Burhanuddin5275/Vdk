@@ -92,7 +92,7 @@ export default function Profile() {
           )}
           {/* Login Prompt */}
           {!isAuthenticated && (
-            <TouchableOpacity style={styles.loginBox} onPress={() => router.push(`/Login?returnTo=${encodeURIComponent('/(tabs)/Profile')}`)}>
+            <TouchableOpacity style={styles.loginBox} onPress={() => router.push(`/Signup?returnTo=${encodeURIComponent('/(tabs)/Profile')}`)}>
               <Text style={styles.loginText}>Login to unlock more Features!</Text>
             </TouchableOpacity>
           )}

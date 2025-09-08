@@ -53,6 +53,8 @@ export default function RootLayout() {
             <Stack.Screen name="Card" options={{ headerShown: false }} />
             <Stack.Screen name="Wishlist" options={{ headerShown: false }} />
             <Stack.Screen name="Login" options={{ headerShown: false }} />
+             <Stack.Screen name="Signup" options={{ headerShown: false }} />
+               <Stack.Screen name="VerifyNumber" options={{ headerShown: false }} />
             <Stack.Screen name="+not-found" />
           </Stack>
           <StatusBar style="auto" />
