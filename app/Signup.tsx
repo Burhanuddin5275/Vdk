@@ -166,7 +166,7 @@ const Signup = () => {
               keyboardType="number-pad"
               placeholder="Phone Number"
               placeholderTextColor={"#1A1A1A"}
-              maxLength={10}
+              maxLength={11}
             />
           </View>
           {/* Continue Button */}
