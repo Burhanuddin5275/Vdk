@@ -1,21 +1,132 @@
 import { Button } from '@/components/Button';
 import { colors } from '@/theme/colors';
+import { useAuth } from '@/hooks/useAuth';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import React, { useState } from 'react';
-import { Dimensions, ImageBackground, KeyboardAvoidingView, Platform, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { Alert, Dimensions, ImageBackground, KeyboardAvoidingView, Platform, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width } = Dimensions.get('window');
 
+// Define the address type
+type AddressType = {
+  id: string;
+  address: string;
+  city: string;
+  street: string;
+  block: string;
+  phone: string;
+  isDefault: boolean;
+};
+
+const STORAGE_KEY = 'user_addresses';
+
 const Address = () => {
   const insets = useSafeAreaInsets();
+  const { phone, isAuthenticated } = useAuth();
+  
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
   const [street, setStreet] = useState('');
   const [block, setBlock] = useState('');
-  const [saveCard, setSaveCard] = useState(false);
+  const [saveAddress, setSaveAddress] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Load saved addresses on component mount
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadSavedAddresses();
+    }
+  }, [isAuthenticated]);
+
+  const loadSavedAddresses = async () => {
+    try {
+      const savedAddresses = await AsyncStorage.getItem(STORAGE_KEY);
+      if (savedAddresses) {
+        const addresses = JSON.parse(savedAddresses);
+        // Find if there's a default address for this user
+        const userDefaultAddress = addresses.find(
+          (addr: AddressType) => addr.phone === phone && addr.isDefault
+        );
+        
+        if (userDefaultAddress) {
+          setAddress(userDefaultAddress.address);
+          setCity(userDefaultAddress.city);
+          setStreet(userDefaultAddress.street);
+          setBlock(userDefaultAddress.block);
+          setSaveAddress(true);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading addresses:', error);
+    }
+  };
+
+  const handleSaveAddress = async () => {
+    if (!address || !city || !street || !block) {
+      Alert.alert('Error', 'Please fill in all required fields');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const newAddress: AddressType = {
+        id: Date.now().toString(),
+        address,
+        city,
+        street,
+        block,
+        phone: phone || '',
+        isDefault: saveAddress
+      };
+
+      // Get existing addresses
+      const savedAddresses = await AsyncStorage.getItem(STORAGE_KEY);
+      let addresses: AddressType[] = [];
+      
+      if (savedAddresses) {
+        addresses = JSON.parse(savedAddresses);
+        
+        // Remove any existing default address for this user if this is being set as default
+        if (saveAddress) {
+          addresses = addresses.map((addr: AddressType) => 
+            addr.phone === phone ? { ...addr, isDefault: false } : addr
+          );
+        }
+        
+        // Update existing address if it exists, otherwise add new one
+        const existingIndex = addresses.findIndex(
+          (addr: AddressType) => 
+            addr.phone === phone && 
+            addr.address === address && 
+            addr.city === city
+        );
+        
+        if (existingIndex >= 0) {
+          addresses[existingIndex] = { ...newAddress, id: addresses[existingIndex].id };
+        } else {
+          addresses.push(newAddress);
+        }
+      } else {
+        addresses = [newAddress];
+      }
+
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(addresses));
+      
+      Alert.alert('Success', 'Address saved successfully');
+      
+      // Navigate back or to the next screen
+      router.back();
+    } catch (error) {
+      console.error('Error saving address:', error);
+      Alert.alert('Error', 'Failed to save address. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
           <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
@@ -79,25 +190,32 @@ const Address = () => {
               <View style={styles.saveCardRow}>
                 <TouchableOpacity
                   style={styles.checkbox}
-                  onPress={() => setSaveCard(!saveCard)}
+                  onPress={() => setSaveAddress(!saveAddress)}
                   activeOpacity={0.7}
+                  disabled={!isAuthenticated}
                 >
                   <View style={{
                     width: moderateScale(20),
                     height: moderateScale(20),
                     borderRadius: 4,
                     borderWidth: 2,
-                    borderColor: '#fff',
-                    backgroundColor: saveCard ? '#fff' : 'transparent',
+                    borderColor: isAuthenticated ? '#fff' : '#666',
+                    backgroundColor: saveAddress ? (isAuthenticated ? '#fff' : '#666') : 'transparent',
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}>
-                    {saveCard && (
-                      <Ionicons name="checkmark" size={moderateScale(16)} color="#E53935" />
+                    {saveAddress && (
+                      <Ionicons 
+                        name="checkmark" 
+                        size={moderateScale(16)} 
+                        color={isAuthenticated ? "#E53935" : "#999"} 
+                      />
                     )}
                   </View>
                 </TouchableOpacity>
-                <Text style={styles.saveCardLabel}>Save Address</Text>
+                <Text style={[styles.saveCardLabel, !isAuthenticated && { color: '#666' }]}>
+                  {isAuthenticated ? 'Save as default address' : 'Sign in to save address'}
+                </Text>
               </View>
             </View>
           </View>
@@ -105,10 +223,11 @@ const Address = () => {
           <View style={styles.bottomBar}>
                  <Button
                        variant="secondary"
-                       style={[styles.addBtn, { alignItems: 'center', justifyContent: 'center', }]}
-                       onPress={() => {}}
+                       style={[styles.addBtn, { alignItems: 'center', justifyContent: 'center' }]}
+                       onPress={handleSaveAddress}
+                       disabled={isLoading}
                      >
-                       Apply
+                       {isLoading ? 'Saving...' : 'Apply'}
                      </Button>
           </View>
         </KeyboardAvoidingView>
