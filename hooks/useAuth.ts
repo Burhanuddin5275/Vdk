@@ -7,8 +7,8 @@ export const useAuth = () => {
   const phone = useAppSelector(selectPhone);
   const user = useAppSelector(selectUser);
 
-  const loginUser = (phone: string, user?: { name: string; email?: string }) => {
-    dispatch(login({ phone, user }));
+  const loginUser = (phone: string) => {
+    dispatch(login({ phone }));
   };
 
   const logoutUser = () => {
@@ -16,10 +16,10 @@ export const useAuth = () => {
   };
 
   return {
-    isAuthenticated,
+    isAuthenticated: !!phone,
     phone,
-    user,
+    user: phone ? { name: phone } : null, // Maintain backward compatibility
     login: loginUser,
     logout: logoutUser,
   };
-}; 
+};

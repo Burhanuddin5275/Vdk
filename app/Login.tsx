@@ -2,26 +2,91 @@ import { useAuth } from '@/hooks/useAuth';
 import { colors } from '@/theme/colors';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
+
 import { Image, ImageBackground, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 
 const Login = () => {
   const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
   const router = useRouter();
   const { returnTo } = useLocalSearchParams();
   const { login } = useAuth();
   const insets = useSafeAreaInsets();
-  const allowedPhones = ['3239339045', '3001234567', '3123456789']; // Example numbers
+
+  // Function to hash password (using SHA-256)
 
   const handleLogin = async () => {
-    if (allowedPhones.includes(phone)) {
-      login(phone, { name: 'User' });
+    if (!phone || !password) {
+      setError('Please enter both phone number and password');
+      return;
+    }
+
+    setIsLoading(true);
+    setError('');
+
+    try {
+      // Add country code if not present
+      let formattedPhone = phone.trim();
+      if (!formattedPhone.startsWith('+92')) {
+        // Remove leading 0 if present
+        formattedPhone = formattedPhone.startsWith('0') 
+          ? '+92' + formattedPhone.substring(1)
+          : '+92' + formattedPhone;
+      }
+
+      const requestBody = {
+        number: formattedPhone,
+        password: password
+      };
+      
+      // Ensure we store the formatted phone number with +92
+      const userPhone = formattedPhone;
+      
+      console.log('Sending login request:', {
+        url: 'http://192.168.1.111:8000/api/app-user/login/',
+        method: 'POST',
+        body: requestBody
+      });
+      
+      const response = await fetch('http://192.168.1.111:8000/api/app-user/login/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      const data = await response.json();
+      console.log('API Response:', { status: response.status, data });
+
+      if (!response.ok) {
+        throw new Error(data.detail || 'Invalid credentials');
+      }
+
+     
+      // Use the formatted phone number we already have
+      
+      // Save only the phone number to auth context
+      login(userPhone);
+      
       // Redirect to the previous screen or default to Profile
       const redirectTo = returnTo ? decodeURIComponent(returnTo as string) : '/(tabs)/Profile';
-      router.replace(redirectTo as any);
-    } else {
-      alert('Invalid phone number');
+      
+      // Navigate to the target screen with phone number in params
+      router.replace({
+        pathname: redirectTo as any,
+        params: { phone: userPhone }
+      });
+    } catch (err: any) {
+      console.error('Login error:', err);
+      setError(err.message || 'Failed to connect to server. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
   
@@ -52,9 +117,38 @@ const Login = () => {
               maxLength={10}
             />
           </View>
+
+          {/* Password Input */}
+          <View style={[styles.inputWrap, { marginTop: 16 }]}>
+            <TextInput
+              style={[styles.input, { flex: 1, paddingRight: 40 }]}
+              value={password}
+              onChangeText={setPassword}
+              placeholder="Password"
+              placeholderTextColor={"#1A1A1A"}
+              secureTextEntry={!showPassword}
+            />
+            <TouchableOpacity 
+              style={styles.passwordToggle}
+              onPress={() => setShowPassword(!showPassword)}
+            >
+              <Text style={styles.passwordToggleText}>
+                {showPassword ? 'HIDE' : 'SHOW'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
           {/* Continue Button */}
-          <TouchableOpacity style={styles.continueBtn} onPress={handleLogin}>
-            <Text style={styles.continueText}>Continue</Text>
+          <TouchableOpacity 
+            style={[styles.continueBtn, isLoading && styles.disabledBtn]} 
+            onPress={handleLogin}
+            disabled={isLoading}
+          >
+            <Text style={styles.continueText}>
+              {isLoading ? 'Logging in...' : 'Continue'}
+            </Text>
           </TouchableOpacity>
           {/* Terms */}
           <Text style={styles.terms}>
@@ -96,9 +190,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 16,
     paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginBottom: 18,
-    width: scale(300),
+    paddingVertical: 5,
+    marginBottom: 5,
+    width: '100%',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
@@ -131,10 +225,29 @@ const styles = StyleSheet.create({
     borderWidth: 0,
     backgroundColor: 'transparent',
   },
+  passwordToggle: {
+    position: 'absolute',
+    right: 12,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+  },
+  passwordToggleText: {
+    color: '#1A1A1A',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  errorText: {
+    color: '#FF6B6B',
+    marginBottom: 10,
+    width: '100%',
+    textAlign: 'left',
+    paddingLeft: 10,
+  },
   continueBtn: {
     backgroundColor: '#FBF4E4',
     borderRadius: 16,
-    width: scale(300),
+    width: '100%',
     alignItems: 'center',
     paddingVertical: 16,
     marginBottom: 18,
@@ -147,8 +260,11 @@ const styles = StyleSheet.create({
   },
   continueText: {
     color: colors.textPrimary,
-    fontSize:moderateScale(16),
+    fontSize: moderateScale(16),
     fontFamily: 'MontserratSemi',
+  },
+  disabledBtn: {
+    opacity: 0.7,
   },
   terms: {
     color: '#fff',

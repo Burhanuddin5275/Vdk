@@ -14,7 +14,20 @@ const VerifyNumber = () => {
   const [otp, setOtp] = useState<string[]>(Array(OTP_LENGTH).fill(''));
   const [timer, setTimer] = useState<number>(RESEND_TIME);
   const [isVerifying, setIsVerifying] = useState<boolean>(false);
+  const [verificationCode, setVerificationCode] = useState<string>('');
   const inputRefs = useRef<Array<TextInput | null>>([]);
+  
+  // Generate random 4-digit code on component mount with delay
+  useEffect(() => {
+    const randomDelay = Math.floor(Math.random() * 1000) + 3000; // Random delay between 3-4 seconds
+    const timer = setTimeout(() => {
+      const randomCode = Math.floor(1000 + Math.random() * 9000).toString();
+      setVerificationCode(randomCode);
+      Alert.alert('Verification Code', `Your verification code is: ${randomCode}`);
+    }, randomDelay);
+
+    return () => clearTimeout(timer);
+  }, []);
   
   // Format phone number for display (e.g., +92 323 933904)
   const formatPhoneNumber = (phone: string) => {
@@ -78,116 +91,26 @@ const VerifyNumber = () => {
       return;
     }
 
-    // Normalize phone similar to resend
-    const cleanedPhone = phone.replace(/\D/g, '');
-    const last10 = cleanedPhone.slice(-10);
-    if (last10.length !== 10) {
-      Alert.alert('Error', 'Invalid phone number format');
-      return;
-    }
-
-    const endpoint = 'http://192.168.1.111:8000/api/verify-otp/';
-    const phoneVariants = [
-      `+92${last10}`,
-      `0${last10}`,
-      `92${last10}`,
-      last10,
-    ];
-    const phoneKeys = ['phone', 'phone_number', 'mobile', 'mobile_number', 'msisdn'];
-    const codeKeys = ['otp', 'code', 'otp_code', 'verification_code'];
-
     setIsVerifying(true);
+    
     try {
-      let success = false;
-      let lastError: string | undefined;
-
-      // Try JSON and form-urlencoded combinations
-      for (const pk of phoneKeys) {
-        if (success) break;
-        for (const pv of phoneVariants) {
-          if (success) break;
-          for (const ck of codeKeys) {
-            // JSON attempt
-            try {
-              const resJson = await fetch(endpoint, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Accept': 'application/json',
-                },
-                body: JSON.stringify({ [pk]: pv, [ck]: code }),
-              });
-              if (resJson.ok) {
-                success = true;
-                break;
-              } else {
-                const txt = await resJson.text();
-                if (txt) {
-                  try {
-                    const parsed = JSON.parse(txt);
-                    lastError = parsed?.message || parsed?.detail || JSON.stringify(parsed);
-                  } catch {
-                    lastError = txt;
-                  }
-                } else {
-                  lastError = `Request failed (${resJson.status}).`;
-                }
-              }
-            } catch (e: any) {
-              lastError = e?.message || 'Network error';
-            }
-
-            if (success) break;
-
-            // x-www-form-urlencoded attempt
-            try {
-              const params = new URLSearchParams();
-              params.append(pk, pv);
-              params.append(ck, code);
-              const resForm = await fetch(endpoint, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/x-www-form-urlencoded',
-                  'Accept': 'application/json, text/plain, */*',
-                },
-                body: params.toString(),
-              });
-              if (resForm.ok) {
-                success = true;
-                break;
-              } else {
-                const txt = await resForm.text();
-                if (txt) {
-                  try {
-                    const parsed = JSON.parse(txt);
-                    lastError = parsed?.message || parsed?.detail || JSON.stringify(parsed);
-                  } catch {
-                    lastError = txt;
-                  }
-                } else {
-                  lastError = `Request failed (${resForm.status}).`;
-                }
-              }
-            } catch (e: any) {
-              lastError = e?.message || 'Network error';
-            }
-          }
-        }
-      }
-
-      if (!success) {
-        Alert.alert('Verification failed', lastError || 'Invalid code or phone number.');
+      // Check if entered code matches the generated verification code
+      if (code !== verificationCode) {
+        Alert.alert('Incorrect Code', 'The verification code you entered is incorrect. Please try again.');
         return;
       }
-
-      // On success, redirect to Signup
-      router.replace('/Signup');
+      
+      // On successful verification, redirect to Signup with phone number
+      router.replace({
+        pathname: '/Signup',
+        params: { phone }
+      });
     } finally {
       setIsVerifying(false);
     }
   };
 
-  const handleResend = async () => {
+  const handleResend = () => {
     if (timer > 0) return;
     
     if (!phone) {
@@ -195,78 +118,15 @@ const VerifyNumber = () => {
       return;
     }
     
-    try {
-      setOtp(Array(OTP_LENGTH).fill(''));
-      setTimer(RESEND_TIME);
-      
-      // Clean and format the phone number
-      const cleanedPhone = phone.replace(/\D/g, '');
-      const phoneNumber = cleanedPhone.startsWith('0') ? cleanedPhone.substring(1) : cleanedPhone;
-      
-      if (phoneNumber.length !== 10) {
-        throw new Error('Invalid phone number format');
-      }
-      
-      const endpoint = 'http://192.168.1.111:8000/api/send-otp/';
-      
-      // Try different payload formats and content types
-      const attempts = [
-        // Try with 'phone' key and JSON
-        {
-          key: 'phone',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phone: `+92${phoneNumber}` })
-        },
-        // Try with 'phone_number' key and JSON
-        {
-          key: 'phone_number',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phone_number: `+92${phoneNumber}` })
-        },
-        // Try with form-urlencoded
-        {
-          key: 'phone',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: new URLSearchParams({ phone: `+92${phoneNumber}` }).toString()
-        }
-      ];
-
-      let lastError: Error | null = null;
-      
-      for (const attempt of attempts) {
-        try {
-          const response = await fetch(endpoint, {
-            method: 'POST',
-            headers: {
-              ...attempt.headers,
-              'Accept': 'application/json',
-            },
-            body: attempt.body
-          });
-          
-          const responseData = await response.json().catch(() => ({}));
-          
-          if (response.ok) {
-            Alert.alert('Success', 'New OTP has been sent to your phone number');
-            return;
-          } else {
-            lastError = new Error(responseData.message || `Request failed with status ${response.status}`);
-          }
-        } catch (error) {
-          lastError = error instanceof Error ? error : new Error('Network request failed');
-          // Continue to next attempt
-        }
-      }
-      
-      throw lastError || new Error('All attempts to resend OTP failed');
-      
-    } catch (error) {
-      console.error('Error resending OTP:', error);
-      Alert.alert(
-        'Error', 
-        error instanceof Error ? error.message : 'Failed to resend OTP. Please try again.'
-      );
-    }
+    setOtp(Array(OTP_LENGTH).fill(''));
+    setTimer(RESEND_TIME);
+    
+    const randomDelay = Math.floor(Math.random() * 1000) + 3000;
+    setTimeout(() => {
+      const newCode = Math.floor(1000 + Math.random() * 9000).toString();
+      setVerificationCode(newCode);
+      Alert.alert('New Verification Code', `Your new verification code is: ${newCode}`);
+    }, randomDelay);
   };
 
   return (
@@ -286,7 +146,7 @@ const VerifyNumber = () => {
         {/* Instruction */}
         <Text style={styles.instruction}>
           Please enter the code that we've{Platform.OS === 'web' ? <br /> : ' '}
-          sent to {phone ? formatPhoneNumber(phone) : 'your phone number'}
+          sent to {phone ? phone : 'your phone number'}
         </Text>
         {/* OTP Inputs */}
         <View style={styles.otpContainer}>

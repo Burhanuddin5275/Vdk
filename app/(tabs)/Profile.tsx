@@ -10,7 +10,7 @@ const { width } = Dimensions.get('window');
 
 export default function Profile() {
   const router = useRouter();
-  const { isAuthenticated, user, logout } = useAuth();
+  const { isAuthenticated, phone, logout } = useAuth();
   const [showDeleteModal, setShowDeleteModal] = React.useState(false);
   const insets = useSafeAreaInsets();
   const handleLogout = () => {
@@ -21,7 +21,7 @@ export default function Profile() {
 
   const allMenuItems = [
     { label: 'My orders', icon: 'cart', onPress: () => { router.push('/Orders') } },
-    { label: 'Chat', icon: 'chatbubble-ellipses', onPress: () => { } },
+    { label: 'Chat', icon: 'chatbubble-ellipses', onPress: () => {router.push('/Chat')} },
     { label: 'Wishlist', icon: 'heart', onPress: () => { router.push('/Wishlist') } },
     { label: 'Manage addresses', icon: 'location', onPress: () => { router.push('/ShippingAddress') } },
     { label: 'Manage profile', icon: 'person-circle', onPress: () => { } },
@@ -43,7 +43,6 @@ export default function Profile() {
       'Redeemed',
       'Privacy policy',
     ].includes(item.label));
-  // Removed hardware back button logout logic
   return (
           <SafeAreaView style={{flex:1,paddingBottom: Math.max(insets.bottom, verticalScale(4))}}>
             <ImageBackground
@@ -51,7 +50,6 @@ export default function Profile() {
       style={styles.background}
       resizeMode="cover"
     >
-      {/* Modal for Delete Account Confirmation */}
       {showDeleteModal && (
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
@@ -65,7 +63,6 @@ export default function Profile() {
             <TouchableOpacity
               onPress={() => {
                 setShowDeleteModal(false);
-                // TODO: Add your delete logic here
                 router.replace('/(tabs)/Profile');
               }}
             >
@@ -87,12 +84,12 @@ export default function Profile() {
           {isAuthenticated && (
             <View style={styles.profileSection}>
               <Image source={require('../../assets/images/Ellipse.png')} style={styles.profileImg} />
-              <Text style={styles.profileName}>{user?.name || 'User'}</Text>
+              <Text style={styles.profileName}>{phone ||null}</Text>
             </View>
           )}
           {/* Login Prompt */}
           {!isAuthenticated && (
-            <TouchableOpacity style={styles.loginBox} onPress={() => router.push(`/Login?returnTo=${encodeURIComponent('/(tabs)/Profile')}`)}>
+            <TouchableOpacity style={styles.loginBox} onPress={() => router.push(`/Signup?returnTo=${encodeURIComponent('/(tabs)/Profile')}`)}>
               <Text style={styles.loginText}>Login to unlock more Features!</Text>
             </TouchableOpacity>
           )}
