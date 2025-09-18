@@ -1,53 +1,60 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, PayloadAction, createSelector } from '@reduxjs/toolkit';
 import { PersistConfig } from 'redux-persist';
 
-interface User {
-  name: string;
-  email?: string;
-}
-
 export interface AuthState {
-  isAuthenticated: boolean;
   phone: string | null;
-  user: User | null;
+  token: string | null;
 }
 
 // This is a partial config that will be extended in store.ts
 export const authPersistConfig = {
   key: 'auth',
-  whitelist: ['isAuthenticated', 'phone', 'user'],
-};
+  whitelist: ['phone', 'token'],
+} as const;
 
 const initialState: AuthState = {
-  isAuthenticated: false,
   phone: null,
-  user: null,
+  token: null,
 };
 
 const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
-    login: (state, action: PayloadAction<{ phone: string; user?: { name: string; email?: string } }>) => {
-      state.isAuthenticated = true;
+    login: (state, action: PayloadAction<{ phone: string; token: string }>) => {
       state.phone = action.payload.phone;
-      state.user = action.payload.user || { name: 'User' };
+      state.token = action.payload.token;
     },
     logout: (state) => {
-      state.isAuthenticated = false;
       state.phone = null;
-      state.user = null;
-    },
-    setUser: (state, action: PayloadAction<{ name: string; email?: string }>) => {
-      state.user = action.payload;
+      state.token = null;
     },
   },
 });
 
-export const { login, logout, setUser } = authSlice.actions;
+export const { login, logout } = authSlice.actions;
 export default authSlice.reducer;
 
 // Selectors
-export const selectIsAuthenticated = (state: { auth: AuthState }) => state.auth?.isAuthenticated ?? false;
-export const selectPhone = (state: { auth: AuthState }) => state.auth?.phone ?? null;
-export const selectUser = (state: { auth: AuthState }) => state.auth?.user ?? null;
+const selectAuthState = (state: { auth: AuthState }) => state.auth;
+
+export const selectIsAuthenticated = createSelector(
+  [selectAuthState],
+  (auth) => !!auth.phone
+);
+
+export const selectPhone = createSelector(
+  [selectAuthState],
+  (auth) => auth.phone ?? null
+);
+
+export const selectToken = createSelector(
+  [selectAuthState],
+  (auth) => auth.token
+);
+
+// For backward compatibility
+export const selectUser = createSelector(
+  [selectPhone],
+  (phone) => phone ? { name: phone } : null
+);

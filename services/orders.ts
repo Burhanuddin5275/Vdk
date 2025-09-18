@@ -1,10 +1,11 @@
-export type OrderStatus = 'Pending' | 'process' | 'Shipped' | 'delivered' | 'cancelled';
+export type OrderStatus = 'pending' | 'process' | 'Shipped' | 'delivered' | 'cancelled';
 
 export type orders = {
-  id: string;
+  id: string; 
   address: string;
   shipping: string;
   status: OrderStatus;
+  user_detail:string;
   items: any[];
   payments: any[];
   created_at?: string;
@@ -19,11 +20,11 @@ function toProduct(item: ApiOrders): orders {
   const id = String(item.id ?? item._id ?? Math.random().toString(36).slice(2));
   const address = item.address ?? item.address ?? "Product";
   const shipping = item.shipping ?? item.shipping ?? "Unknown";
-  // Convert to lowercase for case-insensitive comparison
+const user_detail = item.user_detail ?? item.user_detail ?? "Product";
   const statusValue = item.status ? String(item.status).toLowerCase() : '';
   const status: OrderStatus = (['pending', 'process', 'shipped', 'delivered', 'cancelled'].includes(statusValue))
     ? statusValue as OrderStatus
-    : 'Pending';
+    : 'pending';
   const items = item.items ?? item.items ?? [];
   const payments = item.payments ?? item.payments ?? [];
   const created_at = item.created_at ?? new Date().toISOString();
@@ -33,15 +34,19 @@ function toProduct(item: ApiOrders): orders {
     address,
     shipping,
     status,
+    user_detail,
     items,
     payments,
     created_at,
   };
 }
 
-export async function fetchOrders(): Promise<orders[]> {
+export async function fetchOrders(phone?: string): Promise<orders[]> {
   try {
-    const response = await fetch(API_URL);
+    // Add phone number as a query parameter if provided
+    const url = phone ? `${API_URL}?phone=${encodeURIComponent(phone)}` : API_URL;
+    
+    const response = await fetch(url);
     if (!response.ok) {
       throw new Error(`Failed to fetch orders: ${response.status}`);
     }

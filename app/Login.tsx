@@ -44,14 +44,13 @@ const Login = () => {
         password: password
       };
       
-      // Ensure we store the formatted phone number with +92
-      const userPhone = formattedPhone;
-      
       console.log('Sending login request:', {
         url: 'http://192.168.1.111:8000/api/app-user/login/',
         method: 'POST',
         body: requestBody
       });
+      
+      const userPhone = formattedPhone;
       
       const response = await fetch('http://192.168.1.111:8000/api/app-user/login/', {
         method: 'POST',
@@ -62,17 +61,27 @@ const Login = () => {
       });
 
       const data = await response.json();
-      console.log('API Response:', { status: response.status, data });
+      console.log('Full API Response:', { 
+        status: response.status, 
+        headers: Object.fromEntries(response.headers.entries()),
+        data 
+      });
 
       if (!response.ok) {
         throw new Error(data.detail || 'Invalid credentials');
       }
 
-     
-      // Use the formatted phone number we already have
+      // Get the token from the api_token field
+      const token = data.api_token;
+      console.log('Extracted token:', token);
       
-      // Save only the phone number to auth context
-      login(userPhone);
+      if (!token) {
+        console.error('No token found in response. Available keys:', Object.keys(data));
+        throw new Error('No authentication token received');
+      }
+      
+      // Save phone number and token to auth context
+      login({ phone: userPhone, token });
       
       // Redirect to the previous screen or default to Profile
       const redirectTo = returnTo ? decodeURIComponent(returnTo as string) : '/(tabs)/Profile';
