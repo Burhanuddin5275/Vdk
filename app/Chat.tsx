@@ -1,53 +1,97 @@
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, FlatList, Image, KeyboardAvoidingView, Platform, StatusBar } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, FlatList, Image, KeyboardAvoidingView, Platform, StatusBar, FlatListProps } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRef, useState, useEffect } from 'react';
 import { useRouter } from 'expo-router';
 import { colors } from '@/theme/colors';
-import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
+import { db } from './firebase'; // 🔁 Adjust this path based on your project
+import { collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, Timestamp } from 'firebase/firestore';
 
-// Mock data for chat messages
-const MESSAGES = [
-  { id: '1', text: 'Hey there! 👋', sent: false, time: '10:30 AM' },
-  { id: '2', text: 'Hi! How can I help you today?', sent: true, time: '10:32 AM' },
-  { id: '3', text: 'I have a question about my recent order #12345', sent: false, time: '10:33 AM' },
-  { id: '4', text: 'Sure, I can help with that. What would you like to know?', sent: true, time: '10:35 AM' },
-];
+interface Message {
+  id: string;
+  text: string;
+  sent: boolean;
+  phone: string;
+  reply?: boolean;
+  time: string;
+  createdAt?: Timestamp;
+};
 
 const Chat = () => {
-  const [messages, setMessages] = useState(MESSAGES);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [message, setMessage] = useState('');
   const flatListRef = useRef<FlatList>(null);
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
-  const sendMessage = () => {
+  const sendMessage = async () => {
     if (message.trim() === '') return;
-    
+
+    const currentTime = new Date();
+    const timeString = currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
     const newMessage = {
-      id: Date.now().toString(),
       text: message,
       sent: true,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      phone: '+923001234567',
+      reply: false,
+      time: timeString,
+      timestamp: currentTime.getTime(),
+      createdAt: serverTimestamp()
     };
 
-    setMessages([...messages, newMessage]);
-    setMessage('');
-    
-    // Auto-reply after 1 second
-    setTimeout(() => {
-      const reply = {
-        id: (Date.now() + 1).toString(),
-        text: 'Thanks for your message! Our team will get back to you soon.',
-        sent: false,
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      };
-      setMessages(prev => [...prev, reply]);
-    }, 1000);
+    try {
+      await addDoc(collection(db, 'dkt'), newMessage);
+      setMessage('');
+
+      // Auto-reply from agent
+      setTimeout(async () => {
+        const replyTime = new Date();
+        await addDoc(collection(db, 'dkt'), {
+          text: '',
+          sent: false,
+          phone: '+92638273832',
+          reply: true,
+          time: replyTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          timestamp: replyTime.getTime(),
+          createdAt: serverTimestamp()
+        });
+      }, 1000);
+    } catch (error) {
+      console.error('Error sending message:', error);
+    }
   };
 
   useEffect(() => {
-    // Scroll to bottom when messages change
+    const q = query(collection(db, 'dkt'), orderBy('createdAt', 'asc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const messagesData = snapshot.docs
+        .filter(doc => doc.data().text && doc.data().text.trim() !== '') // Filter out empty messages
+        .map(doc => {
+          const data = doc.data();
+          const messageTime = data.timestamp 
+            ? new Date(data.timestamp)
+            : data.createdAt?.toDate?.() || new Date();
+            
+          return {
+            id: doc.id,
+            text: data.text,
+            sent: data.sent || false,
+            phone: data.phone || '',
+            reply: data.reply || false,
+            time: messageTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            timestamp: messageTime.getTime(),
+            ...data
+          } as Message;
+        });
+      
+      setMessages(messagesData);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
     if (flatListRef.current) {
       setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: true });
@@ -55,7 +99,7 @@ const Chat = () => {
     }
   }, [messages]);
 
-  const renderMessage = ({ item }: { item: typeof MESSAGES[0] }) => (
+  const renderMessage = ({ item }: { item: Message }) => (
     <View style={[
       styles.messageContainer,
       item.sent ? styles.sentMessage : styles.receivedMessage
@@ -83,7 +127,7 @@ const Chat = () => {
   return (
     <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
       <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
-      
+
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
@@ -91,9 +135,9 @@ const Chat = () => {
             <Ionicons name="arrow-back" size={24} color={colors.white} />
           </TouchableOpacity>
           <View style={styles.userInfo}>
-            <Image 
-              source={{ uri: 'https://randomuser.me/api/portraits/women/44.jpg' }} 
-              style={styles.avatar} 
+            <Image
+              source={{ uri: 'https://randomuser.me/api/portraits/women/44.jpg' }}
+              style={styles.avatar}
             />
             <View>
               <Text style={styles.userName}>Support Team</Text>
@@ -112,7 +156,7 @@ const Chat = () => {
       </View>
 
       {/* Messages */}
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardAvoidingView}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
@@ -143,15 +187,15 @@ const Chat = () => {
               placeholderTextColor="#999"
               multiline
             />
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.sendButton, !message && styles.sendButtonDisabled]}
               onPress={sendMessage}
               disabled={!message}
             >
-              <Ionicons 
-                name="send" 
-                size={20} 
-                color={message ? colors.white : '#ccc'} 
+              <Ionicons
+                name="send"
+                size={20}
+                color={message ? colors.white : '#ccc'}
               />
             </TouchableOpacity>
           </View>
