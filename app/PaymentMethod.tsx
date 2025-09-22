@@ -1,10 +1,11 @@
 import { Button } from '@/components/Button';
+import { useAuth } from '@/hooks/useAuth';
 import { colors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
-import { Dimensions, Image, ImageBackground, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useEffect, useMemo, useState } from 'react';
+import axios from 'axios';
+import { ActivityIndicator, Alert, Dimensions, Image, ImageBackground, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 
 const { width, height } = Dimensions.get('window');
@@ -38,13 +39,208 @@ const MORE_OPTIONS =
     },
 ];
 
+interface OrderItem {
+    image: string;
+    name: string;
+    pts: number;
+    variants: string;
+    price: string;
+}
+
+interface OrderData {
+    address: string;
+    shipping: string;
+    status: string;
+    items: OrderItem[];
+}
+
 const Payment = () => {
     const router = useRouter();
-    const [selected, setSelected] = useState('card');
-    const insets = useSafeAreaInsets();
+    const params = useLocalSearchParams();
+    const [selected, setSelected] = useState<string>('');
+    const [isLoading, setIsLoading] = useState(false);
+    const { shippingAddress, shippingMethod, cartItems } = useLocalSearchParams<{
+        shippingAddress: any;
+        shippingMethod: any;
+        cartItems: string;
+    }>();
+    
+    const { isAuthenticated, phone, token, user } = useAuth();
+    const [userId, setUserId] = useState<string | null>(null);
+
+    useEffect(() => {
+        const fetchUserData = async () => {
+            try {
+                const response = await axios.get('http://192.168.1.101:8000/api/app-user/list/');
+                const users = response.data; // Assuming the API returns an array of users
+                
+                // Find user by phone number
+                const matchedUser = users.find((u: any) => u.number === phone);
+                
+                if (matchedUser) {
+                    setUserId(matchedUser.id);
+                    console.log('Matched user ID:', matchedUser.id);
+                } else {
+                    console.log('No user found with phone:', phone);
+                    setUserId(token); // Fallback to token if no match found
+                }
+            } catch (error) {
+                console.error('Error fetching user data:', error);
+                setUserId(token); // Fallback to token on error
+            }
+        };
+
+        if (phone) {
+            fetchUserData();
+        } else {
+            setUserId(token); // Fallback to token if no phone
+        }
+    }, [phone, token]);
+
+    
+    // Parse the cart items if they're a string
+    const parsedCartItems = useMemo(() => {
+        try {
+            return cartItems ? JSON.parse(cartItems) : [];
+        } catch (e) {
+            console.error('Error parsing cart items:', e);
+            return [];
+        }
+    }, [cartItems]);
+
+    const createOrder = async (paymentMethod: string) => {
+        if (!shippingAddress || !shippingMethod) {
+            Alert.alert('Error', 'Missing shipping information');
+            return;
+        }
+
+        if (!isAuthenticated || !token) {
+            Alert.alert('Authentication Required', 'Please log in to place an order');
+            return;
+        }
+
+        setIsLoading(true);
+        
+        try {
+            // Parse shipping address if it's a string
+            const addressObj = typeof shippingAddress === 'string' 
+                ? JSON.parse(shippingAddress) 
+                : shippingAddress;
+                
+            // Parse shipping method if it's a string
+            const methodObj = typeof shippingMethod === 'string'
+                ? JSON.parse(shippingMethod)
+                : shippingMethod;
+
+
+            console.log('Phone number:', phone, 'Type:', typeof phone);
+            const orderData = {
+                user_id: userId ,
+                user_detail: {
+                    number: phone 
+                },
+                address: addressObj?.desc || 'Test',
+                shipping: methodObj?.label || 'Test',
+                status: 'pending',
+                product: parsedCartItems.map((item: any) => ({
+                    name: item.name || 'Product',
+                    pts: item.pts || 5,
+                    variants: item.variants || item.pack || '',
+                    price: item.price ? parseFloat(item.price).toFixed(2) : '0.00'
+                })),
+                payment: [
+                    {
+                        method: selected || 'cash', 
+                        status: 'Pending'
+                    }
+                ], 
+                created_at: new Date().toISOString()
+            };
+
+            console.log('Sending order data:', JSON.stringify(orderData, null, 2));
+            
+            const API_URL = 'http://192.168.1.101:8000/api/create-order/';
+            console.log('Sending request to:', API_URL);
+            
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`,
+                    },
+                    body: JSON.stringify(orderData)
+                });
+
+                // Log response status and headers for debugging
+                console.log('Response status:', response.status, response.statusText);
+                console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+
+                const responseText = await response.text();
+                console.log('Raw response text:', responseText);
+
+                // Try to parse as JSON if the response is not empty
+                let responseData;
+                try {
+                    responseData = responseText ? JSON.parse(responseText) : {};
+                } catch (jsonError) {
+                    console.error('Failed to parse JSON response. Response text:', responseText);
+                    throw new Error(`Server returned non-JSON response: ${responseText.substring(0, 200)}`);
+                }
+
+                // Log parsed response data
+                console.log('Parsed response data:', responseData);
+
+                if (!response.ok) {
+                    console.error('API Error Status:', response.status);
+                    console.error('API Error Data:', responseData);
+                    
+                    // Handle 400 Bad Request specifically
+                    if (response.status === 400) {
+                        const errorMessage = responseData.detail || 
+                                          responseData.message || 
+                                          responseData.error || 
+                                          'Bad request';
+                        throw new Error(`Validation error: ${errorMessage}`);
+                    }
+                    
+                    throw new Error(
+                        responseData.detail || 
+                        responseData.message || 
+                        responseData.error || 
+                        `Server error: ${response.status} ${response.statusText}`
+                    );
+                }
+
+                return responseData;
+            } catch (error: any) {
+                console.error('Request failed:', error);
+                throw error;
+            }
+
+            // Navigate to order confirmation screen on success
+            router.push({
+                pathname: '/Payment',
+          
+            });
+        } catch (error: any) {
+            console.error('Order creation error:', error);
+            Alert.alert('Error', error.message || 'Failed to create order');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handlePaymentMethodSelect = (methodId: string) => {
+        setSelected(methodId);
+        if (methodId === 'cod') {
+            createOrder('cod');
+        }
+    };
 
     return (
-        <SafeAreaView style={{flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4))}}>
+        <SafeAreaView style={{flex: 1, paddingBottom: Math.max(verticalScale(4))}}>
             <ImageBackground
                 source={require('../assets/images/ss1.png')}
                 style={styles.background}
@@ -82,7 +278,7 @@ const Payment = () => {
                                 selected === option.id && styles.selectedRow,
                             ]}
                             activeOpacity={0.8}
-                            onPress={() => setSelected(option.id)}
+                            onPress={() => handlePaymentMethodSelect(option.id)}
                         >
                             <Image source={option.icon} style={styles.optionIcon} resizeMode="contain" />
                             <Text style={styles.optionLabel}>{option.label}</Text>
@@ -94,10 +290,18 @@ const Payment = () => {
                 <View style={styles.footer}>
                     <Button
                         variant="secondary"
-                        style={styles.confirmBtn}
-                        onPress={() => {router.push('/Payment')}}
+                        style={[
+                            styles.confirmBtn,
+                            isLoading && styles.disabledBtn
+                        ]}
+                        onPress={() => createOrder(selected)}
+                        disabled={isLoading}
                     >
-                        Confirm Payment
+{isLoading ? (
+                            <ActivityIndicator color="#fff" />
+                        ) : (
+                            'Confirm Payment'
+                        )}
                     </Button>
                 </View>
             </View>
@@ -220,6 +424,9 @@ const styles = StyleSheet.create({
         backgroundColor: colors.primary,
         alignItems: 'center',
         justifyContent: 'center',
+    },
+    disabledBtn: {
+        backgroundColor: 'gray',
     },
 });
 

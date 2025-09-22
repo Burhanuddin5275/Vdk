@@ -44,10 +44,13 @@ const Checkout = () => {
         <View style={styles.cartItem}>
             <Image source={typeof item.image === 'string' ? { uri: item.image } : item.image} style={styles.cartImage} resizeMode="cover" />
             <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={styles.cartName}>{item.name} {'\n'}<Text style={styles.cartPack}>{item.pack || 3}</Text></Text>
+                <Text style={styles.cartName}>
+                    {item.name}
+                    {item.pack && <Text style={styles.cartPack}>{'\n'}{item.pack}</Text>}
+                </Text>
                 <Text style={styles.cartPrice}>Pkr {item.price.toLocaleString()}</Text>
             </View>
-        </View>
+        </View> 
     );
 
     return (
@@ -107,7 +110,35 @@ const Checkout = () => {
 
                 {/* Continue to Payment Button */}
                 <View style={styles.footer}>
-                    <Button variant="secondary" style={styles.payBtn} onPress={() =>router.push('/PaymentMethod')}>
+                    <Button 
+                        variant="secondary" 
+                        style={styles.payBtn} 
+                        onPress={() => {
+                            if (!selectedAddress) {
+                                alert('Please select a shipping address');
+                                return;
+                            }
+                            
+                            if (!selectedShipping) {
+                                alert('Please select a shipping method');
+                                return;
+                            }
+                            
+                            if (cartItems.length === 0) {
+                                alert('Your cart is empty');
+                                return;
+                            }
+                            
+                            router.push({
+                                pathname: '/PaymentMethod',
+                                params: {
+                                    cartItems: JSON.stringify(cartItems),
+                                    shippingAddress: JSON.stringify(selectedAddress),
+                                    shippingMethod: JSON.stringify(selectedShipping)
+                                }
+                            });
+                        }}
+                    >
                         Continue to Payment
                     </Button>
                 </View>
