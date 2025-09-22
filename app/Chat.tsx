@@ -1,17 +1,20 @@
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, FlatList, Image, KeyboardAvoidingView, Platform, StatusBar, FlatListProps } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, FlatList, Image, KeyboardAvoidingView, Platform, StatusBar, FlatListProps, Alert, Modal, TouchableWithoutFeedback } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRef, useState, useEffect } from 'react';
 import { useRouter } from 'expo-router';
 import { colors } from '@/theme/colors';
-import { db } from './firebase'; // 🔁 Adjust this path based on your project
-import { collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, Timestamp } from 'firebase/firestore';
+import { db } from './firebase';
+import { collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, Timestamp, doc, deleteDoc, updateDoc } from 'firebase/firestore';
+import { useAppSelector } from '@/store/hooks';
+import { selectIsAuthenticated, selectPhone } from '@/store/authSlice';
 
 interface Message {
   id: string;
   text: string;
   sent: boolean;
   phone: string;
+  delete:boolean;
   reply?: boolean;
   time: string;
   createdAt?: Timestamp;
@@ -20,53 +23,83 @@ interface Message {
 const Chat = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [message, setMessage] = useState('');
+  const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const flatListRef = useRef<FlatList>(null);
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const isAuthenticated = useAppSelector(selectIsAuthenticated);
+  const userPhone = useAppSelector(selectPhone);
 
   const sendMessage = async () => {
+    if (!isAuthenticated) {
+      Alert.alert('Authentication Required', 'Please log in to send messages');
+      router.push('./Login');
+      return;
+    }
+
     if (message.trim() === '') return;
 
     const currentTime = new Date();
     const timeString = currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-    const newMessage = {
+    if (!userPhone) {
+      console.error('User phone number not found');
+      return;
+    }
+
+    const sent = {
       text: message,
       sent: true,
-      phone: '+923001234567',
+      phone: userPhone, 
       reply: false,
+      time: timeString,
+      timestamp: currentTime.getTime(),
+      createdAt: serverTimestamp()
+    };
+    const reply = {
+      text: '',
+      sent: false,
+      phone: userPhone, 
+      delete: false,
+      reply: true,
       time: timeString,
       timestamp: currentTime.getTime(),
       createdAt: serverTimestamp()
     };
 
     try {
-      await addDoc(collection(db, 'dkt'), newMessage);
+      await addDoc(collection(db, 'dkt'), sent);
       setMessage('');
 
-      // Auto-reply from agent
-      setTimeout(async () => {
-        const replyTime = new Date();
-        await addDoc(collection(db, 'dkt'), {
-          text: '',
-          sent: false,
-          phone: '+92638273832',
-          reply: true,
-          time: replyTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          timestamp: replyTime.getTime(),
-          createdAt: serverTimestamp()
-        });
-      }, 1000);
+      await addDoc(collection(db, 'dkt'), reply);
     } catch (error) {
       console.error('Error sending message:', error);
+      Alert.alert('Error', 'Failed to send message. Please try again.');
     }
   };
 
   useEffect(() => {
-    const q = query(collection(db, 'dkt'), orderBy('createdAt', 'asc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    if (!isAuthenticated || !userPhone) {
+      setMessages([]); // Clear messages if not authenticated
+      return;
+    }
+
+    
+    const messagesQuery = query(
+      collection(db, 'dkt'),
+      orderBy('createdAt', 'asc')
+    );
+
+    const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
       const messagesData = snapshot.docs
-        .filter(doc => doc.data().text && doc.data().text.trim() !== '') // Filter out empty messages
+        .filter(doc => {
+          const data = doc.data();
+          return data.text && 
+                 data.text.trim() !== '' && 
+                 (data.phone === userPhone || (data.reply && data.phone === userPhone)) &&
+                 !data.delete; 
+        })
         .map(doc => {
           const data = doc.data();
           const messageTime = data.timestamp 
@@ -76,9 +109,10 @@ const Chat = () => {
           return {
             id: doc.id,
             text: data.text,
-            sent: data.sent || false,
-            phone: data.phone || '',
+            sent: data.phone === userPhone,
+            phone: data.phone,
             reply: data.reply || false,
+            delete: data.delete || false,
             time: messageTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             timestamp: messageTime.getTime(),
             ...data
@@ -89,7 +123,7 @@ const Chat = () => {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [isAuthenticated, userPhone]); // Re-run when auth status or phone number changes
 
   useEffect(() => {
     if (flatListRef.current) {
@@ -99,29 +133,61 @@ const Chat = () => {
     }
   }, [messages]);
 
+  const handleDeleteMessage = async (msg: Message, permanent: boolean = false) => {
+    if (!msg.id) return;
+    
+    try {
+      if (permanent) {
+        // Permanent delete
+        await deleteDoc(doc(db, 'dkt', msg.id));
+      } else {
+        // Soft delete - mark as deleted
+        await updateDoc(doc(db, 'dkt', msg.id), {
+          delete: true,
+          deletedAt: serverTimestamp()
+        });
+      }
+      
+      setShowDeleteModal(false);
+    } catch (error) {
+      console.error('Error deleting message:', error);
+      Alert.alert('Error', 'Failed to delete message. Please try again.');
+    }
+  };
+
   const renderMessage = ({ item }: { item: Message }) => (
-    <View style={[
-      styles.messageContainer,
-      item.sent ? styles.sentMessage : styles.receivedMessage
-    ]}>
+    <TouchableWithoutFeedback 
+      onLongPress={() => {
+        // Allow deleting both sent messages and replies
+        if (item.sent || item.reply) {
+          setSelectedMessage(item);
+          setShowDeleteModal(true);
+        }
+      }}
+    >
       <View style={[
-        styles.messageBubble,
-        item.sent ? styles.sentBubble : styles.receivedBubble
+        styles.messageContainer,
+        item.sent ? styles.sentMessage : styles.receivedMessage
       ]}>
-        <Text style={[
-          styles.messageText,
-          item.sent ? styles.sentText : styles.receivedText
+        <View style={[
+          styles.messageBubble,
+          item.sent ? styles.sentBubble : styles.receivedBubble
         ]}>
-          {item.text}
-        </Text>
-        <Text style={[
-          styles.timeText,
-          item.sent ? styles.sentTime : styles.receivedTime
-        ]}>
-          {item.time}
-        </Text>
+          <Text style={[
+            styles.messageText,
+            item.sent ? styles.sentText : styles.receivedText
+          ]}>
+            {item.text}
+          </Text>
+          <Text style={[
+            styles.timeText,
+            item.sent ? styles.sentTime : styles.receivedTime
+          ]}>
+            {item.time}
+          </Text>
+        </View>
       </View>
-    </View>
+    </TouchableWithoutFeedback>
   );
 
   return (
@@ -188,9 +254,12 @@ const Chat = () => {
               multiline
             />
             <TouchableOpacity
-              style={[styles.sendButton, !message && styles.sendButtonDisabled]}
+              style={[
+                styles.sendButton, 
+                (!message || !isAuthenticated) && styles.sendButtonDisabled
+              ]}
               onPress={sendMessage}
-              disabled={!message}
+              disabled={!message || !isAuthenticated}
             >
               <Ionicons
                 name="send"
@@ -201,6 +270,55 @@ const Chat = () => {
           </View>
         </View>
       </KeyboardAvoidingView>
+
+      <Modal
+        visible={showDeleteModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowDeleteModal(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setShowDeleteModal(false)}>
+          <View style={styles.modalOverlay}>
+            <TouchableWithoutFeedback>
+              <View style={styles.modalContent}>
+                <Text style={styles.modalTitle}>Delete Message</Text>
+                <Text style={styles.modalText}>Are you sure you want to delete this message?</Text>
+                <View style={styles.modalButtons}>
+                  <TouchableOpacity 
+                    style={[styles.modalButton, styles.cancelButton]}
+                    onPress={() => setShowDeleteModal(false)}
+                  >
+                    <Text style={styles.cancelButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+                  {selectedMessage?.reply ? (
+                        <TouchableOpacity 
+                        style={[styles.modalButton, styles.softDeleteButton]}
+                        onPress={() => selectedMessage && handleDeleteMessage(selectedMessage, false)}
+                      >
+                        <Text style={styles.deleteButtonText}>Delete</Text>
+                      </TouchableOpacity>
+                  ) : (
+                    <>
+                      <TouchableOpacity 
+                        style={[styles.modalButton, styles.softDeleteButton]}
+                        onPress={() => selectedMessage && handleDeleteMessage(selectedMessage, false)}
+                      >
+                        <Text style={styles.deleteButtonText}>Delete</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity 
+                        style={[styles.modalButton, styles.deleteButton]}
+                        onPress={() => selectedMessage && handleDeleteMessage(selectedMessage, true)}
+                      >
+                        <Text style={styles.deleteButtonText}>Delete Permanently</Text>
+                      </TouchableOpacity>
+                    </>
+                  )}
+                </View>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -346,6 +464,70 @@ const styles = StyleSheet.create({
   },
   sendButtonDisabled: {
     backgroundColor: '#e0e0e0',
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 20,
+    width: '100%',
+    maxWidth: 300,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    color: '#333',
+  },
+  modalText: {
+    fontSize: 16,
+    marginBottom: 20,
+    color: '#666',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    flexWrap: 'wrap',
+    marginTop: 10,
+  },
+  modalButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginLeft: 10,
+    marginBottom: 10,
+    minWidth: 100,
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 40,
+  },
+  cancelButton: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    backgroundColor: '#fff',
+  },
+  softDeleteButton: {
+    backgroundColor: '#ff9800',
+    marginLeft: 10,
+  },
+  deleteButton: {
+    backgroundColor: '#ff4444',
+    marginLeft: 10,
+  },
+  cancelButtonText: {
+    color: '#333',
+    fontWeight: '500',
+  },
+  deleteButtonText: {
+    fontWeight: '500',
+    color: 'white',
   },
 });
 
