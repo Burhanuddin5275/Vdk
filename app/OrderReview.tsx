@@ -32,6 +32,45 @@ const statusSteps = [
   { label: 'Out for delivery', date: '', done: false },
   { label: 'Order delivered', date: '', done: false },
 ];
+const formatDate = (dateString: string) => {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  return date.toLocaleString('en-US', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true
+  });
+};
+// Determine status steps based on order status
+const getStatusSteps = (status: string, createdAt: string) => {
+  const baseDate = new Date(createdAt);
+  const steps = [
+    {
+      label: 'Order placed!',
+      date: formatDate(createdAt),
+      done: true
+    },
+    {
+      label: 'Preparing for dispatch',
+      date: status !== 'pending' ? formatDate(new Date(baseDate.getTime() + 2 * 60 * 60 * 1000).toISOString()) : '',
+      done: ['process', 'delivered', 'cancelled'].includes(status)
+    },
+    {
+      label: 'Out for delivery',
+      date: ['delivered', 'cancelled'].includes(status) ? formatDate(new Date(baseDate.getTime() + 4 * 60 * 60 * 1000).toISOString()) : '',
+      done: ['delivered', 'cancelled'].includes(status)
+    },
+    {
+      label: status === 'cancelled' ? 'Order cancelled' : 'Order delivered',
+      date: status === 'delivered' || status === 'cancelled' ? formatDate(new Date(baseDate.getTime() + 6 * 60 * 60 * 1000).toISOString()) : '',
+      done: ['delivered', 'cancelled'].includes(status)
+    },
+  ];
+  return steps;
+};
 
 const OrderReview = () => {
   const { order: orderString } = useLocalSearchParams();
@@ -41,16 +80,24 @@ const OrderReview = () => {
   const [rating, setRating] = React.useState(0);
   const insets = useSafeAreaInsets();
 
+  // Get status steps based on order status
+  const statusSteps = order ? getStatusSteps(order.status, order.created_at) : [];
+
+  // Format the order date
+  const orderDate = order ? new Date(order.created_at).toLocaleDateString() : '';
+
+  // Calculate total items
+  const totalItems = order?.items?.reduce((sum, item) => sum + (item.quantity || 1), 0) || 0;
   if (!order) {
     return (
-      <SafeAreaView style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+      <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <Text>No order data found</Text>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={{flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4))}}>
+    <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
       <ImageBackground source={bgImage} style={styles.background} resizeMode="cover">
         <View style={styles.container}>
           {/* Header */}
@@ -61,30 +108,28 @@ const OrderReview = () => {
             <Text style={styles.headerTitle}>Order Tracker</Text>
           </View>
           {/* Order Number */}
-          <Text style={styles.orderNumber}>Order # {order.id}</Text>
-          <View style={styles.orderSummary}>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Order Date:</Text>
-              <Text style={styles.summaryValue}>
-                {new Date(order.created_at).toLocaleDateString()}
-              </Text>
-            </View>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Status:</Text>
-              <Text style={[styles.summaryValue, { color: '#4CAF50' }]}>
-                {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-              </Text>
-            </View>
-            <View style={[styles.summaryRow, styles.totalRow]}>
-              <Text style={[styles.summaryLabel, { fontWeight: 'bold' }]}>Total:</Text>
-              <Text style={[styles.summaryValue, { fontWeight: 'bold' }]}>
-                Rs. {parseFloat(order.total || '0').toFixed(2)}
-              </Text>
-            </View>
-          </View>
-          
+          <Text style={styles.orderNumber}>Order # {order?.id || 'N/A'}</Text>
+          <Text style={styles.orderDate}>Placed on: {orderDate}</Text>
           <View style={styles.divider} />
-          
+          {/* Status Timeline */}
+          <View style={styles.timelineContainer}>
+            {statusSteps.map((step, idx) => (
+              <View key={idx} style={styles.timelineStep}>
+                <View style={styles.timelineLeft}>
+                  <View style={[styles.circle, step.done && styles.circleActive]} />
+                  {idx < statusSteps.length - 1 && (
+                    <View style={styles.verticalLine} />
+                  )}
+                </View>
+                <View style={styles.timelineContent}>
+                  <Text style={[styles.timelineLabel, step.done && styles.timelineLabelActive]}>{step.label}</Text>
+                  {!!step.date && <Text style={styles.timelineDate}>{step.date}</Text>}
+                </View>
+              </View>
+            ))}
+          </View>
+          <View style={styles.divider} />
+
           {/* Order Items */}
           <View style={styles.itemsHeader}>
             <Text style={styles.itemsHeaderText}>Order items</Text>
@@ -92,7 +137,7 @@ const OrderReview = () => {
               {order.items.length} product{order.items.length !== 1 ? 's' : ''}
             </Text>
           </View>
-          
+
           {/* Product List */}
           <FlatList
             data={order.items}
@@ -100,7 +145,15 @@ const OrderReview = () => {
             renderItem={({ item }) => (
               <View style={styles.productRow}>
                 {item.image ? (
-                  <Image source={{ uri: item.image }} style={styles.productImage} />
+                  <Image
+                    source={{
+                      uri: item.image && !item.image.startsWith('http')
+                        ? `http://192.168.1.107:8000${item.image.startsWith('/') ? '' : '/'}${item.image}`
+                        : item.image
+                    }}
+                    style={styles.productImage}
+                    onError={(e) => console.log('Image load error:', e.nativeEvent.error)}
+                  />
                 ) : (
                   <View style={[styles.productImage, styles.placeholderImage]}>
                     <Ionicons name="image-outline" size={24} color="#999" />
@@ -108,7 +161,7 @@ const OrderReview = () => {
                 )}
                 <View style={styles.productInfo}>
                   <Text style={styles.productName}>{item.name || 'Product'}</Text>
-                  {item.pts && <Text style={styles.productPack}>{item.pts} PTS</Text>}
+                  {item.pts && <Text style={styles.productPack}>Pts: {item.pts}</Text>}
                   <View style={styles.priceContainer}>
                     <Text style={styles.productPrice}>
                       Rs. {parseFloat(item.price || '0').toFixed(2)}
@@ -128,48 +181,48 @@ const OrderReview = () => {
           transparent={true}
           onRequestClose={() => setModalVisible(false)}
         >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          style={styles.modalOverlay}
-        >
-          <View style={styles.reviewModal}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.reviewTitle}>Order Review</Text>
-              <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeBtn}>
-                <AntDesign name="closecircle" size={moderateScale(28)} color="#E53935" />
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            style={styles.modalOverlay}
+          >
+            <View style={styles.reviewModal}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.reviewTitle}>Order Review</Text>
+                <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeBtn}>
+                  <AntDesign name="closecircle" size={moderateScale(28)} color="#E53935" />
+                </TouchableOpacity>
+              </View>
+              <View style={styles.ratingRow}>
+                {/* Interactive star rating */}
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <TouchableOpacity key={star} onPress={() => setRating(star)}>
+                    <AntDesign
+                      name={star <= rating ? 'star' : 'staro'}
+                      size={24}
+                      color="#FFC107"
+                      style={{ marginRight: 2 }}
+                    />
+                  </TouchableOpacity>
+                ))}
+                <Text style={styles.ratingText}>{rating > 0 ? rating.toFixed(1) : ''}</Text>
+              </View>
+              <Text style={styles.writeReviewLabel}>Write review</Text>
+              <TextInput
+                style={styles.reviewInput}
+                placeholder="Type here"
+                placeholderTextColor="#E53935"
+                multiline
+                value={reviewText}
+                onChangeText={setReviewText}
+              />
+              <TouchableOpacity style={styles.submitBtn}>
+                <Text style={styles.submitBtnText}>Submit</Text>
               </TouchableOpacity>
             </View>
-            <View style={styles.ratingRow}>
-              {/* Interactive star rating */}
-              {[1,2,3,4,5].map((star) => (
-                <TouchableOpacity key={star} onPress={() => setRating(star)}>
-                  <AntDesign
-                    name={star <= rating ? 'star' : 'staro'}
-                    size={24}
-                    color="#FFC107"
-                    style={{ marginRight: 2 }}
-                  />
-                </TouchableOpacity>
-              ))}
-              <Text style={styles.ratingText}>{rating > 0 ? rating.toFixed(1) : ''}</Text>
-            </View>
-            <Text style={styles.writeReviewLabel}>Write review</Text>
-            <TextInput
-              style={styles.reviewInput}
-              placeholder="Type here"
-              placeholderTextColor="#E53935"
-              multiline
-              value={reviewText}
-              onChangeText={setReviewText}
-            />
-            <TouchableOpacity style={styles.submitBtn}>
-              <Text style={styles.submitBtnText}>Submit</Text>
-            </TouchableOpacity>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
-      <TabLayout />
-    </ImageBackground>
+          </KeyboardAvoidingView>
+        </Modal>
+        <TabLayout />
+      </ImageBackground>
     </SafeAreaView>
   );
 };
@@ -188,7 +241,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingBottom: 20,
   },
-  
+
   // Header
   header: {
     flexDirection: 'row',
@@ -218,7 +271,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     lineHeight: verticalScale(55),
   },
-  
+
   // Order Info
   orderNumber: {
     color: '#fff',
@@ -269,7 +322,13 @@ const styles = StyleSheet.create({
     marginVertical: 10,
     width: '100%',
   },
-
+  orderDate: {
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: moderateScale(12),
+    fontFamily: 'Poppins',
+    marginBottom: 8,
+    paddingHorizontal: 20,
+  },
   // Order Items
   itemsHeader: {
     flexDirection: 'row',
@@ -309,10 +368,9 @@ const styles = StyleSheet.create({
     fontFamily: 'PoppinsMedium',
   },
   productPack: {
-    color: '#FFD700',
+    color: '#fff',
     fontSize: moderateScale(12),
     fontFamily: 'PoppinsMedium',
-    marginBottom: 4,
   },
   productPrice: {
     color: '#fff',
@@ -323,7 +381,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 4,
   },
   quantityText: {
     color: 'rgba(255, 255, 255, 0.8)',

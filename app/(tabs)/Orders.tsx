@@ -371,18 +371,11 @@ export default function OrdersScreen() {
             filteredOrders.map((order) => (
               <View key={order.id} style={styles.orderCard}>
                   <View style={styles.imgPlaceholder}>
-                    {order.items[0]?.image ? (
                       <Image 
-                        source={{ uri: order.items[0].image }} 
+                      source={require('../../assets/Icon/order.png')} 
                         style={styles.img} 
                         resizeMode="contain"
-                      />
-                    ) : (
-                      <Image 
-                        source={require('../../assets/Icon/order.png')} 
-                        style={styles.img} 
-                      />
-                    )}
+                      /> 
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.orderNum}>Order #{order.id}</Text>

@@ -209,7 +209,7 @@ const Products = () => {
                             <View style={styles.ptsBadge}><Text style={[styles.ptsText, { color: mainColor }]}>{product.pts} PTS</Text></View>
                         </View>
                         <Text style={styles.title}>{product.name}</Text>
-                        <Text style={styles.pcs}>36 pcs</Text>
+                        <Text style={styles.pcs}>{product.stock} pcs</Text>
                         <Text style={styles.sectionTitle}>Product Details</Text>
                         <Text style={styles.details}>{product.description}</Text>
                         <View style={styles.divider} />

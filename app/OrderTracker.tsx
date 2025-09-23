@@ -52,18 +52,18 @@ const getStatusSteps = (status: string, createdAt: string) => {
       done: true 
     },
     { 
-      label: 'Preparing for dispatch', 
-      date: status !== 'pending' ? formatDate(new Date(baseDate.getTime() + 2 * 60 * 60 * 1000).toISOString()) : '', 
+      label: 'Preparing for dispatch',  
+      date: status !== 'pending' ? formatDate(new Date(baseDate.getTime() ).toISOString()) : '', 
       done: ['process', 'delivered', 'cancelled'].includes(status) 
     },
     { 
       label: 'Out for delivery', 
-      date: ['delivered', 'cancelled'].includes(status) ? formatDate(new Date(baseDate.getTime() + 4 * 60 * 60 * 1000).toISOString()) : '', 
+      date: ['delivered', 'cancelled'].includes(status) ? formatDate(new Date(baseDate.getTime()).toISOString()) : '', 
       done: ['delivered', 'cancelled'].includes(status) 
     },
     { 
       label: status === 'cancelled' ? 'Order cancelled' : 'Order delivered', 
-      date: status === 'delivered' || status === 'cancelled' ? formatDate(new Date(baseDate.getTime() + 6 * 60 * 60 * 1000).toISOString()) : '', 
+      date: status === 'delivered' || status === 'cancelled' ? formatDate(new Date(baseDate.getTime()).toISOString()) : '', 
       done: ['delivered', 'cancelled'].includes(status) 
     },
   ];
@@ -131,9 +131,13 @@ const OrderTracker = () => {
             <View style={styles.productRow}>
               {item.image ? (
                 <Image 
-                  source={{ uri: item.image }} 
-                  style={styles.productImage} 
-                  
+                  source={{ 
+                    uri: item.image && !item.image.startsWith('http') 
+                      ? `http://192.168.1.107:8000${item.image.startsWith('/') ? '' : '/'}${item.image}`
+                      : item.image 
+                  }} 
+                  style={styles.productImage}
+                  onError={(e) => console.log('Image load error:', e.nativeEvent.error)}
                 />
               ) : (
                 <View style={[styles.productImage, styles.placeholderImage]}>
@@ -142,7 +146,7 @@ const OrderTracker = () => {
               )}
               <View style={styles.productInfo}>
                 <Text style={styles.productName}>{item.name || 'Product'}</Text>
-               <Text style={styles.productPack}>{item.pts}</Text>
+               <Text style={styles.productPack}>Pts: {item.pts}</Text>
                 <View style={styles.priceContainer}>
                   <Text style={styles.productPrice}>Rs. {parseFloat(item.price || '0').toFixed(2)}</Text>
                   <Text style={styles.quantityText}>Qty: {item.quantity || 1}</Text>
@@ -158,6 +162,7 @@ const OrderTracker = () => {
           style={{ flexGrow: 0 }}
         />
       </View>
+      
       <TabLayout />
     </ImageBackground>
     </SafeAreaView>
@@ -321,20 +326,16 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: moderateScale(14),
     opacity: 0.8,
-    marginBottom: 2,
     fontFamily:"PoppinsMedium"
   },
   productPrice: {
     color: '#fff',
     fontSize: moderateScale(16),
     fontFamily:"PoppinsSemi",
-    marginTop: 2,
   },
   priceContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 4,
   },
   quantityText: {
     color: '#fff',
