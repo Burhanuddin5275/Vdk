@@ -105,7 +105,7 @@ const OrderReview = () => {
             <TouchableOpacity style={styles.backBtn} onPress={router.back}>
               <Ionicons name="arrow-back" size={moderateScale(28)} color="white" />
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>Order Tracker</Text>
+            <Text style={styles.headerTitle}>Order Review</Text>
           </View>
           {/* Order Number */}
           <Text style={styles.orderNumber}>Order # {order?.id || 'N/A'}</Text>
@@ -140,17 +140,17 @@ const OrderReview = () => {
 
           {/* Product List */}
           <FlatList
-            data={order.items}
+            data={order?.items || []}
             keyExtractor={(item, index) => `${item.id}-${index}`}
             renderItem={({ item }) => (
               <View style={styles.productRow}>
                 {item.image ? (
-                  <Image
-                    source={{
-                      uri: item.image && !item.image.startsWith('http')
+                  <Image 
+                    source={{ 
+                      uri: item.image && !item.image.startsWith('http') 
                         ? `http://192.168.1.107:8000${item.image.startsWith('/') ? '' : '/'}${item.image}`
-                        : item.image
-                    }}
+                        : item.image 
+                    }} 
                     style={styles.productImage}
                     onError={(e) => console.log('Image load error:', e.nativeEvent.error)}
                   />
@@ -160,19 +160,35 @@ const OrderReview = () => {
                   </View>
                 )}
                 <View style={styles.productInfo}>
-                  <Text style={styles.productName}>{item.name || 'Product'}</Text>
-                  {item.pts && <Text style={styles.productPack}>Pts: {item.pts}</Text>}
-                  <View style={styles.priceContainer}>
-                    <Text style={styles.productPrice}>
-                      Rs. {parseFloat(item.price || '0').toFixed(2)}
-                    </Text>
+                  <View>
+                    <Text style={styles.productName}>{item.name || 'Product'}</Text>
                     <Text style={styles.quantityText}>Qty: {item.quantity || 1}</Text>
+                    <Text style={styles.productPack}>Pts: {item.pts}</Text>
+                  </View>
+                  <View style={styles.priceContainer}>
+                    <Text style={styles.productPrice}>Rs. {parseFloat(item.price || '0').toFixed(2)}</Text>
                   </View>
                 </View>
               </View>
             )}
+            ListEmptyComponent={
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>No items found in this order</Text> 
+              </View>
+            }
             style={{ flexGrow: 0 }}
           />
+          {/* Order Total */}
+          {order?.items?.length > 0 && (
+            <View style={styles.totalContainer}>
+              <View style={styles.totalRow}>
+                <Text style={styles.totalLabel}>Order Total:</Text>
+                <Text style={styles.totalAmount}>
+                  Rs. {order.items.reduce((sum, item) => sum + (parseFloat(item.price)), 0).toFixed(2)}
+                </Text>
+              </View>
+            </View>
+          )}
         </View>
         {/* Order Review Modal */}
         <Modal
@@ -308,13 +324,27 @@ const styles = StyleSheet.create({
     color: '#222',
     fontFamily: 'PoppinsMedium',
   },
-  totalRow: {
-    marginTop: 8,
-    paddingTop: 8,
+  totalContainer: {
+    padding: scale(16),
     borderTopWidth: 1,
-    borderTopColor: '#eee',
+    borderTopColor: 'rgba(255, 255, 255, 0.2)',
+    marginTop: verticalScale(8),
   },
-
+  totalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  totalLabel: {
+    color: '#fff',
+    fontSize: moderateScale(16),
+    fontFamily: 'PoppinsSemi',
+  },
+  totalAmount: {
+    color: '#fff',
+    fontSize: moderateScale(18),
+    fontFamily: 'PoppinsBold',
+  },
   // Divider
   divider: {
     height: 1,
@@ -348,11 +378,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(20),
   },
   productImage: {
-    width: scale(70),
-    height: scale(70),
-    borderRadius: scale(12),
-    marginRight: scale(14),
-    backgroundColor: '#fff',
+    width: scale(60),
+    height: scale(60),
+    borderRadius: 8,
+    marginRight: 10,
+    resizeMode: 'cover',
   },
   placeholderImage: {
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
@@ -361,31 +391,41 @@ const styles = StyleSheet.create({
   },
   productInfo: {
     flex: 1,
-  },
-  productName: {
-    color: '#fff',
-    fontSize: moderateScale(14),
-    fontFamily: 'PoppinsMedium',
-  },
-  productPack: {
-    color: '#fff',
-    fontSize: moderateScale(12),
-    fontFamily: 'PoppinsMedium',
-  },
-  productPrice: {
-    color: '#fff',
-    fontSize: moderateScale(15),
-    fontFamily: 'PoppinsSemiBold',
-  },
-  priceContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  productName: {
+    color: '#fff',
+    fontSize: moderateScale(16),
+    fontFamily: 'PoppinsMedium',
+  },
+  productPack: {
+    color: '#fff',
+    fontSize: moderateScale(14),
+    fontFamily: 'PoppinsMedium',
+  },
+  productPrice: {
+    color: '#fff',
+    fontSize: moderateScale(16),
+    fontFamily: 'PoppinsSemiBold',
+  },
+  priceContainer: {
+    alignItems: 'flex-end',
+  },
+  emptyContainer: {
+    padding: 16,
+    alignItems: 'center',
+  },
+  emptyText: {
+    color: '#fff',
+    fontFamily: 'Poppins',
+  },
   quantityText: {
-    color: 'rgba(255, 255, 255, 0.8)',
-    fontSize: moderateScale(12),
-    fontFamily: 'PoppinsRegular',
+    color: '#fff',
+    fontSize: moderateScale(14),
+    fontFamily: 'Poppins',
+    opacity: 0.8,
   },
 
   // Timeline

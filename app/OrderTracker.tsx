@@ -45,28 +45,41 @@ const formatDate = (dateString: string) => {
 // Determine status steps based on order status
 const getStatusSteps = (status: string, createdAt: string) => {
   const baseDate = new Date(createdAt);
+  const now = new Date();
+  
+  // Calculate time differences for each step
+  const pendingTime = new Date(baseDate);
+  const processingTime = new Date(pendingTime.getTime() + (status !== 'pending' ? 0 : 0));
+  const onTheWayTime = new Date(processingTime.getTime() + (['on_the_way', 'delivered', 'cancelled'].includes(status) ? 2 * 60 * 60 * 1000 : 0));
+  const deliveredTime = new Date(onTheWayTime.getTime() + (['delivered', 'cancelled'].includes(status) ? 2 * 60 * 60 * 1000 : 0));
+
   const steps = [
     { 
       label: 'Order placed!', 
-      date: formatDate(createdAt), 
-      done: true 
+      date: formatDate(pendingTime.toISOString()),
+      done: true,
+      active: status === 'pending'
     },
     { 
-      label: 'Preparing for dispatch',  
-      date: status !== 'pending' ? formatDate(new Date(baseDate.getTime() ).toISOString()) : '', 
-      done: ['process', 'delivered', 'cancelled'].includes(status) 
+      label: 'Preparing for dispatch',
+      date: status !== 'pending' ? formatDate(processingTime.toISOString()) : '',
+      done: ['process', 'on_the_way', 'delivered', 'cancelled'].includes(status),
+      active: status === 'process'
+    },
+    {  
+      label: 'Out for delivery',
+      date: ['on_the_way', 'delivered', 'cancelled'].includes(status) ? formatDate(onTheWayTime.toISOString()) : '',
+      done: ['on_the_way', 'delivered', 'cancelled'].includes(status),
+      active: status === 'on_the_way'
     },
     { 
-      label: 'Out for delivery', 
-      date: ['delivered', 'cancelled'].includes(status) ? formatDate(new Date(baseDate.getTime()).toISOString()) : '', 
-      done: ['delivered', 'cancelled'].includes(status) 
-    },
-    { 
-      label: status === 'cancelled' ? 'Order cancelled' : 'Order delivered', 
-      date: status === 'delivered' || status === 'cancelled' ? formatDate(new Date(baseDate.getTime()).toISOString()) : '', 
-      done: ['delivered', 'cancelled'].includes(status) 
+      label: status === 'cancelled' ? 'Order cancelled' : 'Order delivered',
+      date: ['delivered', 'cancelled'].includes(status) ? formatDate(deliveredTime.toISOString()) : '',
+      done: ['delivered', 'cancelled'].includes(status),
+      active: ['delivered', 'cancelled'].includes(status)
     },
   ];
+  
   return steps;
 };
 
@@ -145,11 +158,13 @@ const OrderTracker = () => {
                 </View>
               )}
               <View style={styles.productInfo}>
-                <Text style={styles.productName}>{item.name || 'Product'}</Text>
-               <Text style={styles.productPack}>Pts: {item.pts}</Text>
+                <View>
+                  <Text style={styles.productName}>{item.name || 'Product'}</Text>
+                  <Text style={styles.quantityText}>Qty: {item.quantity || 1}</Text>
+                  <Text style={styles.productPack}>Pts: {item.pts}</Text>
+                </View>
                 <View style={styles.priceContainer}>
                   <Text style={styles.productPrice}>Rs. {parseFloat(item.price || '0').toFixed(2)}</Text>
-                  <Text style={styles.quantityText}>Qty: {item.quantity || 1}</Text>
                 </View>
               </View>
             </View>
@@ -161,6 +176,18 @@ const OrderTracker = () => {
           }
           style={{ flexGrow: 0 }}
         />
+        
+        {/* Order Total */}
+        {order?.items?.length > 0 && (
+          <View style={styles.totalContainer}>
+            <View style={styles.totalRow}>
+              <Text style={styles.totalLabel}>Order Total:</Text>
+              <Text style={styles.totalAmount}>
+                Rs. {order.items.reduce((sum, item) => sum + (parseFloat(item.price)), 0).toFixed(2)}
+              </Text>
+            </View>
+          </View>
+        )}
       </View>
       
       <TabLayout />
@@ -316,6 +343,9 @@ const styles = StyleSheet.create({
   },
   productInfo: {
     flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   productName: {
     color: '#fff',
@@ -325,23 +355,42 @@ const styles = StyleSheet.create({
   productPack: {
     color: '#fff',
     fontSize: moderateScale(14),
-    opacity: 0.8,
     fontFamily:"PoppinsMedium"
   },
   productPrice: {
     color: '#fff',
     fontSize: moderateScale(16),
-    fontFamily:"PoppinsSemi",
+    fontFamily:"PoppinsSemiBold",
   },
   priceContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    alignItems: 'flex-end',
   },
   quantityText: {
     color: '#fff',
     fontSize: moderateScale(14),
     fontFamily: 'Poppins',
     opacity: 0.8,
+  },
+  totalContainer: {
+    padding: scale(16),
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.2)',
+    marginTop: verticalScale(8),
+  },
+  totalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  totalLabel: {
+    color: '#fff',
+    fontSize: moderateScale(16),
+    fontFamily: 'PoppinsSemi',
+  },
+  totalAmount: {
+    color: '#fff',
+    fontSize: moderateScale(18),
+    fontFamily: 'PoppinsBold',
   },
 });
 

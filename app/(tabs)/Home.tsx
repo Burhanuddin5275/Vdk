@@ -1,3 +1,8 @@
+import { fetchHeroes, type HeroItem } from '@/services/heroes';
+import { selectIsAuthenticated } from '@/store/authSlice';
+import { useAppSelector } from '@/store/hooks';
+import { RootState } from '@/store/store';
+import { useAuth } from '@/hooks/useAuth';
 import { colors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -7,13 +12,11 @@ import { Animated, Dimensions, Easing, Image, ImageBackground, Modal, SafeAreaVi
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { useWishlistStore } from '../../app/Wishlist';
-import { selectIsAuthenticated } from '@/store/authSlice';
-import { useAppSelector } from '@/store/hooks';
+import { fetchAds, type AdsItem } from '../../services/ads';
 import { fetchBrands, type BrandItem } from '../../services/brands';
 import { fetchCategories, type CategoryItem } from '../../services/categories';
 import { fetchProducts } from '../../services/products';
-import { fetchAds, type AdsItem } from '../../services/ads';
-import { fetchHeroes, type HeroItem } from '@/services/heroes';
+
 type SalePopupProps = {
   visible: boolean;
   onClose: () => void;
@@ -100,7 +103,13 @@ export default function HomeScreen() {
   const [heroContent, setHeroContent] = useState<HeroItem[]>([]);
   const scrollViewRef = useRef<ScrollView>(null);
   const wishlistItems = useWishlistStore((state) => state.items);
-  
+  const { phone } = useAuth();
+
+  // Get points for the current user
+  const userPoints = useAppSelector((state: RootState) =>
+    phone && state.points.userPoints ? state.points.userPoints[phone] || 0 : 0
+  );
+
   // Fetch hero content on component mount
   useEffect(() => {
     const loadHeroContent = async () => {
@@ -227,8 +236,8 @@ export default function HomeScreen() {
                   )}
                   <View style={styles.rewardBox}>
                     <Text style={styles.rewardLabel}>Reward</Text>
-                    <Text style={styles.rewardPoints}>1273{''}
-                    </Text><Text style={styles.rewardPts}>PTS</Text>
+                    <Text style={styles.rewardPoints}>{userPoints}</Text>
+                    <Text style={styles.rewardPts}>PTS</Text>
                   </View>
                 </View>
                 <View style={{ flex: 1, alignItems: 'flex-end' }}>

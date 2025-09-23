@@ -71,14 +71,14 @@ const Payment = () => {
     useEffect(() => {
         const fetchUserData = async () => {
             try {
-                const response = await axios.get('http://192.168.1.101:8000/api/app-user/list/');
+                const response = await axios.get('http://192.168.1.107:8000/api/app-user/list/');
                 const users = response.data; // Assuming the API returns an array of users
                 
                 // Find user by phone number
                 const matchedUser = users.find((u: any) => u.number === phone);
                 
                 if (matchedUser) {
-                    setUserId(matchedUser.id);
+                    setUserId(matchedUser.id); 
                     console.log('Matched user ID:', matchedUser.id);
                 } else {
                     console.log('No user found with phone:', phone);
@@ -143,14 +143,16 @@ const Payment = () => {
                 shipping: methodObj?.label || 'Test',
                 status: 'pending',
                 product: parsedCartItems.map((item: any) => ({
+                    image: item.image,
                     name: item.name || 'Product',
-                    pts: item.pts || 5,
-                    variants: item.variants || item.pack || '',
-                    price: item.price ? parseFloat(item.price).toFixed(2) : '0.00'
+                    pts: item.points,
+                    quantity: item.quantity,
+                    variants: item.pack,
+                    price: item.price ? (parseFloat(item.price) * (item.quantity || 1)).toFixed(2) : '0.00',
                 })),
                 payment: [
                     {
-                        method: selected || 'cash', 
+                        method: selected, 
                         status: 'Pending'
                     }
                 ], 
@@ -159,7 +161,7 @@ const Payment = () => {
 
             console.log('Sending order data:', JSON.stringify(orderData, null, 2));
             
-            const API_URL = 'http://192.168.1.101:8000/api/create-order/';
+            const API_URL = 'http://192.168.1.107:8000/api/create-order/';
             console.log('Sending request to:', API_URL);
             
             try {

@@ -1,5 +1,6 @@
 import { useAuth } from '@/hooks/useAuth';
 import { fetchOrders, type OrderStatus } from '@/services/orders';
+import { setUserPoints } from '@/store/pointsSlice';
 import { colors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -7,6 +8,7 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, ImageBackground, Modal, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
+import { useDispatch } from 'react-redux';
 
 const TABS = ['All', 'Active', 'Completed', 'Cancelled'];
 
@@ -47,6 +49,7 @@ export default function OrdersScreen() {
   const insets = useSafeAreaInsets();
   const [tabLayouts, setTabLayouts] = useState<{ x: number; width: number }[]>([]);
   const { phone } = useAuth();
+  const dispatch = useDispatch();
 
   useEffect(() => {
     const loadOrders = async () => {
@@ -58,6 +61,7 @@ export default function OrdersScreen() {
         
         // Map API data to DisplayOrder type and filter by current user
         const userOrders: DisplayOrder[] = [];
+        let totalUserPoints = 0;
         
         apiData.forEach(order => {
           // Get the user detail from the order
@@ -65,14 +69,44 @@ export default function OrdersScreen() {
             ? order.user_detail 
             : (order.user_detail as UserDetailObject)?.number || '';
             
-          // Check if this order belongs to the current user
+          // Check if this order belongs to the current user and is completed
           const isCurrentUser = userDetail === phone;
+          const isCompletedOrder = order.status === 'delivered';
+          
+          // Initialize points for this order
+          let orderPoints = 0;
           
           if (isCurrentUser) {
-            console.log('Including order for current user:', {
+            // Only calculate points for completed orders
+            if (isCompletedOrder) {
+              orderPoints = order.items.reduce((sum: number, item: any) => {
+                const points = item.pts ? parseInt(item.pts) : 0;
+                const quantity = item.quantity || 1;
+                return sum + (points * quantity);
+              }, 0);
+              
+              // Add this order's points to the total
+              totalUserPoints += orderPoints;
+              
+              console.log('Adding points for completed order:', {
+                orderId: order.id,
+                points: orderPoints,
+                status: order.status
+              });
+            }
+            
+            console.log('Order details:', {
               orderId: order.id,
               status: order.status,
-              orderUserPhone: userDetail
+              orderUserPhone: userDetail,
+              itemsCount: order.items.length,
+              orderPoints: orderPoints,
+              items: order.items.map((item: any) => ({
+                name: item.name,
+                points: item.pts || 0,
+                quantity: item.quantity || 1,
+                totalPoints: (item.pts || 0) * (item.quantity || 1)
+              }))
             });
             
             const total = order.items?.reduce((sum: number, item: any) => {
@@ -103,6 +137,14 @@ export default function OrdersScreen() {
         });
         
         setOrders(userOrders);
+        
+        // Log the total points across all orders for the current user
+        console.log('Total points across all orders:', totalUserPoints);
+        
+        // Save total points to Redux store for the current user
+        if (phone) {
+          dispatch(setUserPoints({ phone, points: totalUserPoints }));
+        }
         
         // Log all unique status values for debugging
         const statuses = [...new Set(apiData.map((order: any) => order.status))];

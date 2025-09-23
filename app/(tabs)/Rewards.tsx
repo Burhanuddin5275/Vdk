@@ -5,6 +5,9 @@ import React from 'react';
 import { Dimensions, Image, ImageBackground, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store/store';
+import { useAuth } from '@/hooks/useAuth';
 const rewards = [
   {
     name: 'Dining Set',
@@ -38,18 +41,24 @@ const rewards = [
   },
 ];
 
-const pointsBadges = [
-  {
-    value: 5678,
-    label: 'PTS',
-    footer: 'YOUR POINTS',
-  },
- 
-];
+// Points badge data structure
+const getPointsBadge = (points: number) => ({
+  value: points,
+  label: 'PTS',
+  footer: 'YOUR POINTS',
+});
 
 export default function RewardsScreen() {
-    const insets = useSafeAreaInsets();
+  const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { phone } = useAuth();
+  
+  // Get points for the current user
+  const userPoints = useSelector((state: RootState) => 
+    phone && state.points.userPoints ? state.points.userPoints[phone] || 0 : 0
+  );
+  
+  const pointsBadge = getPointsBadge(userPoints);
   return (
           <SafeAreaView style={{flex:1,paddingBottom: Math.max(insets.bottom, verticalScale(4))}}>
             <ImageBackground
@@ -69,30 +78,27 @@ export default function RewardsScreen() {
           {/* Points Badge */}
 
           <View style={styles.pointsBadgeContainer}>
-            {pointsBadges.map((badge, idx) => (
-              <View style={styles.pointsBadgeOuter} key={idx}>
-                <View style={{
-                  width:verticalScale(140),
-                  height:verticalScale(140),
-                  borderRadius:verticalScale(140) / 2,
-                  backgroundColor: '#FFC4C6',
-                  borderWidth: scale(2),
-                  borderColor: '#660101', 
-                  alignItems: 'center', 
-                  justifyContent: 'center',
-                  marginBottom: 0,
-                }} >
-                  <View style={styles.pointsBadgeInner}>
-                    <Text style={styles.pointsValue}>{badge.value}</Text>
-                    <Text style={styles.pointsLabel}>{badge.label}</Text>
-                  </View>
-
-                </View>
-                <View style={styles.pointsBadgeFooter}>
-                  <Text style={styles.pointsFooterText}>{badge.footer}</Text>
+            <View style={styles.pointsBadgeOuter}>
+              <View style={{
+                width: verticalScale(140),
+                height: verticalScale(140),
+                borderRadius: verticalScale(140) / 2,
+                backgroundColor: '#FFC4C6',
+                borderWidth: scale(2),
+                borderColor: '#660101', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                marginBottom: 0,
+              }}>
+                <View style={styles.pointsBadgeInner}>
+                  <Text style={styles.pointsValue}>{pointsBadge.value}</Text>
+                  <Text style={styles.pointsLabel}>{pointsBadge.label}</Text>
                 </View>
               </View>
-            ))}
+              <View style={styles.pointsBadgeFooter}>
+                <Text style={styles.pointsFooterText}>{pointsBadge.footer}</Text>
+              </View>
+            </View>
           </View>
 
           {/* Rewards List */}

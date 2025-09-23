@@ -1,4 +1,4 @@
-export type OrderStatus = 'pending' | 'process' | 'Shipped' | 'delivered' | 'cancelled';
+export type OrderStatus = 'pending' | 'process' | 'on_the_way' | 'delivered' | 'cancelled';
 
 export type orders = {
   id: string; 
@@ -12,7 +12,7 @@ export type orders = {
 }
   
 
-const API_URL = "http://192.168.1.111:8000/api/orders/";
+const API_URL = "http://192.168.1.107:8000/api/orders/";
 
 type ApiOrders = any;
 
@@ -22,7 +22,7 @@ function toProduct(item: ApiOrders): orders {
   const shipping = item.shipping ?? item.shipping ?? "Unknown";
 const user_detail = item.user_detail ?? item.user_detail ?? "Product";
   const statusValue = item.status ? String(item.status).toLowerCase() : '';
-  const status: OrderStatus = (['pending', 'process', 'shipped', 'delivered', 'cancelled'].includes(statusValue))
+  const status: OrderStatus = (['pending', 'process', 'on_the_way', 'delivered', 'cancelled'].includes(statusValue))
     ? statusValue as OrderStatus
     : 'pending';
   const items = item.items ?? item.items ?? [];
