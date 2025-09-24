@@ -1,7 +1,7 @@
 import { colors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Dimensions, ImageBackground, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
@@ -21,14 +21,29 @@ const Mall = () => {
   const router = useRouter();
   const params = useLocalSearchParams<MallParams>();
   const insets = useSafeAreaInsets();
-
+  const userpoint = params?.userPoints ? Number(params.userPoints) : 0;
   const name = params?.name ;
   const subtitle = params?.subtitle ;
   const description = params?.description ;
   const points = params?.points ? Number(params.points) : 0;
-  const image = params?.image
-
-  
+  const image = params?.image  
+  const handleRedeem = () => {
+    if (userpoint >= points) {
+      router.push({
+        pathname: '/Checkout',
+        params: { 
+          name,
+          points: points.toString(),
+          image: image || '',
+          description: description || '',
+          type: 'redeem',
+          userPoints: userpoint.toString()
+        }
+      });
+    } else {
+      alert('Insufficient points to redeem this item');
+    }
+  };
   return (
     <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
       <ImageBackground
@@ -75,9 +90,17 @@ const Mall = () => {
           <Text style={styles.pointsLabel}>Total Points Required</Text>
           <Text style={styles.pointsValue}>{points.toLocaleString()} PTS</Text>
         </View>
-        <TouchableOpacity style={styles.redeemBtn} onPress={() => { router.push('/Redeem') }}>
-          <Text style={styles.redeemText}>Redeem</Text>
-        </TouchableOpacity>
+        <TouchableOpacity 
+  style={[styles.redeemBtn, { opacity: userpoint >= points ? 1 : 0.6 }]} 
+  onPress={handleRedeem}
+  disabled={userpoint < points}
+>
+  <Text style={styles.redeemText}>
+    {userpoint >= points 
+      ? `Redeem ` 
+      : `Insufficient points`}
+  </Text>
+</TouchableOpacity>
       </View>
     </ImageBackground>
     </SafeAreaView>
