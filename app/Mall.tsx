@@ -8,27 +8,26 @@ import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 
 const { width } = Dimensions.get('window');
 
-const imageMap: { [key: string]: any } = {
-  'Dining.png': require('../assets/images/Dining.png'),
-  'Jucier.png': require('../assets/images/Jucier.png'),
-  'Washing.png': require('../assets/images/Washing.png'),
-  'Fridge.png': require('../assets/images/Fridge.png'),
-  'Ac.png': require('../assets/images/Ac.png'),
-};
+// Define the expected params type
+type MallParams = {
+  name?: string;
+  subtitle?: string;
+  description?: string;
+  points?: string;
+  image?: string;
+} & Record<string, string | string[]>;
 
 const Mall = () => {
   const router = useRouter();
-  const params = useLocalSearchParams();
-  // Get reward data from params
-  const name = params.name || 'Ajwa-Dining Set';
-  const points = params.points || 460;
-  let imageKey = params.imageKey;
-  if (Array.isArray(imageKey)) {
-    imageKey = imageKey[0];
-  }
-  const imageSource = imageKey && typeof imageKey === 'string' && imageMap[imageKey] ? imageMap[imageKey] : undefined;
-
+  const params = useLocalSearchParams<MallParams>();
   const insets = useSafeAreaInsets();
+
+  const name = params?.name ;
+  const subtitle = params?.subtitle ;
+  const description = params?.description ;
+  const points = params?.points ? Number(params.points) : 0;
+  const image = params?.image
+
   
   return (
     <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
@@ -39,40 +38,29 @@ const Mall = () => {
       >
       {/* Product Image and Header */}
       <View style={styles.imageHeaderWrap}>
-        {imageSource ? (
-          <ImageBackground
-            source={imageSource}
-            style={styles.productImg}
-            resizeMode="cover"
-            imageStyle={{ borderBottomLeftRadius: 32, borderBottomRightRadius: 32 }}
-          >
-            <View style={styles.headerRow}>
-              <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-                <Ionicons name="arrow-back" size={28} color={colors.white} />
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.heartBtn}>
-                <Ionicons name="heart-outline" size={28} color={colors.white} />
-              </TouchableOpacity>
-            </View>
-          </ImageBackground>
-        ) : (
+        <ImageBackground
+          source={{uri:`http://192.168.1.108:8000/media/redeem/${image}`}}
+          style={styles.productImg}
+          resizeMode="cover"
+          imageStyle={{ borderBottomLeftRadius: 32, borderBottomRightRadius: 32 }}
+        > 
           <View style={styles.headerRow}>
             <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-              <Ionicons name="arrow-back" size={moderateScale(28)} color={colors.white} />
+              <Ionicons name="arrow-back" size={28} color={colors.white} />
             </TouchableOpacity>
             <TouchableOpacity style={styles.heartBtn}>
-              <Ionicons name="heart-outline" size={moderateScale(28)} color={colors.white} />
+              <Ionicons name="heart-outline" size={28} color={colors.white} />
             </TouchableOpacity>
           </View>
-        )}
+        </ImageBackground>
       </View>
      <ScrollView >
        {/* Product Card */}
        <View style={styles.cardWrap}>
-        <Text style={styles.category}>Crockery Dining Set</Text>
+        <Text style={styles.category}>{subtitle}</Text>
         <Text style={styles.title}>{name}</Text>
         <Text style={styles.sectionLabel}>Product Details</Text>
-        <Text style={styles.details}>European Porcelain Dinner Set – 35 Pcs | Elegant Ceramic Tableware in Pakistan</Text>
+        <Text style={styles.details}>{description}</Text>
         <View style={styles.divider} />
         <Text style={styles.sectionLabel}>Reviews</Text>
         <View style={styles.reviewRow}>
@@ -85,7 +73,7 @@ const Mall = () => {
       <View style={styles.footer}>
         <View style={styles.pointsWrap}>
           <Text style={styles.pointsLabel}>Total Points Required</Text>
-          <Text style={styles.pointsValue}>{points} PTS</Text>
+          <Text style={styles.pointsValue}>{points.toLocaleString()} PTS</Text>
         </View>
         <TouchableOpacity style={styles.redeemBtn} onPress={() => { router.push('/Redeem') }}>
           <Text style={styles.redeemText}>Redeem</Text>
@@ -109,7 +97,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   productImg: {
-    width: scale(350),
+    width: "100%",
     height: verticalScale(280),
     borderBottomLeftRadius: 32,
     borderBottomRightRadius: 32,

@@ -1,45 +1,15 @@
 import { colors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Dimensions, Image, ImageBackground, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { fetchRedeems, RedeemItem } from '@/services/redeem';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { useAuth } from '@/hooks/useAuth';
-const rewards = [
-  {
-    name: 'Dining Set',
-    points: 460,
-    imageKey: 'Dining.png',
-    image: require('../../assets/images/Dining.png'),
-  },
-  {
-    name: 'Juicer',
-    points: 560,
-    imageKey: 'Jucier.png',
-    image: require('../../assets/images/Jucier.png'),
-  },
-  {
-    name: 'WASHING MACHINE',
-    points: 1260,
-    imageKey: 'Washing.png',
-    image: require('../../assets/images/Washing.png'),
-  },
-  {
-    name: 'FRIDGE',
-    points: 1560,
-    imageKey: 'Fridge.png',
-    image: require('../../assets/images/Fridge.png'),
-  },
-  {
-    name: 'AC',
-    points: 1860,
-    imageKey: 'Ac.png',
-    image: require('../../assets/images/Ac.png'),
-  },
-];
+
 
 // Points badge data structure
 const getPointsBadge = (points: number) => ({
@@ -52,8 +22,26 @@ export default function RewardsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { phone } = useAuth();
+  const [redeems, setRedeems] = useState<RedeemItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
-  // Get points for the current user
+  useEffect(() => {
+    const loadRedeems = async () => {
+      try {
+        setLoading(true);
+        const data = await fetchRedeems();
+        setRedeems(data);
+      } catch (err) {
+        console.error('Failed to load redeems:', err);
+        setError('Failed to load rewards. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadRedeems();
+  }, []);
   const userPoints = useSelector((state: RootState) => 
     phone && state.points.userPoints ? state.points.userPoints[phone] || 0 : 0
   );
@@ -103,17 +91,29 @@ export default function RewardsScreen() {
 
           {/* Rewards List */}
 
-          {rewards.map((item, idx) => (
-            <View style={styles.rewardItem} key={item.name}>
+          {redeems.map((item, idx) => (
+            <View style={styles.rewardItem} key={idx}>
               <Image source={item.image} style={styles.rewardImage} resizeMode="cover" />
               <View style={styles.rewardInfo}>
-                <Text style={styles.rewardName}>{item.name}</Text>
+                <Text style={styles.rewardName}>{item.title}</Text>
                 <View style={{ alignItems: 'flex-start' }}>
-                  <Text style={styles.rewardPoints}>{item.points}</Text>
+                  <Text style={styles.rewardPoints}>{item.points_required}</Text>
                   <Text style={styles.pointsSub}>POINTS</Text>
                 </View>
               </View>
-              <TouchableOpacity style={styles.redeemBtn} onPress={() => router.push({ pathname: '/Mall', params: { name: item.name, points: item.points, imageKey: item.imageKey } })}>
+              <TouchableOpacity 
+                style={styles.redeemBtn} 
+                onPress={() => router.push({ 
+                  pathname: '/Mall', 
+                  params: { 
+                    name: item.title, 
+                    points: item.points_required, 
+                    image: item.imageKey, // Pass the image key instead of the image object
+                    subtitle: item.subtitle || '', // Make sure to include subtitle
+                    description: item.description || ''
+                  } 
+                })}
+              >
                 <Text style={styles.redeemText}>Redeem</Text>
               </TouchableOpacity>
             </View>
