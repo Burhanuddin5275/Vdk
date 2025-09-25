@@ -26,7 +26,7 @@ const Mall = () => {
   const subtitle = params?.subtitle ;
   const description = params?.description ;
   const points = params?.points ? Number(params.points) : 0;
-  const image = params?.image  
+  const image = params?.image ? `http://192.168.1.113:8000/media/redeem/${params.image}` : '';
   const handleRedeem = () => {
     if (userpoint >= points) {
       router.push({
@@ -54,7 +54,7 @@ const Mall = () => {
       {/* Product Image and Header */}
       <View style={styles.imageHeaderWrap}>
         <ImageBackground
-          source={{uri:`http://192.168.1.108:8000/media/redeem/${image}`}}
+          source={{uri:image}}
           style={styles.productImg}
           resizeMode="cover"
           imageStyle={{ borderBottomLeftRadius: 32, borderBottomRightRadius: 32 }}

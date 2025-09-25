@@ -11,33 +11,33 @@ import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 const { width, height } = Dimensions.get('window');
 
 const PAYMENT_METHODS =
-[
-    {
-        id: 'card',
-        label: 'Add Card',
-        icon: <Ionicons name="card-outline" size={moderateScale(25)}color={colors.primary} />,
-        type: 'card',
-    },
-];
+    [
+        {
+            id: 'card',
+            label: 'Add Card',
+            icon: <Ionicons name="card-outline" size={moderateScale(25)} color={colors.primary} />,
+            type: 'card',
+        },
+    ];
 
-const MORE_OPTIONS = 
-[
-    {
-        id: 'easypaisa',
-        label: 'Easypaisa',
-        icon: require('../assets/images/easypaisa.png'), 
-    },
-    {
-        id: 'jazzcash', 
-        label: 'Jazzcash',
-        icon: require('../assets/images/jazzcash.png'),
-    },
-    {
-        id: 'cod',
-        label: 'Cash on Delivery',
-        icon: require('../assets/images/cash.png'),
-    },
-];
+const MORE_OPTIONS =
+    [
+        {
+            id: 'easypaisa',
+            label: 'Easypaisa',
+            icon: require('../assets/images/easypaisa.png'),
+        },
+        {
+            id: 'jazzcash',
+            label: 'Jazzcash',
+            icon: require('../assets/images/jazzcash.png'),
+        },
+        {
+            id: 'cash',
+            label: 'Cash on Delivery',
+            icon: require('../assets/images/cash.png'),
+        },
+    ];
 
 interface OrderItem {
     image: string;
@@ -64,21 +64,21 @@ const Payment = () => {
         shippingMethod: any;
         cartItems: string;
     }>();
-    
+
     const { isAuthenticated, phone, token, user } = useAuth();
     const [userId, setUserId] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchUserData = async () => {
             try {
-                const response = await axios.get('http://192.168.1.107:8000/api/app-user/list/');
+                const response = await axios.get('http://192.168.1.113:8000/api/app-user/list/');
                 const users = response.data; // Assuming the API returns an array of users
                 
                 // Find user by phone number
                 const matchedUser = users.find((u: any) => u.number === phone);
-                
+
                 if (matchedUser) {
-                    setUserId(matchedUser.id); 
+                    setUserId(matchedUser.id);
                     console.log('Matched user ID:', matchedUser.id);
                 } else {
                     console.log('No user found with phone:', phone);
@@ -97,7 +97,7 @@ const Payment = () => {
         }
     }, [phone, token]);
 
-    
+
     // Parse the cart items if they're a string
     const parsedCartItems = useMemo(() => {
         try {
@@ -120,13 +120,13 @@ const Payment = () => {
         }
 
         setIsLoading(true);
-        
+
         try {
             // Parse shipping address if it's a string
-            const addressObj = typeof shippingAddress === 'string' 
-                ? JSON.parse(shippingAddress) 
+            const addressObj = typeof shippingAddress === 'string'
+                ? JSON.parse(shippingAddress)
                 : shippingAddress;
-                
+
             // Parse shipping method if it's a string
             const methodObj = typeof shippingMethod === 'string'
                 ? JSON.parse(shippingMethod)
@@ -135,35 +135,35 @@ const Payment = () => {
 
             console.log('Phone number:', phone, 'Type:', typeof phone);
             const orderData = {
-                user_id: userId ,
+                user_id: userId,
                 user_detail: {
-                    number: phone 
+                    number: phone
                 },
                 address: addressObj?.desc || 'Test',
                 shipping: methodObj?.label || 'Test',
                 status: 'pending',
                 product: parsedCartItems.map((item: any) => ({
-                    image: item.image,
-                    name: item.name || 'Product',
-                    pts: item.points,
-                    quantity: item.quantity,
-                    variants: item.pack,
+                    image: item.image ||null,
+                    name: item.name || null,
+                    pts: item.points || null,
+                    quantity: item.quantity || null,
+                    variants: item.variants || null,
                     price: item.price ? (parseFloat(item.price) * (item.quantity || 1)).toFixed(2) : '0.00',
                 })),
                 payment: [
                     {
-                        method: selected, 
+                        method: selected,
                         status: 'Pending'
                     }
-                ], 
+                ],
                 created_at: new Date().toISOString()
             };
 
             console.log('Sending order data:', JSON.stringify(orderData, null, 2));
-            
-            const API_URL = 'http://192.168.1.107:8000/api/create-order/';
+
+            const API_URL = 'http://192.168.1.113:8000/api/create-order/';
             console.log('Sending request to:', API_URL);
-            
+
             try {
                 const response = await fetch(API_URL, {
                     method: 'POST',
@@ -197,20 +197,20 @@ const Payment = () => {
                 if (!response.ok) {
                     console.error('API Error Status:', response.status);
                     console.error('API Error Data:', responseData);
-                    
+
                     // Handle 400 Bad Request specifically
                     if (response.status === 400) {
-                        const errorMessage = responseData.detail || 
-                                          responseData.message || 
-                                          responseData.error || 
-                                          'Bad request';
+                        const errorMessage = responseData.detail ||
+                            responseData.message ||
+                            responseData.error ||
+                            'Bad request';
                         throw new Error(`Validation error: ${errorMessage}`);
                     }
-                    
+
                     throw new Error(
-                        responseData.detail || 
-                        responseData.message || 
-                        responseData.error || 
+                        responseData.detail ||
+                        responseData.message ||
+                        responseData.error ||
                         `Server error: ${response.status} ${response.statusText}`
                     );
                 }
@@ -221,10 +221,9 @@ const Payment = () => {
                 throw error;
             }
 
-            // Navigate to order confirmation screen on success
             router.push({
                 pathname: '/Payment',
-          
+
             });
         } catch (error: any) {
             console.error('Order creation error:', error);
@@ -236,78 +235,75 @@ const Payment = () => {
 
     const handlePaymentMethodSelect = (methodId: string) => {
         setSelected(methodId);
-        if (methodId === 'cod') {
-            createOrder('cod');
-        }
     };
 
     return (
-        <SafeAreaView style={{flex: 1, paddingBottom: Math.max(verticalScale(4))}}>
+        <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(verticalScale(4)) }}>
             <ImageBackground
                 source={require('../assets/images/ss1.png')}
                 style={styles.background}
                 resizeMode="cover"
             >
                 <View style={styles.container}>
-                {/* Header */}
-                <View style={styles.header}>
-                    <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-                        <Ionicons name="arrow-back" size={moderateScale(28)} color={colors.white} />
-                    </TouchableOpacity>
-                    <Text style={styles.headerTitle}>Payment Method</Text>
-                </View>
-                <ScrollView contentContainerStyle={{ flexGrow:1, paddingHorizontal: 16, justifyContent: 'flex-start', }} showsVerticalScrollIndicator={false}>
-                    <Text style={styles.sectionTitle}>Credit & Debit Card</Text>
-                    <TouchableOpacity
-                        style={[
-                            styles.cardRow,
-                            selected === 'card' && styles.selectedRow,
-                        ]}
-                        activeOpacity={0.8}
-                        onPress={() => { setSelected('card'); router.push('/Card'); }}
-                    >
-                        <View style={styles.iconBox}>{PAYMENT_METHODS[0].icon}</View>
-                        <Text style={styles.cardLabel}>{PAYMENT_METHODS[0].label}</Text>
-                    </TouchableOpacity>
-
-                    {/* More Payment Options */}
-                    <Text style={styles.sectionTitle}>More Payment Options</Text>
-                    {MORE_OPTIONS.map((option) => (
+                    {/* Header */}
+                    <View style={styles.header}>
+                        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+                            <Ionicons name="arrow-back" size={moderateScale(28)} color={colors.white} />
+                        </TouchableOpacity>
+                        <Text style={styles.headerTitle}>Payment Method</Text>
+                    </View>
+                    <ScrollView contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 16, justifyContent: 'flex-start', }} showsVerticalScrollIndicator={false}>
+                        <Text style={styles.sectionTitle}>Credit & Debit Card</Text>
                         <TouchableOpacity
-                            key={option.id}
                             style={[
-                                styles.optionRow,
-                                selected === option.id && styles.selectedRow,
+                                styles.cardRow,
+                                selected === 'card' && styles.selectedRow,
                             ]}
                             activeOpacity={0.8}
-                            onPress={() => handlePaymentMethodSelect(option.id)}
+                            onPress={() => { setSelected('card'); router.push('/Card'); }}
                         >
-                            <Image source={option.icon} style={styles.optionIcon} resizeMode="contain" />
-                            <Text style={styles.optionLabel}>{option.label}</Text>
-
+                            <View style={styles.iconBox}>{PAYMENT_METHODS[0].icon}</View>
+                            <Text style={styles.cardLabel}>{PAYMENT_METHODS[0].label}</Text>
                         </TouchableOpacity>
-                    ))}
-                </ScrollView>
-                {/* Confirm Payment Button */}
-                <View style={styles.footer}>
-                    <Button
-                        variant="secondary"
-                        style={[
-                            styles.confirmBtn,
-                            isLoading && styles.disabledBtn
-                        ]}
-                        onPress={() => createOrder(selected)}
-                        disabled={isLoading}
-                    >
-{isLoading ? (
-                            <ActivityIndicator color="#fff" />
-                        ) : (
-                            'Confirm Payment'
-                        )}
-                    </Button>
+
+                        {/* More Payment Options */}
+                        <Text style={styles.sectionTitle}>More Payment Options</Text>
+                        {MORE_OPTIONS.map((option) => (
+                            <TouchableOpacity
+                                key={option.id}
+                                style={[
+                                    styles.optionRow,
+                                    selected === option.id && styles.selectedRow,
+                                ]}
+                                activeOpacity={0.8}
+                                onPress={() => handlePaymentMethodSelect(option.id)}
+                            >
+                                <Image source={option.icon} style={styles.optionIcon} resizeMode="contain" />
+                                <Text style={styles.optionLabel}>{option.label}</Text>
+
+                            </TouchableOpacity>
+                        ))}
+                    </ScrollView>
+                    {/* Confirm Payment Button */}
+                    <View style={styles.footer}>
+                        <Button
+                            variant="secondary"
+                            style={[
+                                styles.confirmBtn,
+                                isLoading && styles.disabledBtn
+                            ]}
+                            onPress={() => createOrder(selected)}
+                            disabled={isLoading}
+                        >
+                            {isLoading ? (
+                                <ActivityIndicator color="#fff" />
+                            ) : (
+                                'Confirm Payment'
+                            )}
+                        </Button>
+                    </View>
                 </View>
-            </View>
-        </ImageBackground>
+            </ImageBackground>
         </SafeAreaView>
     );
 };
@@ -320,36 +316,36 @@ const styles = StyleSheet.create({
     },
     container: {
         flex: 1,
-    
+
     },
     header: {
-     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    height: verticalScale(80),
-    position: 'relative',
-    paddingHorizontal: scale(18),
-    marginTop: verticalScale(20),
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'flex-start',
+        height: verticalScale(80),
+        position: 'relative',
+        paddingHorizontal: scale(18),
+        marginTop: verticalScale(20),
     },
     backBtn: {
-     width: scale(40),
-    height: scale(40),
-    justifyContent: 'center',
-    zIndex: 1,
+        width: scale(40),
+        height: scale(40),
+        justifyContent: 'center',
+        zIndex: 1,
     },
     headerTitle: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0,
-    textAlign: 'center',
-    textAlignVertical: 'center',
-    fontSize: moderateScale(28),
-    color: '#fff',
-    fontFamily: 'Sigmar',
-    letterSpacing: 1,
-    lineHeight: verticalScale(55),
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        top: 0,
+        bottom: 0,
+        textAlign: 'center',
+        textAlignVertical: 'center',
+        fontSize: moderateScale(28),
+        color: '#fff',
+        fontFamily: 'Sigmar',
+        letterSpacing: 1,
+        lineHeight: verticalScale(55),
     },
     sectionTitle: {
         color: colors.white,

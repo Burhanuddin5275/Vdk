@@ -106,6 +106,7 @@ export default function RewardsScreen() {
                 onPress={() => router.push({ 
                   pathname: '/Mall', 
                   params: { 
+                    userPoints:pointsBadge.value,
                     name: item.title, 
                     points: item.points_required, 
                     image: item.imageKey, // Pass the image key instead of the image object

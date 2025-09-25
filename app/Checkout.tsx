@@ -7,51 +7,89 @@ import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { Button } from '../components/Button';
 import { IconSymbol } from '../components/ui/IconSymbol';
 import { useAddressStore } from '../store/addressStore';
-import { CartItem, useCartStore } from '../store/cartStore';
 import { useShippingStore } from '../store/shippingStore';
 import { colors } from '../theme/colors';
-
+import { useLocalSearchParams, useRouter } from 'expo-router';
 const { width, height } = Dimensions.get('window');
-
+type CheckoutParams = {
+    name?: string;
+    price?: string;
+    image?: string;
+    quantity?: string;
+    variant?: string;
+    points?: string;
+  } & Record<string, string | string[]>;
 const Checkout = () => {
-    const insets = useSafeAreaInsets();
+  const insets = useSafeAreaInsets();
+  const params = useLocalSearchParams<CheckoutParams>();
+  
+  // Parse the items from the URL params or use individual params
+  let cartItems: CheckoutParams[] = [];
+  
+  // Check if we have items in the cart (from Cart.tsx)
+  if (params?.items) {
+    try {
+      const itemsData = Array.isArray(params.items) ? params.items[0] : params.items;
+      cartItems = JSON.parse(itemsData);
+    } catch (error) {
+      console.error('Error parsing cart items:', error);
+    }
+  } 
+  // If no items in cart but we have individual item params (from Mall.tsx)
+  else if (params?.name) {
+    cartItems = [{
+      name: params.name || '',
+      image: params.image || '',
+      quantity: params.quantity || '1',
+      variant: params.variant || '',
+      points: params.points || '0',
+      description: params.description || '',
+      type: params.type || '',
+      userPoints: params.userPoints || '0'
+    }];
+  }
 
-    useEffect(() => {
-        // No font loading needed here as fonts are now global
+  // Log the complete params and cart items for debugging
+  useEffect(() => {
         return () => {
             // Clear address and shipping when leaving Checkout
             useAddressStore.getState().setSelectedAddress(null);
             useShippingStore.getState().setSelectedShipping(null);
         };
     }, []);
-    const { cartItems, loadCart } = useCartStore();
-
-    useEffect(() => {
-        loadCart();
-    }, []);
-
-    // Get selected address and shipping from stores
+ 
+  
     const { selectedAddress } = useAddressStore();
     const { selectedShipping } = useShippingStore();
 
-    const address = selectedAddress || { label: 'Home', desc: 'lorem ispum' };
-    const shipping = selectedShipping || {
-        label: 'Economy',
-        desc: 'Estimated Arrival: 25 Aug 2025',
-    };
+    const address = selectedAddress
+    const shipping = selectedShipping 
 
-    const renderCartItem = ({ item }: { item: CartItem }) => (
-        <View style={styles.cartItem}>
-            <Image source={typeof item.image === 'string' ? { uri: item.image } : item.image} style={styles.cartImage} resizeMode="cover" />
-            <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={styles.cartName}>
-                    {item.name}
-                    {item.pack && <Text style={styles.cartPack}>{'\n'}{item.pack}</Text>}
-                </Text>
-                <Text style={styles.cartPrice}>Pkr {item.price.toLocaleString()}</Text>
+    const renderCartItem = ({ item }: { item: CheckoutParams }) => {
+        console.log('Rendering item:', JSON.stringify(item, null, 2));
+        return (
+            <View style={styles.cartItem}>
+                <Image 
+                    source={typeof item.image === 'string' ? { uri: item.image } : item.image} 
+                    style={styles.cartImage} 
+                    resizeMode="cover" 
+                />
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                    <Text style={styles.cartName}>
+                        {item.name}
+                        {item.variant && <Text style={styles.cartPack}>{'\n'}{item.variant}</Text>}
+                    </Text>
+                    {item.price && item.price !== 'null' ? (
+                        <Text style={styles.cartPrice}>Pkr {item.price}</Text>
+                    ) : item.points && item.points !== 'null' ? (
+                        <Text style={styles.cartPrice}>Pts: {item.points}</Text>
+                    ) : (
+                        <Text style={styles.cartPrice}>No price available</Text>
+                    )}
+                </View>
             </View>
-        </View> 
-    );
+        );
+    };
 
     return (
         <SafeAreaView style={{flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4))}}>
@@ -73,8 +111,8 @@ const Checkout = () => {
                 <View style={styles.sectionRow}>
                     <IconSymbol name="location.fill" size={30} color={colors.white} />
                     <View style={{ flex: 1, marginLeft: 10 }}>
-                        <Text style={styles.addressLabel}>{address.label}</Text>
-                        <Text style={styles.addressDetails}>{address.desc}</Text>
+                        <Text style={styles.addressLabel}>{address?.label}</Text>
+                        <Text style={styles.addressDetails}>{address?.desc}</Text>
                     </View>
                     <Button onPress={() => { router.push('/ShippingAddress') }} variant="secondary" style={styles.changeBtn}>
                         Change
@@ -88,8 +126,8 @@ const Checkout = () => {
                     resizeMode='contain'
                     style={{width:scale(30), height:scale(40), tintColor: colors.white}}/>
                     <View style={{ flex: 1, marginLeft: 10 }}>
-                        <Text style={styles.shippingLabel}>{shipping.label}</Text>
-                        <Text style={styles.shippingEstimate}>{shipping.desc}</Text>
+                        <Text style={styles.shippingLabel}>{shipping?.label}</Text>
+                        <Text style={styles.shippingEstimate}>{shipping?.desc}</Text>
                     </View>
                     <Button onPress={() => { router.push('/ChooseShipping') }} variant="secondary" style={styles.changeBtn}>
                         Change
@@ -102,16 +140,21 @@ const Checkout = () => {
                     renderItem={renderCartItem}
                     keyExtractor={(item, index) => {
                         const variantKey = item.variant ? `-${JSON.stringify(item.variant)}` : '';
-                        return `${item.id}${variantKey}-${index}`;
+                        return `${item.name || 'item'}-${index}${variantKey}`;
                     }}
                     style={{ marginTop: 18, marginBottom: 18 }}
                     showsVerticalScrollIndicator={false}
+                    ListEmptyComponent={
+                        <Text style={{color: colors.white, textAlign: 'center', marginTop: 20}}>
+                            No items in cart
+                        </Text>
+                    }
                 />
 
                 {/* Continue to Payment Button */}
                 <View style={styles.footer}>
                     <Button 
-                        variant="secondary" 
+                        variant="secondary"
                         style={styles.payBtn} 
                         onPress={() => {
                             if (!selectedAddress) {
@@ -124,15 +167,13 @@ const Checkout = () => {
                                 return;
                             }
                             
-                            if (cartItems.length === 0) {
-                                alert('Your cart is empty');
-                                return;
-                            }
+                          
                             
                             router.push({
                                 pathname: '/PaymentMethod',
                                 params: {
                                     cartItems: JSON.stringify(cartItems),
+                                
                                     shippingAddress: JSON.stringify(selectedAddress),
                                     shippingMethod: JSON.stringify(selectedShipping)
                                 }

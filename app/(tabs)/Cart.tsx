@@ -59,302 +59,314 @@ export default function CartScreen() {
   if (loading) {
     return (
       <SafeAreaView style={{ flex: 1 }}>
-        <View style={{flex:1,justifyContent:'center',alignItems:'center'}}>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <Text>Loading...</Text>
         </View>
       </SafeAreaView>
     );
   }
 
-
-
-  // Dynamic calculations
   const subTotal = cartItems.reduce((sum: number, item: CartItem) => sum + (item.price * item.quantity), 0);
   const deliveryFee = 120;
   const discount = Math.round(subTotal * 0.10); // 10% discount
   const totalCost = subTotal + deliveryFee - discount;
 
   return (
-          <SafeAreaView style={{flex:1,paddingBottom: Math.max(insets.bottom, verticalScale(4))}}>
-            <ImageBackground
-      source={require('../../assets/images/Cart.jpg')}
-      style={styles.background}
-      resizeMode="cover"
-    >
-      <View style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={router.back}>
-            <Ionicons name="arrow-back" size={moderateScale(28)} color="white" />
-          </TouchableOpacity>
+    <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
+      <ImageBackground
+        source={require('../../assets/images/Cart.jpg')}
+        style={styles.background}
+        resizeMode="cover"
+      >
+        <View style={styles.container}>
+          {/* Header */}
+          <View style={styles.header}>
+            <TouchableOpacity style={styles.backButton} onPress={router.back}>
+              <Ionicons name="arrow-back" size={moderateScale(28)} color="white" />
+            </TouchableOpacity>
             <Text style={styles.headerTitle}>Cart</Text>
-          <View style={styles.backButton} />
-        </View>
-
-        {/* Cart Items */}
-        <ScrollView style={styles.cartList} showsVerticalScrollIndicator={false}>
-          {cartItems.map((item: CartItem, index: number) => {
-            const variantKey = item.variant ? `-${JSON.stringify(item.variant)}` : '';
-            const uniqueKey = `${item.id}${variantKey}-${index}`;
-            
-            return (
-            <View key={uniqueKey}>
-              <View style={styles.cartItem}>
-                <View style={styles.imageContainer}>
-                  <Image source={typeof item.image === 'string' ? { uri: item.image } : item.image} style={styles.productImage} />
-                  <Text style={styles.productPoints}>{item.points} Pts</Text>
-                </View>
-
-                <View style={styles.productInfo}>
-                  <Text style={styles.productName}>{item.name}</Text>
-                  {item.pack && <Text style={styles.productPack}>{item.pack}</Text>}
-                  <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                    {item.sale_price ? (
-                      <>
-                        <Text style={[styles.productPrice, {color: 'white'}]}>
-                          Pkr {(item.sale_price || 0).toLocaleString()}
-                        </Text>
-                      </>
-                    ) : (
-                      <Text style={styles.productPrice}>
-                        Pkr {(item.price || 0).toLocaleString()}
-                      </Text>
-                    )}
-                  </View>
-                </View>
-
-                <View style={styles.rightSection}>
-                  <View style={styles.quantityControls}>
-                    <TouchableOpacity
-                      style={styles.minusButton}
-                      onPress={() => useCartStore.getState().updateQuantity(item.id, -1)}
-                    >
-                      <Ionicons name="remove" size={moderateScale(20)} color="red" />
-                    </TouchableOpacity>
-                    <Text style={styles.quantityText}>{item.quantity}</Text>
-                    <TouchableOpacity
-                      style={styles.plusButton}
-                      onPress={() => useCartStore.getState().updateQuantity(item.id, 1)}
-                    >
-                      <Ionicons name="add" size={moderateScale(20)} color="red" />
-                    </TouchableOpacity>
-                  </View>
-
-                  <TouchableOpacity
-                    style={styles.removeButton}
-                    onPress={() => {
-                      setSelectedItem(item);
-                      setDeleteModalVisible(true);
-                    }}
-                  >
-                    <Ionicons name="trash-outline" size={moderateScale(20)} color="white" />
-                  </TouchableOpacity>
-                </View>
-              </View>
-              {index < cartItems.length - 1 && <View style={styles.separator} />}
-            </View>
-            );
-          })}
-          {/* Checkout Button */}
-          <View style={styles.checkoutContainer}>
-            <Button
-              variant="primary"
-              style={styles.checkoutButton}
-              onPress={() => {
-                if (cartItems.length > 0) {
-                  setCheckoutModalVisible(true);
-                } else {
-                  setEmptyCartMessage('Please add a product to your cart before checking out.');
-                  setTimeout(() => setEmptyCartMessage(''), 2000);
-                }
-              }}
-              disabled={cartItems.length === 0}
-            >
-              Checkout
-            </Button>
+            <View style={styles.backButton} />
           </View>
-        </ScrollView>
 
-        {/* Delete Modal */}
-        <Modal
-          visible={deleteModalVisible}
-          transparent
-          animationType="slide"
-          onRequestClose={() => setDeleteModalVisible(false)}
-        >
-          <View style={modalStyles.overlay}>
-            <View style={modalStyles.container}>
-              <Text style={modalStyles.title}>Remove from Cart</Text>
-              <View style={modalStyles.divider} />
-              {selectedItem && (
-                <View style={modalStyles.itemRow}>
-                  <Image source={selectedItem && typeof selectedItem.image === 'string' ? { uri: selectedItem.image } : selectedItem.image} style={modalStyles.itemImage} />
-                  <View>
-                    <Text style={modalStyles.itemName}>{selectedItem.name}</Text>
-                    <Text style={modalStyles.itemPrice}>Pkr {selectedItem.price}</Text>
+          {/* Cart Items */}
+          <ScrollView style={styles.cartList} showsVerticalScrollIndicator={false}>
+            {cartItems.map((item: CartItem, index: number) => {
+              const variantKey = item.variant ? `-${JSON.stringify(item.variant)}` : '';
+              const uniqueKey = `${item.id}${variantKey}-${index}`;
+
+              return (
+                <View key={uniqueKey}>
+                  <View style={styles.cartItem}>
+                    <View style={styles.imageContainer}>
+                      <Image source={typeof item.image === 'string' ? { uri: item.image } : item.image} style={styles.productImage} />
+                      <Text style={styles.productPoints}>{item.points} Pts</Text>
+                    </View>
+
+                    <View style={styles.productInfo}>
+                      <Text style={styles.productName}>{item.name}</Text>
+                      {item.pack && <Text style={styles.productPack}>{item.pack}</Text>}
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        {item.sale_price ? (
+                          <>
+                            <Text style={[styles.productPrice, { color: 'white' }]}>
+                              Pkr {(item.sale_price || 0).toLocaleString()}
+                            </Text>
+                          </>
+                        ) : (
+                          <Text style={styles.productPrice}>
+                            Pkr {(item.price || 0).toLocaleString()}
+                          </Text>
+                        )}
+                      </View>
+                    </View>
+
+                    <View style={styles.rightSection}>
+                      <View style={styles.quantityControls}>
+                        <TouchableOpacity
+                          style={styles.minusButton}
+                          onPress={() => useCartStore.getState().updateQuantity(item.id, -1)}
+                        >
+                          <Ionicons name="remove" size={moderateScale(20)} color="red" />
+                        </TouchableOpacity>
+                        <Text style={styles.quantityText}>{item.quantity}</Text>
+                        <TouchableOpacity
+                          style={styles.plusButton}
+                          onPress={() => useCartStore.getState().updateQuantity(item.id, 1)}
+                        >
+                          <Ionicons name="add" size={moderateScale(20)} color="red" />
+                        </TouchableOpacity>
+                      </View>
+                      <TouchableOpacity
+                        style={styles.removeButton}
+                        onPress={() => {
+                          setSelectedItem(item);
+                          setDeleteModalVisible(true);
+                        }}
+                      >
+                        <Ionicons name="trash-outline" size={moderateScale(20)} color="white" />
+                      </TouchableOpacity>
+                    </View>
                   </View>
+                  {index < cartItems.length - 1 && <View style={styles.separator} />}
                 </View>
-              )}
-              <View style={modalStyles.buttonRow}>
-                <Button
-                  variant="primary"
-                  style={modalStyles.cancelButton}
-                  onPress={() => setDeleteModalVisible(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  style={modalStyles.removeButton}
-                  onPress={() => {
-                    if (selectedItem) {
-                      useCartStore.getState().removeItem(selectedItem.id);
-                      setDeleteModalVisible(false);
-                    }
-                  }}>
-                  Yes, Remove
-                </Button>
-              </View>
-            </View>
-          </View>
-        </Modal>
-        <Modal
-          visible={checkoutModalVisible}
-          transparent
-          animationType="slide"
-          onRequestClose={() => setCheckoutModalVisible(false)}
-        >
-          <View style={checkoutModalStyles.overlay}>
-            <View style={checkoutModalStyles.container}>
-              {/* Promo Code Row */}
-              <View style={checkoutModalStyles.promoRow}>
-                <View style={[checkoutModalStyles.promoInputBox, { flexDirection: 'row', alignItems: 'center' }]}>
-                  <TextInput
-                    style={[checkoutModalStyles.promoInputText, { flex: 1 }]}
-                    placeholder="Promo Code"
-                    placeholderTextColor="#B0B0B0"
-                    value={promoCode}
-                    onChangeText={setPromoCode}
-                  />
-                  <TouchableOpacity style={checkoutModalStyles.applyButton}>
-                    <Text style={checkoutModalStyles.applyButtonText}>Apply</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-              <View style={checkoutModalStyles.calcRow}>
-                <Text style={checkoutModalStyles.label}>Sub-Total</Text>
-                <Text style={checkoutModalStyles.valueBold}>Pkr {subTotal.toLocaleString()}</Text>
-              </View>
-              <View style={checkoutModalStyles.calcRow}>
-                <Text style={checkoutModalStyles.label}>Delivery Fee</Text>
-                <Text style={checkoutModalStyles.valueBold}>Pkr {deliveryFee.toLocaleString()}</Text>
-              </View>
-              <View style={checkoutModalStyles.calcRow}>
-                <Text style={checkoutModalStyles.label}>Discount</Text>
-                <Text style={checkoutModalStyles.discountValue}>10%(Pkr-{discount})</Text>
-              </View>
-              <View style={checkoutModalStyles.divider} />
-              <View style={checkoutModalStyles.calcRow}>
-                <Text style={checkoutModalStyles.label}>Total Cost</Text>
-                <Text style={checkoutModalStyles.totalValue}>Pkr {totalCost.toLocaleString()}</Text>
-              </View>
-
-              {/* Proceed Button */}
-              <Pressable
-                style={({ hovered }) => [
-                  checkoutModalStyles.proceedButton,
-                  hovered && { backgroundColor: colors.primary }
-                ]}
+              );
+            })}
+            {/* Checkout Button */}
+            <View style={styles.checkoutContainer}>
+              <Button
+                variant="primary"
+                style={styles.checkoutButton}
                 onPress={() => {
-                  setCheckoutModalVisible(false);
-                  router.push('/Checkout');
+                  if (cartItems.length > 0) {
+                    setCheckoutModalVisible(true);
+                  } else {
+                    setEmptyCartMessage('Please add a product to your cart before checking out.');
+                    setTimeout(() => setEmptyCartMessage(''), 2000);
+                  }
                 }}
+                disabled={cartItems.length === 0}
               >
-                <Text style={checkoutModalStyles.proceedButtonText}>Proceed to Checkout</Text>
-              </Pressable>
+                Checkout
+              </Button>
             </View>
-          </View>
-        </Modal>
+          </ScrollView>
 
-        {/* Add to Cart Modal */}
-        <Modal
-          visible={addToCartModalVisible}
-          transparent
-          animationType="slide"
-          onRequestClose={() => setAddToCartModalVisible(false)}
-        >
-          <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.3)' }}>
-            <View style={{ backgroundColor: '#FBF4E4', borderTopLeftRadius: 32, borderTopRightRadius: 32, padding: 24, width: '100%', maxWidth: '100%', alignSelf: 'center', }}>
-              <Text style={{ color: '#E53935', fontFamily: 'PoppinsBold', fontSize: 18, marginBottom: 10 }}>Sizes</Text>
-              <View style={{ flexDirection: 'row', marginBottom: 16 }}>
-                {sizes.map((s, i) => (
-                  <TouchableOpacity
-                    key={s.label}
-                    onPress={() => setSelectedSize(s.label)}
-                    style={{
-                      borderWidth: selectedSize === s.label ? 2 : 0,
-                      borderColor: '#E53935',
-                      borderRadius: 12,
-                      backgroundColor: '#fff',
-                      marginRight: 16,
-                      padding: 8,
-                      alignItems: 'center',
-                      width: 90,
-                    }}
+          {/* Delete Modal */}
+          <Modal
+            visible={deleteModalVisible}
+            transparent
+            animationType="slide"
+            onRequestClose={() => setDeleteModalVisible(false)}
+          >
+            <View style={modalStyles.overlay}>
+              <View style={modalStyles.container}>
+                <Text style={modalStyles.title}>Remove from Cart</Text>
+                <View style={modalStyles.divider} />
+                {selectedItem && (
+                  <View style={modalStyles.itemRow}>
+                    <Image source={selectedItem && typeof selectedItem.image === 'string' ? { uri: selectedItem.image } : selectedItem.image} style={modalStyles.itemImage} />
+                    <View>
+                      <Text style={modalStyles.itemName}>{selectedItem.name}</Text>
+                      <Text style={modalStyles.itemPrice}>Pkr {selectedItem.price}</Text>
+                    </View>
+                  </View>
+                )}
+                <View style={modalStyles.buttonRow}>
+                  <Button
+                    variant="primary"
+                    style={modalStyles.cancelButton}
+                    onPress={() => setDeleteModalVisible(false)}
                   >
-                    <View style={{ width: 48, height: 32, backgroundColor: '#F2F2F2', borderRadius: 8, marginBottom: 6 }} />
-                    <Text style={{ color: selectedSize === s.label ? '#E53935' : '#1A1A1A', fontFamily: 'PoppinsBold', fontSize: 14 }}>{s.label}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-              <View style={{ height: 1, backgroundColor: '#E5E5E5', marginVertical: 10 }} />
-              <Text style={{ color: '#E53935', fontFamily: 'PoppinsBold', fontSize: 16, marginBottom: 8 }}>Quantity</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
-                <TouchableOpacity
-                  style={{ backgroundColor: '#E5E5E5', borderRadius: 6, width: 32, height: 32, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}
-                  onPress={() => setQty(q => Math.max(1, q - 1))}
-                >
-                  <Ionicons name="remove" size={20} color="#E53935" />
-                </TouchableOpacity>
-                <Text style={{ fontSize: 18, fontFamily: 'PoppinsBold', color: '#E53935', marginHorizontal: 8 }}>{qty}</Text>
-                <TouchableOpacity
-                  style={{ backgroundColor: '#E5E5E5', borderRadius: 6, width: 32, height: 32, alignItems: 'center', justifyContent: 'center', marginLeft: 12 }}
-                  onPress={() => setQty(q => q + 1)}
-                >
-                  <Ionicons name="add" size={20} color="#E53935" />
-                </TouchableOpacity>
-              </View>
-              <View style={{ height: 1, backgroundColor: '#E5E5E5', marginVertical: 10 }} />
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                <View>
-                  <Text style={{ color: '#E53935', fontFamily: 'PoppinsBold', fontSize: 24 }}>
-                    Pkr {selectedItem ? (selectedItem.sale_price || selectedItem.price) * qty : 0}/-
-                  </Text>
+                    Cancel
+                  </Button>
+                  <Button
+                    style={modalStyles.removeButton}
+                    onPress={() => {
+                      if (selectedItem) {
+                        useCartStore.getState().removeItem(selectedItem.id);
+                        setDeleteModalVisible(false);
+                      }
+                    }}>
+                    Yes, Remove
+                  </Button>
                 </View>
-                <TouchableOpacity
-                  style={{ backgroundColor: '#E53935', borderRadius: 24, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 22, paddingVertical: 12 }}
-                  onPress={() => setAddToCartModalVisible(false)}
-                >
-                  <Ionicons name="cart" size={20} color="#fff" style={{ marginRight: 8 }} />
-                  <Text style={{ color: '#fff', fontFamily: 'PoppinsBold', fontSize: 16 }}>Add to Cart</Text>
-                </TouchableOpacity>
               </View>
             </View>
-          </View>
-        </Modal>
+          </Modal>
+          <Modal
+            visible={checkoutModalVisible}
+            transparent
+            animationType="slide"
+            onRequestClose={() => setCheckoutModalVisible(false)}
+          >
+            <View style={checkoutModalStyles.overlay}>
+              <View style={checkoutModalStyles.container}>
+                {/* Promo Code Row */}
+                <View style={checkoutModalStyles.promoRow}>
+                  <View style={[checkoutModalStyles.promoInputBox, { flexDirection: 'row', alignItems: 'center' }]}>
+                    <TextInput
+                      style={[checkoutModalStyles.promoInputText, { flex: 1 }]}
+                      placeholder="Promo Code"
+                      placeholderTextColor="#B0B0B0"
+                      value={promoCode}
+                      onChangeText={setPromoCode}
+                    />
+                    <TouchableOpacity style={checkoutModalStyles.applyButton}>
+                      <Text style={checkoutModalStyles.applyButtonText}>Apply</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+                <View style={checkoutModalStyles.calcRow}>
+                  <Text style={checkoutModalStyles.label}>Sub-Total</Text>
+                  <Text style={checkoutModalStyles.valueBold}>Pkr {subTotal.toLocaleString()}</Text>
+                </View>
+                <View style={checkoutModalStyles.calcRow}>
+                  <Text style={checkoutModalStyles.label}>Delivery Fee</Text>
+                  <Text style={checkoutModalStyles.valueBold}>Pkr {deliveryFee.toLocaleString()}</Text>
+                </View>
+                <View style={checkoutModalStyles.calcRow}>
+                  <Text style={checkoutModalStyles.label}>Discount</Text>
+                  <Text style={checkoutModalStyles.discountValue}>10%(Pkr-{discount})</Text>
+                </View>
+                <View style={checkoutModalStyles.divider} />
+                <View style={checkoutModalStyles.calcRow}>
+                  <Text style={checkoutModalStyles.label}>Total Cost</Text>
+                  <Text style={checkoutModalStyles.totalValue}>Pkr {totalCost.toLocaleString()}</Text>
+                </View>
 
-        {/* Empty Cart Message */}
-        {emptyCartMessage ? (
-          <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center', zIndex: 20 }}>
-            <View style={{ backgroundColor: '#E53935', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 24 }}>
-              <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>{emptyCartMessage}</Text>
+                {/* Proceed Button */}
+                <Pressable
+                  style={({ hovered }) => [
+                    checkoutModalStyles.proceedButton,
+                    hovered && { backgroundColor: colors.primary }
+                  ]}
+                  onPress={() => {
+                    if (cartItems.length === 0) return;
+                    setCheckoutModalVisible(false);
+                    // Convert cart items to a format that can be passed as URL params
+                    const itemsParam = JSON.stringify(cartItems.map((item: CartItem) => ({
+                      name: item.name,
+                      price: item.price,
+                      image: item.image,
+                      quantity: item.quantity,
+                      variant: item.pack,
+                      points: item.points,
+                    })));
+                    
+                    router.push({
+                      pathname: '/Checkout',
+                      params: { 
+                        items: itemsParam
+                      }
+                    });
+                  }}
+                >
+                  <Text style={checkoutModalStyles.proceedButtonText}>Proceed to Checkout</Text>
+                </Pressable>
+              </View>
             </View>
-          </View>
-        ) : null}
+          </Modal>
 
-      </View>
-    </ImageBackground>
-          </SafeAreaView>
-   
+          {/* Add to Cart Modal */}
+          <Modal
+            visible={addToCartModalVisible}
+            transparent
+            animationType="slide"
+            onRequestClose={() => setAddToCartModalVisible(false)}
+          >
+            <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.3)' }}>
+              <View style={{ backgroundColor: '#FBF4E4', borderTopLeftRadius: 32, borderTopRightRadius: 32, padding: 24, width: '100%', maxWidth: '100%', alignSelf: 'center', }}>
+                <Text style={{ color: '#E53935', fontFamily: 'PoppinsBold', fontSize: 18, marginBottom: 10 }}>Sizes</Text>
+                <View style={{ flexDirection: 'row', marginBottom: 16 }}>
+                  {sizes.map((s, i) => (
+                    <TouchableOpacity
+                      key={s.label}
+                      onPress={() => setSelectedSize(s.label)}
+                      style={{
+                        borderWidth: selectedSize === s.label ? 2 : 0,
+                        borderColor: '#E53935',
+                        borderRadius: 12,
+                        backgroundColor: '#fff',
+                        marginRight: 16,
+                        padding: 8,
+                        alignItems: 'center',
+                        width: 90,
+                      }}
+                    >
+                      <View style={{ width: 48, height: 32, backgroundColor: '#F2F2F2', borderRadius: 8, marginBottom: 6 }} />
+                      <Text style={{ color: selectedSize === s.label ? '#E53935' : '#1A1A1A', fontFamily: 'PoppinsBold', fontSize: 14 }}>{s.label}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                <View style={{ height: 1, backgroundColor: '#E5E5E5', marginVertical: 10 }} />
+                <Text style={{ color: '#E53935', fontFamily: 'PoppinsBold', fontSize: 16, marginBottom: 8 }}>Quantity</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+                  <TouchableOpacity
+                    style={{ backgroundColor: '#E5E5E5', borderRadius: 6, width: 32, height: 32, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}
+                    onPress={() => setQty(q => Math.max(1, q - 1))}
+                  >
+                    <Ionicons name="remove" size={20} color="#E53935" />
+                  </TouchableOpacity>
+                  <Text style={{ fontSize: 18, fontFamily: 'PoppinsBold', color: '#E53935', marginHorizontal: 8 }}>{qty}</Text>
+                  <TouchableOpacity
+                    style={{ backgroundColor: '#E5E5E5', borderRadius: 6, width: 32, height: 32, alignItems: 'center', justifyContent: 'center', marginLeft: 12 }}
+                    onPress={() => setQty(q => q + 1)}
+                  >
+                    <Ionicons name="add" size={20} color="#E53935" />
+                  </TouchableOpacity>
+                </View>
+                <View style={{ height: 1, backgroundColor: '#E5E5E5', marginVertical: 10 }} />
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <View>
+                    <Text style={{ color: '#E53935', fontFamily: 'PoppinsBold', fontSize: 24 }}>
+                      Pkr {selectedItem ? (selectedItem.sale_price || selectedItem.price) * qty : 0}/-
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    style={{ backgroundColor: '#E53935', borderRadius: 24, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 22, paddingVertical: 12 }}
+                    onPress={() => setAddToCartModalVisible(false)}
+                  >
+                    <Ionicons name="cart" size={20} color="#fff" style={{ marginRight: 8 }} />
+                    <Text style={{ color: '#fff', fontFamily: 'PoppinsBold', fontSize: 16 }}>Add to Cart</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </Modal>
+
+          {/* Empty Cart Message */}
+          {emptyCartMessage ? (
+            <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center', zIndex: 20 }}>
+              <View style={{ backgroundColor: '#E53935', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 24 }}>
+                <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>{emptyCartMessage}</Text>
+              </View>
+            </View>
+          ) : null}
+
+        </View>
+      </ImageBackground>
+    </SafeAreaView>
+
   );
 }
 
@@ -627,7 +639,7 @@ const checkoutModalStyles = StyleSheet.create({
   },
   applyButtonText: {
     color: 'white',
-    fontFamily:'PoppinsMedium',
+    fontFamily: 'PoppinsMedium',
     fontSize: moderateScale(16),
   },
   calcRow: {
