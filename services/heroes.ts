@@ -1,3 +1,5 @@
+import { Api_url } from "../url/url";
+
 type ApiHero = any;
 
 export type HeroItem = {
@@ -6,7 +8,7 @@ export type HeroItem = {
   image: any;
 };
 
-const API_URL = "http://192.168.1.111:8000/api/heros/";
+const API_URL = `${Api_url}api/heros/`;
 
 function toHero(item: ApiHero): HeroItem {
   const title = String(item.title ?? item.name ?? item.label ?? "Hero");

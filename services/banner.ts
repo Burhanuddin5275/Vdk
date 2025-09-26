@@ -1,3 +1,4 @@
+import { Api_url } from "../url/url";
 type ApiBanner = any;
 
 export type BannerItem = {
@@ -6,7 +7,7 @@ export type BannerItem = {
   image: any;
 };
 
-const API_URL = "http://192.168.1.111:8000/api/banners/";
+const API_URL = `${Api_url}api/banners/`;
 
 function toBanner(item: ApiBanner): BannerItem {
   const brand = String(item.brand ?? "Banner");

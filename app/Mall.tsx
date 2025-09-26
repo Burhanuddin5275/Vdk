@@ -5,7 +5,7 @@ import React, { useEffect } from 'react';
 import { Dimensions, ImageBackground, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
-
+import { Api_url } from '../url/url';
 const { width } = Dimensions.get('window');
 
 // Define the expected params type
@@ -26,7 +26,7 @@ const Mall = () => {
   const subtitle = params?.subtitle ;
   const description = params?.description ;
   const points = params?.points ? Number(params.points) : 0;
-  const image = params?.image ? `http://192.168.1.113:8000/media/redeem/${params.image}` : '';
+  const image = params?.image ? `${Api_url}media/redeem/${params.image}` : '';
   const handleRedeem = () => {
     if (userpoint >= points) {
       router.push({

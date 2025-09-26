@@ -7,7 +7,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 import { ActivityIndicator, Alert, Dimensions, Image, ImageBackground, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
-
+import { Api_url } from '../url/url';
 const { width, height } = Dimensions.get('window');
 
 const PAYMENT_METHODS =
@@ -71,7 +71,7 @@ const Payment = () => {
     useEffect(() => {
         const fetchUserData = async () => {
             try {
-                const response = await axios.get('http://192.168.1.113:8000/api/app-user/list/');
+                const response = await axios.get(`${Api_url}api/app-user/list/`);
                 const users = response.data; // Assuming the API returns an array of users
                 
                 // Find user by phone number
@@ -161,7 +161,7 @@ const Payment = () => {
 
             console.log('Sending order data:', JSON.stringify(orderData, null, 2));
 
-            const API_URL = 'http://192.168.1.113:8000/api/create-order/';
+            const API_URL = `${Api_url}api/create-order/`;
             console.log('Sending request to:', API_URL);
 
             try {

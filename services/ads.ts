@@ -1,3 +1,4 @@
+import { Api_url } from "../url/url";
 type ApiAds = any;
 
 export type AdsItem = {
@@ -6,7 +7,7 @@ export type AdsItem = {
   image: any;
 };
 
-const API_URL = "http://192.168.1.111:8000/api/ads/";
+const API_URL = `${Api_url}api/ads/`;
 
 function toAds(item: ApiAds): AdsItem {
   const brand = String(item.brand ?? "Ads");

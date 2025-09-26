@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRef, useState, useEffect } from 'react';
 import { useRouter } from 'expo-router';
 import { colors } from '@/theme/colors';
-import { db } from './firebase';
+import { db } from '../firebase/firebase';
 import { collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, Timestamp, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { useAppSelector } from '@/store/hooks';
 import { selectIsAuthenticated, selectPhone } from '@/store/authSlice';

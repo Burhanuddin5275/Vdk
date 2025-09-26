@@ -6,7 +6,7 @@ import React, { useEffect, useState } from 'react';
 import { Image, ImageBackground, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
-
+import { Api_url } from '../url/url';
 const Login = () => {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
@@ -45,14 +45,14 @@ const Login = () => {
       };
       
       console.log('Sending login request:', {
-        url: 'http://192.168.1.111:8000/api/app-user/login/',
+        url: `${Api_url}api/app-user/login/`,
         method: 'POST',
         body: requestBody
       });
       
       const userPhone = formattedPhone;
       
-      const response = await fetch('http://192.168.1.111:8000/api/app-user/login/', {
+      const response = await fetch(`${Api_url}api/app-user/login/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -5,6 +5,7 @@ import { Dimensions, FlatList, Image, ImageBackground, SafeAreaView, StyleSheet,
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import TabLayout from './(tabs)/_layout';
+import { Api_url } from '../url/url';
 
 const bgImage = require('../assets/images/ss1.png');
 
@@ -146,7 +147,7 @@ const OrderTracker = () => {
                 <Image 
                   source={{ 
                     uri: item.image && !item.image.startsWith('http') 
-                      ? `http://192.168.1.107:8000${item.image.startsWith('/') ? '' : '/'}${item.image}`
+                      ? `${Api_url}${item.image.startsWith('/') ? '' : '/'}${item.image}`
                       : item.image 
                   }} 
                   style={styles.productImage}

@@ -1,3 +1,4 @@
+import { Api_url } from "../url/url";
 export type OrderStatus = 'pending' | 'process' | 'on_the_way' | 'delivered' | 'cancelled';
 
 export type orders = {
@@ -12,7 +13,7 @@ export type orders = {
 }
   
 
-const API_URL = "http://192.168.1.107:8000/api/orders/";
+const API_URL = `${Api_url}api/orders/`;
 
 type ApiOrders = any;
 
