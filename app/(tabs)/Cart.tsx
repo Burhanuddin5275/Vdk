@@ -17,6 +17,7 @@ interface CartItem {
   sale_price?: number;
   points: number;
   quantity: number;
+  stock: number;
   image: any;
   variant?: {
     price: number;
@@ -130,10 +131,18 @@ export default function CartScreen() {
                         </TouchableOpacity>
                         <Text style={styles.quantityText}>{item.quantity}</Text>
                         <TouchableOpacity
-                          style={styles.plusButton}
+                          style={[
+                            styles.plusButton,
+                            item.stock !== null && item.quantity >= item.stock && styles.disabledButton
+                          ]}
                           onPress={() => useCartStore.getState().updateQuantity(item.id, 1)}
+                          disabled={item.stock !== null && item.quantity >= item.stock}
                         >
-                          <Ionicons name="add" size={moderateScale(20)} color="red" />
+                          <Ionicons 
+                            name="add" 
+                            size={moderateScale(20)} 
+                            color={item.stock !== null && item.quantity >= item.stock ? '#cccccc' : 'red'} 
+                          />
                         </TouchableOpacity>
                       </View>
                       <TouchableOpacity
@@ -485,6 +494,10 @@ const styles = StyleSheet.create({
     fontSize: moderateScale(16),
     fontWeight: '600',
     marginHorizontal: scale(12),
+  },
+  disabledButton: {
+    opacity: 0.5,
+    backgroundColor: '#999',
   },
   removeButton: {
     width: moderateScale(32),
