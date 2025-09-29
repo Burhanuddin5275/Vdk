@@ -113,6 +113,7 @@ const Products = () => {
     const addToCart = useCartStore((state: any) => state.addToCart);
     const selectedVariant = variants.find((v: any) => v.label === selectedSize);
     const [showSuccess, setShowSuccess] = useState(false);
+    const isOutOfStock = selectedVariant?.stock === 0 || product.quantity === 0 || product?.stock_status === 'outofstock';
     const wishlistItems = useWishlistStore(state => state.items);
     const [wishlistMessage, setWishlistMessage] = useState<string | null>(null);
     const [cartMessage, setCartMessage] = useState<string | null>(null);
@@ -405,24 +406,49 @@ const Products = () => {
                                 ))}
                             </View>
                             {variants.length > 0 && <View style={{ height: 1, backgroundColor: '#E5E5E5', marginVertical: 10 }} />}
-                            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                                <Text style={{ color: mainColor, fontFamily: 'PoppinsRegular', fontSize: moderateScale(15) }}>Quantity</Text>
-                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                    <TouchableOpacity
-                                        style={{ backgroundColor: '#E5E5E5', borderRadius: 6, width: 32, height: 32, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}
-                                        onPress={() => setQty(q => Math.max(1, q - 1))}
-                                    >
-                                        <Ionicons name="remove" size={20} color={mainColor} />
-                                    </TouchableOpacity>
-                                    <Text style={{ fontSize: 18, fontFamily: 'PoppinsBold', color: mainColor, marginHorizontal: 8 }}>{qty}</Text>
-                                    <TouchableOpacity
-                                        style={{ backgroundColor: '#E5E5E5', borderRadius: 6, width: 32, height: 32, alignItems: 'center', justifyContent: 'center', marginLeft: 12 }}
-                                        onPress={() => setQty(q => q + 1)}
-                                    >
-                                        <Ionicons name="add" size={20} color={mainColor} />
-                                    </TouchableOpacity>
+                            {(selectedVariant?.stock === 0 || product.quantity === 0) ? (
+                                <View style={[styles.outOfStockContainer, { borderColor: mainColor }]}>
+                                    <Text style={[styles.outOfStockText, { color: mainColor }]}>Out of Stock</Text>
                                 </View>
-                            </View>
+                            ) : (
+                                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                                    <Text style={{ color: mainColor, fontFamily: 'PoppinsRegular', fontSize: moderateScale(15) }}>Quantity</Text>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                        <TouchableOpacity
+                                            style={{ backgroundColor: '#E5E5E5', borderRadius: 6, width: 32, height: 32, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}
+                                            onPress={() => setQty(q => Math.max(1, q - 1))}
+                                        >
+                                            <Ionicons name="remove" size={20} color={mainColor} />
+                                        </TouchableOpacity>
+                                        <Text style={{ fontSize: 18, fontFamily: 'PoppinsBold', color: mainColor, marginHorizontal: 8 }}>{qty}</Text>
+                                        <TouchableOpacity
+                                            style={[{
+                                                backgroundColor: '#E5E5E5',
+                                                borderRadius: 6,
+                                                width: 32,
+                                                height: 32,
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                marginLeft: 12,
+                                                opacity: (selectedVariant?.stock !== undefined && qty >= selectedVariant.stock) ? 0.5 : 1
+                                            }]}
+                                            onPress={() => {
+                                                const maxQty = selectedVariant?.stock !== undefined ? selectedVariant.stock : product.quantity || 0;
+                                                if (qty < maxQty) {
+                                                    setQty(q => q + 1);
+                                                }
+                                            }}
+                                            disabled={selectedVariant?.stock !== undefined ? qty >= selectedVariant.stock : (product.quantity ? qty >= product.quantity : false)}
+                                        >
+                                            <Ionicons 
+                                                name="add" 
+                                                size={20} 
+                                                color={(selectedVariant?.stock !== undefined && qty >= selectedVariant.stock) || (product.quantity && qty >= product.quantity) ? '#999' : mainColor} 
+                                            />
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
+                            )}
                             <View style={{ height: 1, backgroundColor: '#E5E5E5', marginVertical: 10 }} />
                             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                                 <View>
@@ -508,24 +534,29 @@ const Products = () => {
                                         </View>
                                     </View>
                                 </View>
-                                <TouchableOpacity
-                                    disabled={product?.stock_status === 'outofstock'}
-                                    style={{
-                                        backgroundColor: product?.stock_status === 'outofstock' ? '#9E9E9E' : mainColor,
-                                        opacity: product?.stock_status === 'outofstock' ? 0.9 : 1,
-                                        borderRadius: 24,
-                                        flexDirection: 'row',
-                                        alignItems: 'center',
-                                        paddingHorizontal: 22,
-                                        paddingVertical: 12
-                                    }}
-                                    onPress={handleAddToCart}
-                                >
-                                    <Ionicons name="cart" size={scale(20)} color="#fff" style={{ marginRight: 8 }} />
-                                    <Text style={{ color: '#fff', fontFamily: 'PoppinsMedium', fontSize: moderateScale(15) }}>
-                                        {product?.stock_status === 'outofstock' ? 'Out of Stock' : 'Add to Cart'}
-                                    </Text>
-                                </TouchableOpacity>
+                                {isOutOfStock ? (
+                                    <View style={[styles.outOfStockContainer, { borderColor: mainColor, marginTop: 10 }]}>
+                                        <Text style={[styles.outOfStockText, { color: mainColor }]}>Out of Stock</Text>
+                                    </View>
+                                ) : (
+                                    <TouchableOpacity
+                                        onPress={handleAddToCart}
+                                        style={{
+                                            backgroundColor: mainColor,
+                                            borderRadius: 24,
+                                            flexDirection: 'row',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            paddingHorizontal: 22,
+                                            paddingVertical: 12
+                                        }}
+                                    >
+                                        <Ionicons name="cart" size={20} color="#fff" style={{ marginRight: 8 }} />
+                                        <Text style={{ color: '#fff', fontFamily: 'PoppinsMedium', fontSize: moderateScale(15) }}>
+                                            Add to Cart
+                                        </Text>
+                                    </TouchableOpacity>
+                                )}
                             </View>
                         </View>
                     </View>
@@ -568,6 +599,18 @@ const Products = () => {
 };
 
 const styles = StyleSheet.create({
+    outOfStockContainer: {
+        borderWidth: 1,
+        borderRadius: 8,
+        padding: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginVertical: 8
+    },
+    outOfStockText: {
+        fontFamily: 'PoppinsMedium',
+        fontSize: 16,
+    },
     modalOverlay: {
         ...StyleSheet.absoluteFillObject,
         backgroundColor: 'rgba(0, 0, 0, 0.5)',

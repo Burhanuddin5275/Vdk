@@ -116,13 +116,20 @@ export const useCartStore = create<CartState>((set, get) => ({
     await AsyncStorage.setItem(userCartKey, JSON.stringify(updated));
   },
   removeItem: async (id: string, userId?: string, variant?: { price: number; sale_price?: number }) => {
+    const { cartItems } = get();
+    
+    // If cart is empty or undefined, nothing to remove
+    if (!cartItems || cartItems.length === 0) {
+      return;
+    }
+    
     // Create a unique key for the item being removed
     const getItemKey = (i: CartItem) => {
       return i.variant ? `${i.id}-${JSON.stringify(i.variant)}` : i.id;
     };
     
     // Find the exact item to remove using both ID and variant
-    const itemToRemove = get().cartItems.find(item => {
+    const itemToRemove = cartItems.find(item => {
       // If variant is provided, match both ID and variant
       if (variant) {
         return item.id === id && JSON.stringify(item.variant || {}) === JSON.stringify(variant);
@@ -136,7 +143,7 @@ export const useCartStore = create<CartState>((set, get) => ({
     const targetKey = getItemKey(itemToRemove);
     
     // Remove only the specific item that matches both ID and variant
-    const updated = get().cartItems.filter(item => {
+    const updated = cartItems.filter(item => {
       const itemKey = getItemKey(item);
       return itemKey !== targetKey;
     });
