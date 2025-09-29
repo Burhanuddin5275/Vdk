@@ -212,8 +212,13 @@ export default function CartScreen() {
                     style={modalStyles.removeButton}
                     onPress={() => {
                       if (selectedItem) {
-                        useCartStore.getState().removeItem(selectedItem.id);
+                        useCartStore.getState().removeItem(
+                          selectedItem.id,
+                          undefined, 
+                          selectedItem.variant 
+                        );
                         setDeleteModalVisible(false);
+                        setSelectedItem(null);
                       }
                     }}>
                     Yes, Remove

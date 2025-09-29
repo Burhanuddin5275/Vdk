@@ -3,13 +3,12 @@ import { useAppSelector } from '@/store/hooks';
 import { colors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useWishlistStore } from './Wishlist';
 import React, { useEffect, useState } from 'react';
 import { Image, ImageBackground, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { useCartStore } from '../store/cartStore';
-import { CartItem } from '../store/cartStore';
+import { useWishlistStore } from './Wishlist';
 
 const backgroundImages = {
     ss1: require('../assets/images/ss1.png'),
@@ -108,19 +107,17 @@ const Products = () => {
             priceRange = { min: minPrice, max: maxPrice };
         }
     }
+
     const [selectedSize, setSelectedSize] = useState(variants[0]?.label || '');
     const [qty, setQty] = useState(1);
     const addToCart = useCartStore((state: any) => state.addToCart);
     const selectedVariant = variants.find((v: any) => v.label === selectedSize);
     const [showSuccess, setShowSuccess] = useState(false);
-    const [cartMessage, setCartMessage] = useState<string | null>(null);
+    const wishlistItems = useWishlistStore(state => state.items);
     const [wishlistMessage, setWishlistMessage] = useState<string | null>(null);
-    const wishlistItems = useWishlistStore((state) => state.items);
-    const phone = useAppSelector(selectPhone);
+    const [cartMessage, setCartMessage] = useState<string | null>(null);
     const isAuthenticated = useAppSelector(selectIsAuthenticated);
-    const cartItems = useCartStore((state) => state.cartItems).filter(
-        (item: CartItem) => item.user === phone
-    );
+    const phone = useAppSelector(selectPhone);
 
     let bgKey: 'ss1' | 'ss2' | undefined;
     if (Array.isArray(backgroundImage)) {
@@ -159,63 +156,51 @@ const Products = () => {
         const variantSalePrice = selectedVariant?.sale_price;
         const imageForCart = selectedVariant?.image || selectedImg;
 
-        // Check if product with same variant already exists in cart
-        const existingItem = cartItems.find((item: CartItem) => {
-            if (item.id !== product.id) return false;
-            
-            // If both have variants, compare them
-            if (selectedVariant && item.variant) {
-                return item.variant.price === variantPrice && 
-                       item.variant.sale_price === variantSalePrice;
-            }
-            
-            // If neither has variants, it's a match
-            return !selectedVariant && !item.variant;
-        });
+        const cartItem = {
+            id: product.id,
+            name: product.name,
+            pack: selectedSize,
+            price: variantSalePrice || variantPrice || product.sale_price || product.regular_price || 0,
+            sale_price: variantSalePrice || product.sale_price || undefined,
+            points: product.pts,
+            stock: selectedVariant?.stock !== undefined ? selectedVariant.stock : product.quantity,
+            image: imageForCart,
+            user: phone,
+            variant: selectedVariant ? { 
+                price: variantPrice,
+                sale_price: variantSalePrice,
+            } : undefined,
+            quantity: qty,
+        };
 
-        if (existingItem) {
-            // Check if adding one more would exceed stock
-            const maxStock = selectedVariant?.stock ?? product.quantity ?? 0;
-            if (existingItem.quantity >= maxStock) {
-                setCartMessage('Maximum available quantity already in cart');
-                setTimeout(() => setCartMessage(null), 2000);
-                return;
-            }
-            
-            // Update quantity of existing item
-            await useCartStore.getState().updateQuantity(
-                existingItem.id, 
-                1, 
-                phone,
-                existingItem.variant
-            );
-        } else {
-            // Add as new item
-            await addToCart({
-                id: product.id,
-                name: product.name,
-                pack: selectedSize,
-                price: variantSalePrice || variantPrice || product.sale_price || product.regular_price || 0,
-                sale_price: variantSalePrice || product.sale_price || undefined,
-                points: product.pts,
-                stock: selectedVariant?.stock !== undefined ? selectedVariant.stock : product.quantity,
-                image: imageForCart,
-                user: phone,
-                variant: selectedVariant ? { 
-                    price: variantPrice,
-                    sale_price: variantSalePrice,
-                } : undefined,
-                quantity: product.quantity,
-            });
-        }
+        console.log('Attempting to add to cart:', JSON.stringify(cartItem, null, 2));
         
-        setModalVisible(false);
-        setShowSuccess(true);
-        setCartMessage('Product added to cart!');
-        setTimeout(() => {
-            setShowSuccess(false);
-            setCartMessage(null);
-        }, 2000);
+        try {
+            await addToCart(cartItem);
+            console.log('Successfully added to cart');
+            setModalVisible(false); 
+            setShowSuccess(true);
+            setTimeout(() => setShowSuccess(false), 2000);
+        } catch (error) {
+            let errorMessage = 'Failed to add to cart';
+            
+            if (error instanceof Error) {
+                const errorLower = error.message.toLowerCase();
+                
+                if (errorLower.includes('stock') || errorLower.includes('available') || errorLower.includes('exceed')) {
+                    // Extract the available quantity if mentioned in the error
+                    const quantityMatch = error.message.match(/\d+/);
+                    if (quantityMatch) {
+                        const availableQty = quantityMatch[0];
+                        errorMessage = `Only ${availableQty} item${availableQty === '1' ? ' is' : 's are'} available in stock`;
+                    } else {
+                        errorMessage = 'Not enough items in stock';
+                    }
+                }
+            }
+             
+            setTimeout(() => setCartMessage(null), 3000);
+        }
     };
 
     const insets = useSafeAreaInsets();
@@ -554,7 +539,16 @@ const Products = () => {
                     </View>
                 </View>
             )}
-            {/* Snackbar/Toast */}
+            {/* Cart Message */}
+            {cartMessage && (
+                <View style={{ position: 'absolute', top: 40, left: 0, right: 0, alignItems: 'center', zIndex: 20 }}>
+                    <View style={{ backgroundColor: '#ff4444', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 24 }}>
+                        <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>{cartMessage}</Text>
+                    </View>
+                </View>
+            )}
+            
+            {/* Wishlist Message */}
             {wishlistMessage && (
                 <View style={{ position: 'absolute', top: 40, left: 0, right: 0, alignItems: 'center', zIndex: 20 }}>
                     <View style={{ backgroundColor: mainColor, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 24 }}>
