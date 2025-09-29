@@ -5,7 +5,7 @@ import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 
 type ButtonProps = {
   variant?: 'primary' | 'secondary';
-  children: string;
+  children: React.ReactNode;  // Changed from string to ReactNode
   onPress?: () => void;
   style?: object;
   disabled?: boolean;

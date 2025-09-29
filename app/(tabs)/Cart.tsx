@@ -125,7 +125,7 @@ export default function CartScreen() {
                       <View style={styles.quantityControls}>
                         <TouchableOpacity
                           style={styles.minusButton}
-                          onPress={() => useCartStore.getState().updateQuantity(item.id, -1)}
+                          onPress={() => useCartStore.getState().updateQuantity(item.id, -1, undefined, item.variant)}
                         >
                           <Ionicons name="remove" size={moderateScale(20)} color="red" />
                         </TouchableOpacity>
@@ -135,7 +135,7 @@ export default function CartScreen() {
                             styles.plusButton,
                             item.stock !== null && item.quantity >= item.stock && styles.disabledButton
                           ]}
-                          onPress={() => useCartStore.getState().updateQuantity(item.id, 1)}
+                          onPress={() => useCartStore.getState().updateQuantity(item.id, 1, undefined, item.variant)}
                           disabled={item.stock !== null && item.quantity >= item.stock}
                         >
                           <Ionicons 

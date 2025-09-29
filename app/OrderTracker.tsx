@@ -1,11 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import React from 'react';
-import { Dimensions, FlatList, Image, ImageBackground, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useState } from 'react';
+import { Alert, Dimensions, FlatList, Image, ImageBackground, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
-import TabLayout from './(tabs)/_layout';
 import { Api_url } from '../url/url';
+import TabLayout from './(tabs)/_layout';
 
 const bgImage = require('../assets/images/ss1.png');
 
@@ -27,6 +27,7 @@ interface OrderData {
   items: OrderItem[];
   address?: string;
   shipping?: string;
+  user_id?: string;  // Add user_id to the interface
 }
 
 // Helper function to format date
@@ -89,8 +90,74 @@ const OrderTracker = () => {
   const insets = useSafeAreaInsets();
   
   // Parse the order data from the route params
-  const order: OrderData = orderString ? JSON.parse(orderString as string) : null;
+  const [order, setOrder] = useState<OrderData | null>(orderString ? JSON.parse(orderString as string) : null);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const handleCancelOrder = async () => {
+    if (!order) return;
+    
+    try {
+      setIsCancelling(true);
+      // Using the original endpoint that was working before
+      const url = `${Api_url}api/create-order/`;
+      console.log('Attempting to cancel order at URL:', url);
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: order.id,
+          status: 'cancelled'
+        })
+      });
   
+      const responseText = await response.text();
+      console.log('Raw response:', {
+        status: response.status,
+        statusText: response.statusText,
+        body: responseText
+      });
+  
+      // Define the expected response shape
+      interface ApiResponse {
+        message?: string;
+        detail?: string;
+        [key: string]: any;  // Allow other properties
+      }
+      
+      // Try to parse JSON, but don't fail if it's not JSON
+      let data: ApiResponse = {};
+      try {
+        data = responseText ? JSON.parse(responseText) : {};
+      } catch (e) {
+        console.warn('Response is not JSON, but that might be okay');
+      }
+  
+      if (!response.ok) {
+        throw new Error(
+          data.message || 
+          data.detail || 
+          `Request failed with status ${response.status}`
+        );
+      }
+  
+      // If we get here, the request was successful
+      setOrder(prev => ({
+        ...prev!,
+        status: 'cancelled'
+      }));
+      Alert.alert('Success', 'Your order has been cancelled successfully');
+    } catch (error) {
+      console.error('Error cancelling order:', error);
+      Alert.alert(
+        'Error', 
+        error instanceof Error ? error.message : 'Failed to cancel order. Please try again.'
+      );
+    } finally {
+      setIsCancelling(false);
+    }
+  };
   // Get status steps based on order status
   const statusSteps = order ? getStatusSteps(order.status, order.created_at) : [];
   
@@ -110,9 +177,31 @@ const OrderTracker = () => {
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Order Tracker</Text>
         </View>
-        {/* Order Number */}
-        <Text style={styles.orderNumber}>Order # {order?.id || 'N/A'}</Text>
-        <Text style={styles.orderDate}>Placed on: {orderDate}</Text>
+        {/* Order Number with Action Icons */}
+        <View style={styles.orderHeader}>
+          <View>
+            <Text style={styles.orderNumber}>Order # {order?.id || 'N/A'}</Text>
+            <Text style={styles.orderDate}>Placed on: {orderDate}</Text>
+          </View>
+           <View style={{flexDirection:'row', gap:8, marginLeft:verticalScale(90)}}>
+           <TouchableOpacity 
+              style={styles.actionButton} 
+              onPress={() => router.push({
+                pathname: '/Chat',
+                params: { orderId: order?.id }
+              })}
+            >
+              <Ionicons name="chatbubble-ellipses-outline" size={24} color="red" />
+            </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.actionButton} 
+                onPress={handleCancelOrder}
+              >
+                <Ionicons name="close-circle-outline" size={24} color="#ff4444" />
+              </TouchableOpacity>
+
+           </View>
+        </View> 
         <View style={styles.divider} />
         {/* Status Timeline */}
         <View style={styles.timelineContainer}>
@@ -179,16 +268,16 @@ const OrderTracker = () => {
         />
         
         {/* Order Total */}
-        {order?.items?.length > 0 && (
-          <View style={styles.totalContainer}>
-            <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>Order Total:</Text>
-              <Text style={styles.totalAmount}>
-                Rs. {order.items.reduce((sum, item) => sum + (parseFloat(item.price)), 0).toFixed(2)}
-              </Text>
-            </View>
-          </View>
-        )}
+        {order?.items && order.items.length > 0 ? (
+  <View style={styles.totalContainer}>
+    <View style={styles.totalRow}>
+      <Text style={styles.totalLabel}>Order Total:</Text>
+      <Text style={styles.totalAmount}>
+        Rs. {order.items.reduce((sum, item) => sum + (parseFloat(item.price)), 0).toFixed(2)}
+      </Text>
+    </View>
+  </View>
+) : null}
       </View>
       
       <TabLayout />
@@ -208,6 +297,16 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
+  },
+  orderHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: verticalScale(8),
+  },
+  actionButton: {
+    padding: scale(6),
+    borderRadius: 20,
+    backgroundColor: '#f0f0f0',
   },
   header: {
          flexDirection: 'row',

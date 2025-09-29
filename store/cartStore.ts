@@ -16,6 +16,7 @@ interface CartItem {
   sale_price?: number;
   points: number;
   quantity: number;
+  stock: number;
   image: any;
   user?: string;
   variant?: {
@@ -29,7 +30,7 @@ export type { CartItem };
 interface CartState {
   cartItems: CartItem[];
   addToCart: (item: CartItem) => Promise<void>;
-  updateQuantity: (id: string, change: number) => Promise<void>;
+  updateQuantity: (id: string, change: number, userId?: string, variant?: { price: number; sale_price?: number }) => Promise<void>;
   removeItem: (id: string) => Promise<void>;
   loadCart: (userId?: string) => Promise<void>;
 }
@@ -67,17 +68,30 @@ export const useCartStore = create<CartState>((set, get) => ({
     set({ cartItems: updated });
     await AsyncStorage.setItem(userCartKey, JSON.stringify(updated));
   },
-  updateQuantity: async (id, change, userId?: string) => {
-    const itemToUpdate = get().cartItems.find(item => item.id === id);
+  updateQuantity: async (id: string, change: number, userId?: string, variant?: { price: number; sale_price?: number }) => {
+    // Create a unique key for the item being updated
+    const getItemKey = (i: CartItem) => {
+      return i.variant ? `${i.id}-${JSON.stringify(i.variant)}` : i.id;
+    };
+    
+    // Find the exact item to update using both ID and variant
+    const itemToUpdate = get().cartItems.find(item => {
+      // If variant is provided, match both ID and variant
+      if (variant) {
+        return item.id === id && JSON.stringify(item.variant || {}) === JSON.stringify(variant);
+      }
+      // Otherwise, just match by ID (for backward compatibility)
+      return item.id === id;
+    });
     
     if (!itemToUpdate) return; // Item not found
     
+    const targetKey = getItemKey(itemToUpdate);
+    
+    // Update only the specific item that matches both ID and variant
     const updated = get().cartItems.map(item => {
-      // Match by both ID and variant (if exists)
-      const itemVariant = JSON.stringify(item.variant || {});
-      const targetVariant = JSON.stringify(itemToUpdate.variant || {});
-      
-      if (item.id === id && itemVariant === targetVariant) {
+      const itemKey = getItemKey(item);
+      if (itemKey === targetKey) {
         return { ...item, quantity: Math.max(1, item.quantity + change) };
       }
       return item;
@@ -87,30 +101,25 @@ export const useCartStore = create<CartState>((set, get) => ({
     set({ cartItems: updated });
     await AsyncStorage.setItem(userCartKey, JSON.stringify(updated));
   },
-  removeItem: async (id, userId?: string) => {
-    // Check if the ID contains variant information (format: 'id-{variantInfo}')
+  removeItem: async (id: string, userId?: string) => {
+    // Get the item to remove using the ID
     const itemToRemove = get().cartItems.find(item => item.id === id);
+    if (!itemToRemove) return; // Item not found
     
-    if (!itemToRemove) {
-      // If no exact match, try to find by base ID (for backward compatibility)
-      const updated = get().cartItems.filter(item => item.id !== id);
-      set({ cartItems: updated });
-      await AsyncStorage.setItem(CART_KEY, JSON.stringify(updated));
-      return;
-    }
+    // Create a unique key for the item being removed
+    const getItemKey = (i: CartItem) => {
+      return i.variant ? `${i.id}-${JSON.stringify(i.variant)}` : i.id;
+    };
+    const targetKey = getItemKey(itemToRemove);
     
-    // If we have a variant, make sure we only remove the exact variant
+    // Remove only the specific item that matches both ID and variant
     const updated = get().cartItems.filter(item => {
-      if (item.id !== id) return true; // Keep items with different IDs
-      
-      // For items with the same ID, compare variants
-      const itemVariant = JSON.stringify(item.variant || {});
-      const removeVariant = JSON.stringify(itemToRemove.variant || {});
-      return itemVariant !== removeVariant;
+      const itemKey = getItemKey(item);
+      return itemKey !== targetKey;
     });
     
     const userCartKey = getUserCartKey(userId);
     set({ cartItems: updated });
     await AsyncStorage.setItem(userCartKey, JSON.stringify(updated));
-  },
+  }
 })); 
