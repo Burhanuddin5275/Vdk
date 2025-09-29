@@ -26,12 +26,6 @@ interface OrderData {
   items: OrderItem[];
 }
 
-const statusSteps = [
-  { label: 'Order placed!', date: '04/20/2025, 11:00 AM', done: true },
-  { label: 'Preparing for dispatch', date: '04/20/2025, 03:23 PM', done: true },
-  { label: 'Out for delivery', date: '', done: false },
-  { label: 'Order delivered', date: '', done: false },
-];
 const formatDate = (dateString: string) => {
   if (!dateString) return '';
   const date = new Date(dateString);
@@ -100,18 +94,15 @@ const OrderReview = () => {
     <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
       <ImageBackground source={bgImage} style={styles.background} resizeMode="cover">
         <View style={styles.container}>
-          {/* Header */}
           <View style={styles.header}>
             <TouchableOpacity style={styles.backBtn} onPress={router.back}>
               <Ionicons name="arrow-back" size={moderateScale(28)} color="white" />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Order Review</Text>
           </View>
-          {/* Order Number */}
           <Text style={styles.orderNumber}>Order # {order?.id || 'N/A'}</Text>
           <Text style={styles.orderDate}>Placed on: {orderDate}</Text>
           <View style={styles.divider} />
-          {/* Status Timeline */}
           <View style={styles.timelineContainer}>
             {statusSteps.map((step, idx) => (
               <View key={idx} style={styles.timelineStep}>
@@ -130,7 +121,6 @@ const OrderReview = () => {
           </View>
           <View style={styles.divider} />
 
-          {/* Order Items */}
           <View style={styles.itemsHeader}>
             <Text style={styles.itemsHeaderText}>Order items</Text>
             <Text style={styles.itemsHeaderText}>
@@ -138,7 +128,6 @@ const OrderReview = () => {
             </Text>
           </View>
 
-          {/* Product List */}
           <FlatList
             data={order?.items || []}
             keyExtractor={(item, index) => `${item.id}-${index}`}
@@ -178,7 +167,6 @@ const OrderReview = () => {
             }
             style={{ flexGrow: 0 }}
           />
-          {/* Order Total */}
           {order?.items?.length > 0 && (
             <View style={styles.totalContainer}>
               <View style={styles.totalRow}>
@@ -190,7 +178,6 @@ const OrderReview = () => {
             </View>
           )}
         </View>
-        {/* Order Review Modal */}
         <Modal
           visible={modalVisible}
           animationType="slide"
@@ -209,7 +196,6 @@ const OrderReview = () => {
                 </TouchableOpacity>
               </View>
               <View style={styles.ratingRow}>
-                {/* Interactive star rating */}
                 {[1, 2, 3, 4, 5].map((star) => (
                   <TouchableOpacity key={star} onPress={() => setRating(star)}>
                     <AntDesign

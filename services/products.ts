@@ -1,3 +1,4 @@
+import {Api_url} from "../url/url";
 export type Product =
   | {
     id: string;
@@ -8,6 +9,8 @@ export type Product =
     pts: number;
     rating: number;
     regular_price: number;
+    quantity: number;
+    stock: number;
     sale_price: number;
     description?: string;
     stock_status?: string;
@@ -15,7 +18,7 @@ export type Product =
   }
   | { banner: string };
 
-const API_URL = "http://192.168.1.111:8000/api/products/";
+const API_URL = `${Api_url}api/products/`;
 
 type ApiProduct = any;
 
@@ -27,6 +30,8 @@ function toProduct(item: ApiProduct): Product {
   const imageUrl = item.image?.url ?? item.image ?? item.thumbnail ?? item.img ?? null;
   const img = imageUrl ? { uri: String(imageUrl) } : require("../assets/images/card.png");
   const rating = Number(item.rating ?? item.stars ?? 5);
+  const quantity = Number(item.quantity ?? null);
+  const stock = Number(item.stock ?? item.quantity ?? 0);
   const pts = Number(item.pts ?? item.points ?? 29);
   const regular_price = Number(item.regular_price ?? item.amount ?? 0);
   const sale_price = Number(item.sale_price ?? item.discounted_price ?? 0);
@@ -41,7 +46,9 @@ function toProduct(item: ApiProduct): Product {
     Category,
     img,
     pts,
+    stock,
     rating,
+    quantity,
    regular_price,
    sale_price,
     description,

@@ -82,10 +82,12 @@ export default function OrdersScreen() {
               orderPoints = order.items.reduce((sum: number, item: any) => {
                 const points = item.pts ? parseInt(item.pts) : 0;
                 const quantity = item.quantity || 1;
-                return sum + (points * quantity);
+                if (item.price === null || item.price === '0.00') {
+                  return sum - (points * quantity);
+                }
+                return sum + (points * quantity); 
               }, 0);
               
-              // Add this order's points to the total
               totalUserPoints += orderPoints;
               
               console.log('Adding points for completed order:', {
@@ -137,11 +139,9 @@ export default function OrdersScreen() {
         });
         
         setOrders(userOrders);
-        
-        // Log the total points across all orders for the current user
+
         console.log('Total points across all orders:', totalUserPoints);
         
-        // Save total points to Redux store for the current user
         if (phone) {
           dispatch(setUserPoints({ phone, points: totalUserPoints }));
         }
