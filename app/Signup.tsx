@@ -1,4 +1,5 @@
 import { colors } from '@/theme/colors';
+import { Api_url } from '@/url/url';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -46,12 +47,12 @@ const Signup = () => {
         };
         
         console.log('Sending request to register user:', {
-          url: 'http://192.168.1.111:8000/api/app-users/',
+          url: `${Api_url}/api/app-users/`,
           method: 'POST',
           body: requestBody
         });
 
-        const response = await fetch('http://192.168.1.111:8000/api/app-users/', {
+        const response = await fetch(`${Api_url}/api/app-users/`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

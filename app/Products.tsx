@@ -113,12 +113,19 @@ const Products = () => {
     const addToCart = useCartStore((state: any) => state.addToCart);
     const selectedVariant = variants.find((v: any) => v.label === selectedSize);
     const [showSuccess, setShowSuccess] = useState(false);
-    const isOutOfStock = selectedVariant?.stock === 0 || product.quantity === 0 || product?.stock_status === 'outofstock';
     const wishlistItems = useWishlistStore(state => state.items);
     const [wishlistMessage, setWishlistMessage] = useState<string | null>(null);
     const [cartMessage, setCartMessage] = useState<string | null>(null);
     const isAuthenticated = useAppSelector(selectIsAuthenticated);
     const phone = useAppSelector(selectPhone);
+    const cartItems = useCartStore(state => state.cartItems);
+    const [stockLimit, setStockLimit] = useState<number | null>(null);
+
+    // Calculate if product is out of stock
+    const isOutOfStock = selectedVariant?.stock === 0 || 
+                        product.quantity === 0 || 
+                        product?.stock_status === 'outofstock' ||
+                        (stockLimit !== null && stockLimit < 1);
 
     let bgKey: 'ss1' | 'ss2' | undefined;
     if (Array.isArray(backgroundImage)) {
@@ -128,10 +135,8 @@ const Products = () => {
     }
 
     const mainColor = bgKey === 'ss2' ? '#0B3D0B' : '#E53935';
-    const cartItems = useCartStore(state => state.cartItems);
 
     // Check if product is in cart when cart items change
-    const [stockLimit, setStockLimit] = useState<number | null>(null);
 
     useEffect(() => {
         // Only run if there are items in the cart
@@ -444,11 +449,7 @@ const Products = () => {
                                 ))}
                             </View>
                             {variants.length > 0 && <View style={{ height: 1, backgroundColor: '#E5E5E5', marginVertical: 10 }} />}
-                            {(selectedVariant?.stock === 0 || product.quantity === 0) ? (
-                                <View style={[styles.outOfStockContainer, { borderColor: mainColor }]}>
-                                    <Text style={[styles.outOfStockText, { color: mainColor }]}>Out of Stock</Text>
-                                </View>
-                            ) : (
+
                                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
                                     <Text style={{ color: mainColor, fontFamily: 'PoppinsRegular', fontSize: moderateScale(15) }}>Quantity</Text>
                                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -510,7 +511,7 @@ const Products = () => {
                                         </TouchableOpacity>
                                     </View>
                                 </View>
-                            )}
+                            
                             <View style={{ height: 1, backgroundColor: '#E5E5E5', marginVertical: 10 }} />
                             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                                 <View>

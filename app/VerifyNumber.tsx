@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, ImageBackground, Keyboard, Platform, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, ImageBackground, Keyboard, Linking, Platform, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { verticalScale } from 'react-native-size-matters';
 
@@ -17,13 +17,29 @@ const VerifyNumber = () => {
   const [verificationCode, setVerificationCode] = useState<string>('');
   const inputRefs = useRef<Array<TextInput | null>>([]);
   
-  // Generate random 4-digit code on component mount with delay
+  // Generate random 4-digit code on component mount with delay and send via email
   useEffect(() => {
+    const sendOtpEmail = async (code: string) => {
+      const emailAddress = 'bhamza4747@gmail.com';
+      const emailSubject = 'Your Verification Code';
+      const emailBody = `Your verification code is: ${code}\n\nPlease use this code to verify your account.`;
+      const emailUrl = `mailto:${emailAddress}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
+      
+      try {
+        await Linking.openURL(emailUrl);
+        console.log('Verification code email sent');
+      } catch (error) {
+        console.error('Error sending verification email:', error);
+        // Fallback to alert if email client fails to open
+        Alert.alert('Verification Code', `Your verification code is: ${code}`);
+      }
+    };
+
     const randomDelay = Math.floor(Math.random() * 1000) + 3000; // Random delay between 3-4 seconds
     const timer = setTimeout(() => {
       const randomCode = Math.floor(1000 + Math.random() * 9000).toString();
       setVerificationCode(randomCode);
-      Alert.alert('Verification Code', `Your verification code is: ${randomCode}`);
+      sendOtpEmail(randomCode);
     }, randomDelay);
 
     return () => clearTimeout(timer);
@@ -110,7 +126,7 @@ const VerifyNumber = () => {
     }
   };
 
-  const handleResend = () => {
+  const handleResend = async () => {
     if (timer > 0) return;
     
     if (!phone) {
@@ -121,11 +137,30 @@ const VerifyNumber = () => {
     setOtp(Array(OTP_LENGTH).fill(''));
     setTimer(RESEND_TIME);
     
-    const randomDelay = Math.floor(Math.random() * 1000) + 3000;
+    const sendOtpEmail = async (code: string) => {
+      const emailAddress = 'bhamza4747@gmail.com';
+      const emailSubject = 'Your New Verification Code';
+      const emailBody = `Your new verification code is: ${code}\n\nPlease use this code to verify your account.`;
+      const emailUrl = `mailto:${emailAddress}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
+      
+      try {
+        await Linking.openURL(emailUrl);
+        console.log('New verification code email sent');
+        Alert.alert('Code Sent', 'A new verification code has been sent to your email.');
+      } catch (error) {
+        console.error('Error sending verification email:', error);
+        // Fallback to alert if email client fails to open
+        Alert.alert('New Verification Code', `Your new verification code is: ${code}`);
+      }
+    };
+    
+    const newCode = Math.floor(1000 + Math.random() * 9000).toString();
+    setVerificationCode(newCode);
+    
+    // Add a small delay before sending the email
+    const randomDelay = Math.floor(Math.random() * 1000) + 1000;
     setTimeout(() => {
-      const newCode = Math.floor(1000 + Math.random() * 9000).toString();
-      setVerificationCode(newCode);
-      Alert.alert('New Verification Code', `Your new verification code is: ${newCode}`);
+      sendOtpEmail(newCode);
     }, randomDelay);
   };
 
