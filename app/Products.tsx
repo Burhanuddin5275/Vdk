@@ -128,6 +128,43 @@ const Products = () => {
     }
 
     const mainColor = bgKey === 'ss2' ? '#0B3D0B' : '#E53935';
+    const cartItems = useCartStore(state => state.cartItems);
+
+    // Check if product is in cart when cart items change
+    const [stockLimit, setStockLimit] = useState<number | null>(null);
+
+    useEffect(() => {
+        // Only run if there are items in the cart
+        if (cartItems && cartItems.length > 0) {
+            const cartItem = cartItems.find(item => {
+                if (item.id !== product.id) return false;
+                if (variants.length > 0) {
+                    if (!selectedVariant) return false;                    
+                    return item.pack === selectedVariant.label && 
+                           item.variant?.price === selectedVariant.price &&
+                           item.variant?.sale_price === selectedVariant.sale_price;
+                }
+                return true;
+            });
+            
+            if (cartItem) {
+                const availableStock = cartItem.stock - cartItem.quantity;
+                console.log('Product in cart:', {
+                    id: cartItem.id,
+                    name: cartItem.name,
+                    variant: cartItem.pack,
+                    cartQuantity: cartItem.quantity,
+                    availableInCart: availableStock,
+                    variantStock: selectedVariant?.stock
+                });
+                setStockLimit(availableStock);
+            } else {
+                setStockLimit(null);
+            }
+        } else {
+            setStockLimit(null);
+        }
+    }, [cartItems, product.id, product.quantity, selectedVariant?.stock]);
 
     const handleAddToCart = async () => {
         if (!isAuthenticated || !phone) {
@@ -142,8 +179,9 @@ const Products = () => {
                 setCartMessage('This variant is out of stock.');
                 setTimeout(() => setCartMessage(null), 2000);
                 return;
-            } else if (qty > selectedVariant.stock) {
-                setCartMessage(`Only ${selectedVariant.stock} items available in stock.`);
+            } else if (qty > (stockLimit || selectedVariant.stock)) {
+                const available = stockLimit || selectedVariant.stock;
+                setCartMessage(`Only ${available} item${available === 1 ? '' : 's'} available in stock.`);
                 setTimeout(() => setCartMessage(null), 2000);
                 return;
             }
@@ -416,7 +454,7 @@ const Products = () => {
                                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                                         <TouchableOpacity
                                             style={{ backgroundColor: '#E5E5E5', borderRadius: 6, width: 32, height: 32, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}
-                                            onPress={() => setQty(q => Math.max(1, q - 1))}
+                                            onPress={() => setQty(q => Math.max(1, q - 1))} 
                                         >
                                             <Ionicons name="remove" size={20} color={mainColor} />
                                         </TouchableOpacity>
@@ -430,20 +468,44 @@ const Products = () => {
                                                 alignItems: 'center',
                                                 justifyContent: 'center',
                                                 marginLeft: 12,
-                                                opacity: (selectedVariant?.stock !== undefined && qty >= selectedVariant.stock) ? 0.5 : 1
                                             }]}
-                                            onPress={() => {
-                                                const maxQty = selectedVariant?.stock !== undefined ? selectedVariant.stock : product.quantity || 0;
+                                            onPress={() => { 
+                                                const variantStock = selectedVariant?.stock ?? product.quantity ?? 0;
+                                                const maxQty = selectedVariant 
+                                                    ? (stockLimit !== null ? Math.min(variantStock, stockLimit) : variantStock)
+                                                    : (stockLimit !== null ? Math.min(product.quantity ?? 0, stockLimit) : (product.quantity ?? 0));
+                                                
                                                 if (qty < maxQty) {
                                                     setQty(q => q + 1);
                                                 }
                                             }}
-                                            disabled={selectedVariant?.stock !== undefined ? qty >= selectedVariant.stock : (product.quantity ? qty >= product.quantity : false)}
+                                            disabled={(() => {
+                                                const variantStock = selectedVariant?.stock ?? product.quantity ?? 0;
+                                                const maxQty = selectedVariant 
+                                                    ? (stockLimit !== null ? Math.min(variantStock, stockLimit) : variantStock)
+                                                    : (stockLimit !== null ? Math.min(product.quantity ?? 0, stockLimit) : (product.quantity ?? 0));
+                                                return qty >= maxQty;
+                                            })()}
                                         >
                                             <Ionicons 
                                                 name="add" 
                                                 size={20} 
-                                                color={(selectedVariant?.stock !== undefined && qty >= selectedVariant.stock) || (product.quantity && qty >= product.quantity) ? '#999' : mainColor} 
+                                                color={(() => {
+                                                    const variantStock = selectedVariant?.stock ?? product.quantity ?? 0;
+                                                    const maxQty = selectedVariant 
+                                                        ? (stockLimit !== null ? Math.min(variantStock, stockLimit) : variantStock)
+                                                        : (stockLimit !== null ? Math.min(product.quantity ?? 0, stockLimit) : (product.quantity ?? 0));
+                                                    return qty >= maxQty ? '#999' : mainColor;
+                                                })()}
+                                                style={{
+                                                    opacity: (() => {
+                                                        const variantStock = selectedVariant?.stock ?? product.quantity ?? 0;
+                                                        const maxQty = selectedVariant 
+                                                            ? (stockLimit !== null ? Math.min(variantStock, stockLimit) : variantStock)
+                                                            : (stockLimit !== null ? Math.min(product.quantity ?? 0, stockLimit) : (product.quantity ?? 0));
+                                                        return qty >= maxQty ? 0.5 : 1;
+                                                    })()
+                                                }}
                                             />
                                         </TouchableOpacity>
                                     </View>
