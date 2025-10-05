@@ -24,7 +24,7 @@ export default function Profile() {
     { label: 'Chat', icon: 'chatbubble-ellipses', onPress: () => {router.push('/Chat')} },
     { label: 'Wishlist', icon: 'heart', onPress: () => { router.push('/Wishlist') } },
     { label: 'Manage addresses', icon: 'location', onPress: () => { router.push('/ShippingAddress') } },
-    { label: 'Manage profile', icon: 'person-circle', onPress: () => { } },
+    { label: 'Manage profile', icon: 'person-circle', onPress: () => { router.push('/ManageProfile') } },
     { label: 'Contact us', icon: 'paper-plane', onPress: () => { } },
     { label: 'About us', icon: 'information-circle', onPress: () => { } },
     { label: 'Terms & conditions', icon: 'document-text', onPress: () => { } },

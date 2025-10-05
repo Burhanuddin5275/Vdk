@@ -98,7 +98,8 @@ const Mall = () => {
   <Text style={styles.redeemText}>
     {userpoint >= points 
       ? `Redeem ` 
-      : `Insufficient points`}
+      : `Insufficient 
+      Points`}
   </Text>
 </TouchableOpacity>
       </View>
@@ -230,12 +231,11 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontSize: moderateScale(26),
     fontFamily: 'PoppinsBold',
-    marginTop: 2,
   },
   redeemBtn: {
     backgroundColor: colors.primary,
     borderRadius: scale(26),
-    paddingVertical: 8,
+    paddingVertical: 6,
     paddingHorizontal: 32,
     alignItems: 'center',
     justifyContent: 'center',

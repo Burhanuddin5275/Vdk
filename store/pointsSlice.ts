@@ -32,4 +32,8 @@ export const pointsSlice = createSlice({
 
 export const { setUserPoints, addUserPoints, resetUserPoints } = pointsSlice.actions;
 
+// Selector to get points for a specific user
+export const selectUserPoints = (state: { points: PointsState }, phone: string) => 
+  state.points.userPoints[phone] || 0;
+
 export default pointsSlice.reducer;

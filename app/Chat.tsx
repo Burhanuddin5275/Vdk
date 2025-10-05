@@ -81,7 +81,7 @@ const Chat = () => {
 
   useEffect(() => {
     if (!isAuthenticated || !userPhone) {
-      setMessages([]); // Clear messages if not authenticated
+      setMessages([]); 
       return;
     }
 

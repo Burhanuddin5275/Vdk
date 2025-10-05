@@ -122,10 +122,10 @@ const Products = () => {
     const [stockLimit, setStockLimit] = useState<number | null>(null);
 
     // Calculate if product is out of stock
-    const isOutOfStock = selectedVariant?.stock === 0 || 
-                        product.quantity === 0 || 
-                        product?.stock_status === 'outofstock' ||
-                        (stockLimit !== null && stockLimit < 1);
+    const isOutOfStock = selectedVariant?.stock === 0 ||
+        product.quantity === 0 ||
+        product?.stock_status === 'outofstock' ||
+        (stockLimit !== null && stockLimit < 1);
 
     let bgKey: 'ss1' | 'ss2' | undefined;
     if (Array.isArray(backgroundImage)) {
@@ -144,14 +144,14 @@ const Products = () => {
             const cartItem = cartItems.find(item => {
                 if (item.id !== product.id) return false;
                 if (variants.length > 0) {
-                    if (!selectedVariant) return false;                    
-                    return item.pack === selectedVariant.label && 
-                           item.variant?.price === selectedVariant.price &&
-                           item.variant?.sale_price === selectedVariant.sale_price;
+                    if (!selectedVariant) return false;
+                    return item.pack === selectedVariant.label &&
+                        item.variant?.price === selectedVariant.price &&
+                        item.variant?.sale_price === selectedVariant.sale_price;
                 }
                 return true;
             });
-            
+
             if (cartItem) {
                 const availableStock = cartItem.stock - cartItem.quantity;
                 console.log('Product in cart:', {
@@ -178,7 +178,7 @@ const Products = () => {
             setTimeout(() => router.replace(`/Login?returnTo=${encodeURIComponent(currentRoute)}`), 1000);
             return;
         }
-        
+
         if (selectedVariant?.stock !== undefined) {
             if (selectedVariant.stock <= 0) {
                 setCartMessage('This variant is out of stock.');
@@ -195,7 +195,7 @@ const Products = () => {
             setTimeout(() => setCartMessage(null), 2000);
             return;
         }
-        
+
         const variantPrice = selectedVariant?.price ?? 0;
         const variantSalePrice = selectedVariant?.sale_price;
         const imageForCart = selectedVariant?.image || selectedImg;
@@ -210,7 +210,7 @@ const Products = () => {
             stock: selectedVariant?.stock !== undefined ? selectedVariant.stock : product.quantity,
             image: imageForCart,
             user: phone,
-            variant: selectedVariant ? { 
+            variant: selectedVariant ? {
                 price: variantPrice,
                 sale_price: variantSalePrice,
             } : undefined,
@@ -218,19 +218,19 @@ const Products = () => {
         };
 
         console.log('Attempting to add to cart:', JSON.stringify(cartItem, null, 2));
-        
+
         try {
             await addToCart(cartItem);
             console.log('Successfully added to cart');
-            setModalVisible(false); 
+            setModalVisible(false);
             setShowSuccess(true);
             setTimeout(() => setShowSuccess(false), 2000);
         } catch (error) {
             let errorMessage = 'Failed to add to cart';
-            
+
             if (error instanceof Error) {
                 const errorLower = error.message.toLowerCase();
-                
+
                 if (errorLower.includes('stock') || errorLower.includes('available') || errorLower.includes('exceed')) {
                     // Extract the available quantity if mentioned in the error
                     const quantityMatch = error.message.match(/\d+/);
@@ -242,7 +242,7 @@ const Products = () => {
                     }
                 }
             }
-             
+
             setTimeout(() => setCartMessage(null), 3000);
         }
     };
@@ -450,68 +450,68 @@ const Products = () => {
                             </View>
                             {variants.length > 0 && <View style={{ height: 1, backgroundColor: '#E5E5E5', marginVertical: 10 }} />}
 
-                                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                                    <Text style={{ color: mainColor, fontFamily: 'PoppinsRegular', fontSize: moderateScale(15) }}>Quantity</Text>
-                                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                        <TouchableOpacity
-                                            style={{ backgroundColor: '#E5E5E5', borderRadius: 6, width: 32, height: 32, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}
-                                            onPress={() => setQty(q => Math.max(1, q - 1))} 
-                                        >
-                                            <Ionicons name="remove" size={20} color={mainColor} />
-                                        </TouchableOpacity>
-                                        <Text style={{ fontSize: 18, fontFamily: 'PoppinsBold', color: mainColor, marginHorizontal: 8 }}>{qty}</Text>
-                                        <TouchableOpacity
-                                            style={[{
-                                                backgroundColor: '#E5E5E5',
-                                                borderRadius: 6,
-                                                width: 32,
-                                                height: 32,
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                marginLeft: 12,
-                                            }]}
-                                            onPress={() => { 
+                            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                                <Text style={{ color: mainColor, fontFamily: 'PoppinsRegular', fontSize: moderateScale(15) }}>Quantity</Text>
+                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                    <TouchableOpacity
+                                        style={{ backgroundColor: '#E5E5E5', borderRadius: 6, width: 32, height: 32, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}
+                                        onPress={() => setQty(q => Math.max(1, q - 1))}
+                                    >
+                                        <Ionicons name="remove" size={20} color={mainColor} />
+                                    </TouchableOpacity>
+                                    <Text style={{ fontSize: 18, fontFamily: 'PoppinsBold', color: mainColor, marginHorizontal: 8 }}>{qty}</Text>
+                                    <TouchableOpacity
+                                        style={[{
+                                            backgroundColor: '#E5E5E5',
+                                            borderRadius: 6,
+                                            width: 32,
+                                            height: 32,
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            marginLeft: 12,
+                                        }]}
+                                        onPress={() => {
+                                            const variantStock = selectedVariant?.stock ?? product.quantity ?? 0;
+                                            const maxQty = selectedVariant
+                                                ? (stockLimit !== null ? Math.min(variantStock, stockLimit) : variantStock)
+                                                : (stockLimit !== null ? Math.min(product.quantity ?? 0, stockLimit) : (product.quantity ?? 0));
+
+                                            if (qty < maxQty) {
+                                                setQty(q => q + 1);
+                                            }
+                                        }}
+                                        disabled={(() => {
+                                            const variantStock = selectedVariant?.stock ?? product.quantity ?? 0;
+                                            const maxQty = selectedVariant
+                                                ? (stockLimit !== null ? Math.min(variantStock, stockLimit) : variantStock)
+                                                : (stockLimit !== null ? Math.min(product.quantity ?? 0, stockLimit) : (product.quantity ?? 0));
+                                            return qty >= maxQty;
+                                        })()}
+                                    >
+                                        <Ionicons
+                                            name="add"
+                                            size={20}
+                                            color={(() => {
                                                 const variantStock = selectedVariant?.stock ?? product.quantity ?? 0;
-                                                const maxQty = selectedVariant 
+                                                const maxQty = selectedVariant
                                                     ? (stockLimit !== null ? Math.min(variantStock, stockLimit) : variantStock)
                                                     : (stockLimit !== null ? Math.min(product.quantity ?? 0, stockLimit) : (product.quantity ?? 0));
-                                                
-                                                if (qty < maxQty) {
-                                                    setQty(q => q + 1);
-                                                }
-                                            }}
-                                            disabled={(() => {
-                                                const variantStock = selectedVariant?.stock ?? product.quantity ?? 0;
-                                                const maxQty = selectedVariant 
-                                                    ? (stockLimit !== null ? Math.min(variantStock, stockLimit) : variantStock)
-                                                    : (stockLimit !== null ? Math.min(product.quantity ?? 0, stockLimit) : (product.quantity ?? 0));
-                                                return qty >= maxQty;
+                                                return qty >= maxQty ? '#999' : mainColor;
                                             })()}
-                                        >
-                                            <Ionicons 
-                                                name="add" 
-                                                size={20} 
-                                                color={(() => {
+                                            style={{
+                                                opacity: (() => {
                                                     const variantStock = selectedVariant?.stock ?? product.quantity ?? 0;
-                                                    const maxQty = selectedVariant 
+                                                    const maxQty = selectedVariant
                                                         ? (stockLimit !== null ? Math.min(variantStock, stockLimit) : variantStock)
                                                         : (stockLimit !== null ? Math.min(product.quantity ?? 0, stockLimit) : (product.quantity ?? 0));
-                                                    return qty >= maxQty ? '#999' : mainColor;
-                                                })()}
-                                                style={{
-                                                    opacity: (() => {
-                                                        const variantStock = selectedVariant?.stock ?? product.quantity ?? 0;
-                                                        const maxQty = selectedVariant 
-                                                            ? (stockLimit !== null ? Math.min(variantStock, stockLimit) : variantStock)
-                                                            : (stockLimit !== null ? Math.min(product.quantity ?? 0, stockLimit) : (product.quantity ?? 0));
-                                                        return qty >= maxQty ? 0.5 : 1;
-                                                    })()
-                                                }}
-                                            />
-                                        </TouchableOpacity>
-                                    </View>
+                                                    return qty >= maxQty ? 0.5 : 1;
+                                                })()
+                                            }}
+                                        />
+                                    </TouchableOpacity>
                                 </View>
-                            
+                            </View>
+
                             <View style={{ height: 1, backgroundColor: '#E5E5E5', marginVertical: 10 }} />
                             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                                 <View>
@@ -572,7 +572,7 @@ const Products = () => {
                                                                     fontFamily: 'PoppinsBold',
                                                                     marginRight: 8
                                                                 }]}>
-                                                                    Pkr {Math.round(product.regular_price||0 * qty)}
+                                                                    Pkr {Math.round(product.regular_price || 0 * qty)}
                                                                 </Text>
                                                                 <Text style={[{
                                                                     color: '#E53935',
@@ -599,7 +599,9 @@ const Products = () => {
                                 </View>
                                 {isOutOfStock ? (
                                     <View style={[styles.outOfStockContainer, { borderColor: mainColor, marginTop: 10 }]}>
-                                        <Text style={[styles.outOfStockText, { color: mainColor }]}>Out of Stock</Text>
+                                        <Text style={{ color: '#fff', fontFamily: 'PoppinsMedium', fontSize: moderateScale(15) }}>
+                                            out of stock
+                                        </Text>
                                     </View>
                                 ) : (
                                     <TouchableOpacity
@@ -625,7 +627,6 @@ const Products = () => {
                     </View>
                 </View>
             )}
-            {/* Success Message */}
             {showSuccess && (
                 <View style={{ position: 'absolute', top: 40, left: 0, right: 0, alignItems: 'center', zIndex: 20 }}>
                     <View style={{ backgroundColor: mainColor, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 24 }}>
@@ -641,7 +642,7 @@ const Products = () => {
                     </View>
                 </View>
             )}
-            
+
             {/* Wishlist Message */}
             {wishlistMessage && (
                 <View style={{ position: 'absolute', top: 40, left: 0, right: 0, alignItems: 'center', zIndex: 20 }}>

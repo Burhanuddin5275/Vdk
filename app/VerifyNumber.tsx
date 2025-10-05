@@ -44,27 +44,6 @@ const VerifyNumber = () => {
 
     return () => clearTimeout(timer);
   }, []);
-  
-  // Format phone number for display (e.g., +92 323 933904)
-  const formatPhoneNumber = (phone: string) => {
-    if (!phone) return '';
-    // Remove any non-digit characters
-    const cleaned = phone.replace(/\D/g, '');
-    // Format as +92 XXX XXXXXXX
-    if (cleaned.length === 12) {
-      return `+${cleaned.slice(0, 2)} ${cleaned.slice(2, 5)} ${cleaned.slice(5)}`;
-    }
-    // If it's already in +92XXXXXXXXXX format but without spaces
-    if (cleaned.length === 11 && cleaned.startsWith('92')) {
-      return `+${cleaned.slice(0, 2)} ${cleaned.slice(2, 5)} ${cleaned.slice(5)}`;
-    }
-    // If it's a 10-digit number (without country code)
-    if (cleaned.length === 10) {
-      return `+92 ${cleaned.slice(0, 3)} ${cleaned.slice(3)}`;
-    }
-    // Return as is if format is unknown
-    return phone;
-  };
 
   useEffect(() => {
     if (timer === 0) return;

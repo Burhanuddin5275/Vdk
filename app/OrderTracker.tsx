@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, Dimensions, FlatList, Image, ImageBackground, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Dimensions, FlatList, Image, ImageBackground, Platform, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { Api_url } from '../url/url';
@@ -92,26 +92,31 @@ const OrderTracker = () => {
   // Parse the order data from the route params
   const [order, setOrder] = useState<OrderData | null>(orderString ? JSON.parse(orderString as string) : null);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const handleCancelPress = () => {
+    setShowCancelModal(true);
+  };
+
   const handleCancelOrder = async () => {
     if (!order) return;
+    setShowCancelModal(false);
     
     try {
       setIsCancelling(true);
-      // Using the original endpoint that was working before
-      const url = `${Api_url}api/create-order/`;
+      const url = `http://192.168.1.110:8000/api/update-order-status/${order.id}/`;
       console.log('Attempting to cancel order at URL:', url);
       
       const response = await fetch(url, {
-        method: 'POST',
+        method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          id: order.id,
           status: 'cancelled'
         })
       });
-  
+
       const responseText = await response.text();
       console.log('Raw response:', {
         status: response.status,
@@ -123,7 +128,8 @@ const OrderTracker = () => {
       interface ApiResponse {
         message?: string;
         detail?: string;
-        [key: string]: any;  // Allow other properties
+        status?: string;
+        [key: string]: any;
       }
       
       // Try to parse JSON, but don't fail if it's not JSON
@@ -147,7 +153,11 @@ const OrderTracker = () => {
         ...prev!,
         status: 'cancelled'
       }));
-      Alert.alert('Success', 'Your order has been cancelled successfully');
+      setShowSuccessModal(true);
+      // Hide the success modal after 2 seconds
+      setTimeout(() => {
+        setShowSuccessModal(false);
+      }, 2000);
     } catch (error) {
       console.error('Error cancelling order:', error);
       Alert.alert(
@@ -195,7 +205,8 @@ const OrderTracker = () => {
             </TouchableOpacity>
               <TouchableOpacity 
                 style={styles.actionButton} 
-                onPress={handleCancelOrder}
+                onPress={handleCancelPress}
+                disabled={isCancelling}
               >
                 <Ionicons name="close-circle-outline" size={24} color="#ff4444" />
               </TouchableOpacity>
@@ -281,6 +292,45 @@ const OrderTracker = () => {
       </View>
       
       <TabLayout />
+      
+      {/* Success Modal */}
+      {showSuccessModal && (
+        <View style={styles.successModalOverlay}>
+          <View style={styles.successModalContent}>
+            <Ionicons name="checkmark-circle" size={48} color="white" />
+            <Text style={styles.successModalText}>Your order has been cancelled successfully</Text>
+          </View>
+        </View>
+      )}
+      
+      {/* Custom Cancel Confirmation Modal */}
+      {showCancelModal && (
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Cancel Order</Text>
+            <Text style={styles.modalText}>
+              Are you sure you want to cancel this order? This action cannot be undone.
+            </Text>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity 
+                style={styles.cancelButton}
+                onPress={() => setShowCancelModal(false)}
+              >
+                <Text style={styles.cancelButtonText}>No, Keep It</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.confirmButton}
+                onPress={handleCancelOrder}
+                disabled={isCancelling}
+              >
+                <Text style={styles.confirmButtonText}>
+                  {isCancelling ? 'Cancelling...' : 'Yes, Cancel Order'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
     </ImageBackground>
     </SafeAreaView>
   );
@@ -307,6 +357,105 @@ const styles = StyleSheet.create({
     padding: scale(6),
     borderRadius: 20,
     backgroundColor: '#f0f0f0',
+  },
+  // Modal styles
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 20,
+    width: '85%',
+    maxWidth: 400,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 15,
+    color: '#333',
+    textAlign: 'center',
+  },
+  modalText: {
+    fontSize: 16,
+    color: '#555',
+    marginBottom: 25,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 10,
+  },
+  cancelButton: {
+    flex: 1,
+    padding: 12,
+    marginRight: 8,
+    borderRadius: 8,
+    backgroundColor: '#f0f0f0',
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    color: '#333',
+    fontWeight: '600',
+  },
+  confirmButton: {
+    flex: 1,
+    padding: 12,
+    marginLeft: 8,
+    borderRadius: 8,
+    backgroundColor: '#ff4444',
+    alignItems: 'center',
+  },
+  confirmButtonText: {
+    color: 'white',
+    fontWeight: '600',
+  },
+  // Success Modal Styles
+  successModalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1001,
+  },
+  successModalContent: {
+    backgroundColor: '#ff4444',
+    borderRadius: 12,
+    padding: 20,
+    width: '80%',
+    maxWidth: 300,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  successModalText: {
+    color: 'white',
+    fontSize: 16,
+    marginTop: 10,
+    textAlign: 'center',
+    fontWeight: '500',
   },
   header: {
          flexDirection: 'row',
