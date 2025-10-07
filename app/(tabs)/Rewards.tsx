@@ -6,26 +6,44 @@ import { Dimensions, Image, ImageBackground, SafeAreaView, ScrollView, StyleShee
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { fetchRedeems, RedeemItem } from '@/services/redeem';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/store/store';
 import { useAuth } from '@/hooks/useAuth';
+import { fetchUsers, UserItem } from '@/services/user';
 
 
-// Points badge data structure
-const getPointsBadge = (points: number) => ({
-  value: points,
-  label: 'PTS',
-  footer: 'YOUR POINTS',
-});
 
 export default function RewardsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { phone } = useAuth();
+  const { phone, token } = useAuth();
   const [redeems, setRedeems] = useState<RedeemItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+    const [user, setUser] = useState<UserItem | string | null | undefined>(undefined);
+    useEffect(() => {
+      const loadUsers = async () => {
+        try {
+          const users = await fetchUsers();
+          const matchedUser = users.find((u) => u.number === phone);
   
+          if (matchedUser) {
+            setUser(matchedUser);
+            console.log('Matched user:', matchedUser);
+          } else {
+            console.log('No user found with phone:', phone);
+            setUser(token);
+          }
+        } catch (error) { 
+          console.error('Error loading users:', error);
+          setUser(token);
+        }
+      };
+  
+      if (phone) {
+        loadUsers();
+      } else {
+        setUser(token); // Fallback to token if no phone
+      }
+    }, [phone, token]);
   useEffect(() => {
     const loadRedeems = async () => {
       try {
@@ -42,11 +60,7 @@ export default function RewardsScreen() {
 
     loadRedeems();
   }, []);
-  const userPoints = useSelector((state: RootState) => 
-    phone && state.points.userPoints ? state.points.userPoints[phone] || 0 : 0
-  );
-  
-  const pointsBadge = getPointsBadge(userPoints);
+
   return (
           <SafeAreaView style={{flex:1,paddingBottom: Math.max(insets.bottom, verticalScale(4))}}>
             <ImageBackground
@@ -79,12 +93,12 @@ export default function RewardsScreen() {
                 marginBottom: 0,
               }}>
                 <View style={styles.pointsBadgeInner}>
-                  <Text style={styles.pointsValue}>{pointsBadge.value}</Text>
-                  <Text style={styles.pointsLabel}>{pointsBadge.label}</Text>
+                <Text style={styles.pointsValue}>{typeof user === 'object' && user !== null && 'total_points' in user ? (user as UserItem).total_points : '0'}</Text>
+                  <Text style={styles.pointsLabel}>PTS</Text>
                 </View>
               </View>
               <View style={styles.pointsBadgeFooter}>
-                <Text style={styles.pointsFooterText}>{pointsBadge.footer}</Text>
+                <Text style={styles.pointsFooterText}>YOUR POINTS</Text>
               </View>
             </View>
           </View>
@@ -106,11 +120,11 @@ export default function RewardsScreen() {
                 onPress={() => router.push({ 
                   pathname: '/Mall', 
                   params: { 
-                    userPoints:pointsBadge.value,
+                    userPoints:typeof user === 'object' && user !== null && 'total_points' in user ? (user as UserItem).total_points : '0',
                     name: item.title, 
                     points: item.points_required, 
-                    image: item.imageKey, // Pass the image key instead of the image object
-                    subtitle: item.subtitle || '', // Make sure to include subtitle
+                    image: item.imageKey, 
+                    subtitle: item.subtitle || '', 
                     description: item.description || ''
                   } 
                 })}

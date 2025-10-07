@@ -1,6 +1,4 @@
-import { useAuth } from '@/hooks/useAuth';
 import { colors } from '@/theme/colors';
-import { Api_url } from '@/url/url';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import { useRouter } from 'expo-router';
@@ -9,7 +7,9 @@ import React, { useEffect, useState } from 'react';
 import { Dimensions, Image, ImageBackground, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
-
+import { fetchUsers, UserItem } from '@/services/user';
+import { useAuth } from '@/hooks/useAuth';
+import { Api_url } from '@/url/url';
 const screenWidth = Dimensions.get('window').width;
 const COLUMN_GAP = scale(12);
 const CARD_WIDTH = (screenWidth - COLUMN_GAP * 3) / 2
@@ -20,48 +20,49 @@ const ProfileTab = () => {
   const [profileImage, setProfileImage] = React.useState<string | null>(null);
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState('');
-  const { isAuthenticated, phone, token, user } = useAuth();
+  const { isAuthenticated, phone, token } = useAuth();
   const [userId, setUserId] = useState<string | null>(null);
+  const [user, setUser] = useState<UserItem | string | null | undefined>(undefined);
   useEffect(() => {
-    const fetchUserData = async () => {
+    const loadUsers = async () => {
       try {
-        const response = await axios.get(`${Api_url}api/app-user/list/`);
-        const users = response.data;
-        const matchedUser = users.find((u: any) => u.number === phone);
+        const users = await fetchUsers();
+        const matchedUser = users.find((u) => u.number === phone);
 
         if (matchedUser) {
-          setUserId(matchedUser.id);
-          console.log('Matched user ID:', matchedUser.id);
+          setUser(matchedUser);
+          setUserId(matchedUser.id.toString());
+          console.log('Matched user:', matchedUser);
         } else {
           console.log('No user found with phone:', phone);
-          setUserId(token);
+          setUser(token);
         }
       } catch (error) {
-        console.error('Error fetching user data:', error);
-        setUserId(token);
+        console.error('Error loading users:', error);
+        setUser(token);
       }
     };
 
     if (phone) {
-      fetchUserData();
+      loadUsers();
     } else {
-      setUserId(token); // Fallback to token if no phone
+      setUser(token); // Fallback to token if no phone
     }
   }, [phone, token]);
   const handleSelectImage = async () => {
     try {
       setIsLoading(true);
-      let image = await ImagePicker.launchImageLibraryAsync({
+      const image = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images', 'videos'],
         allowsEditing: true,
         aspect: [4, 3],
         quality: 1,
       });
-  
+
       console.log('Selected image:', image);
-  
-      if (image ) {
-       
+
+      if (image && !image.canceled && image.assets && image.assets[0]) {
+        setProfileImage(image.assets[0].uri);
       }
     } catch (error) {
       console.error('Error picking image:', error);
@@ -74,42 +75,48 @@ const ProfileTab = () => {
       setError('Please enter your name');
       return;
     }
-    
-    if (!userId) {
+
+    if (!user) {
       setError('User not identified');
       return;
     }
-    
+
     setIsLoading(true);
     setError('');
-    
+
     try {
-      const url = `http://192.168.1.114:8000/api/update-user/${userId}/`;
+      const url = `${Api_url}api/update-user/${userId}/`;
       console.log('Updating profile at URL:', url);
-      
+
       const formData = new FormData();
       formData.append('name', name);
 
-      
+      if (profileImage) {
+        formData.append('image', {
+          uri: profileImage,
+          name: 'profile.jpg',
+          type: 'image/jpeg',
+        } as any);
+      }
+
       const response = await fetch(url, {
         method: 'PATCH',
         headers: {
           'Accept': 'application/json',
+          // DO NOT set 'Content-Type'
           'Authorization': `Token ${token}`,
-          // Let the browser set the Content-Type with boundary for FormData
         },
         body: formData
       });
-      
+
       const responseData = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(responseData.detail || 'Failed to update profile');
       }
-      
+
       console.log('Profile updated successfully:', responseData);
       alert('Profile updated successfully!');
-      
     } catch (err) {
       console.error('Error updating profile:', err);
       setError('Failed to update profile. Please try again.');
@@ -126,7 +133,14 @@ const ProfileTab = () => {
             <Image source={{ uri: profileImage }} style={styles.avatar} />
           ) : (
             <View style={styles.avatarPlaceholder}>
-              <Ionicons name="person" size={40} color={colors.white} />
+              { typeof user === 'object' && user?.image?.uri!==null ? (
+                <Image
+                  source={{uri: `http://192.168.1.112:8000${user?.image.uri}`}}
+                  style={styles.avatar}
+                />
+              ) : (
+                <Ionicons name="person" size={40} color={colors.white} />
+              )}
             </View>
           )}
           <View style={styles.cameraIcon}>
@@ -141,11 +155,10 @@ const ProfileTab = () => {
           style={styles.input}
           value={name}
           onChangeText={setName}
-          placeholder="Enter your full name"
+          placeholder={typeof user === 'object' && user !== null && user?.name && user.name !== '' && user.name !== 'null' ? user.name : 'Enter your name'}
           placeholderTextColor="#999"
         />
       </View>
-
       <TouchableOpacity
         style={styles.updateButton}
         onPress={handleUpdateProfile}
@@ -156,11 +169,133 @@ const ProfileTab = () => {
   );
 };
 
-const ChangePasswordTab = () => (
-  <View style={styles.tabContent}>
-    <Text>Change Password Content</Text>
-  </View>
-);
+const ChangePasswordTab = () => {
+  const [currentPassword, setCurrentPassword] = React.useState('');
+  const [newPassword, setNewPassword] = React.useState('');
+  const [isCurrentPasswordValid, setIsCurrentPasswordValid] = React.useState(false);
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [error, setError] = React.useState('');
+  const [success, setSuccess] = React.useState('');
+  const { password, token } = useAuth();
+
+  useEffect(() => {
+    if (currentPassword === password) {
+      setIsCurrentPasswordValid(true);
+    } else {
+      setIsCurrentPasswordValid(false);
+    }
+    console.log(currentPassword);
+    console.log(password);
+    console.log(isCurrentPasswordValid);
+  }, [currentPassword, password]);
+
+  const handleChangePassword = async () => {
+    // Validation
+    if (!currentPassword.trim()) {
+      setError('Please enter your current password');
+    } else if (!isCurrentPasswordValid) {
+      setError('Current password is incorrect');
+    } else if (!newPassword.trim()) {
+      return;
+    }
+
+    if (!newPassword.trim()) {
+      setError('Please enter a new password');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setError('New password must be at least 6 characters long');
+      return;
+    }
+
+
+    setIsLoading(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      const response = await fetch('http://192.168.1.117:8000/api/change-password/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Token ${token}`,
+        },
+        body: JSON.stringify({
+          current_password: currentPassword,
+          new_password: newPassword,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.detail || 'Failed to change password');
+      }
+
+      setSuccess('Password changed successfully!');
+      setCurrentPassword('');
+      setNewPassword('');
+
+      // Clear success message after 3 seconds
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err: any) {
+      console.error('Error changing password:', err);
+      setError(err.message || 'Failed to change password. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <ScrollView style={styles.tabContent} contentContainerStyle={styles.profileContent}>
+      <View style={styles.formGroup}>
+        <Text style={styles.label}>Current Password</Text>
+        <TextInput
+          style={styles.input}
+          value={currentPassword}
+          onChangeText={setCurrentPassword}
+          placeholder="Enter your current password"
+          placeholderTextColor="#999"
+          secureTextEntry
+          autoCapitalize="none"
+          autoCorrect={false}
+        />
+      </View>
+      {
+        isCurrentPasswordValid == true ? (
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>New Password</Text>
+            <TextInput
+              style={styles.input}
+              value={newPassword}
+              onChangeText={setNewPassword}
+              placeholder="Enter your new password"
+              placeholderTextColor="#999"
+              secureTextEntry
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+          </View>
+        ) : null
+      }
+
+
+      {error && <Text style={styles.errorText}>{error}</Text>}
+      {success && <Text style={styles.successText}>{success}</Text>}
+
+      <TouchableOpacity
+        style={[styles.updateButton, isLoading && styles.disabledButton]}
+        onPress={handleChangePassword}
+        disabled={isLoading}
+      >
+        <Text style={styles.updateButtonText}>
+          {isLoading ? 'Changing Password...' : 'Change Password'}
+        </Text>
+      </TouchableOpacity>
+    </ScrollView>
+  );
+};
 
 const ManageProfile = () => {
   const router = useRouter();
@@ -280,6 +415,25 @@ const styles = StyleSheet.create({
   profileContent: {
     paddingBottom: 30,
   },
+  updateButtonText: {
+    color: colors.white,
+    fontSize: 16,
+    fontFamily: 'PoppinsSemi',
+  },
+  errorText: {
+    color: '#ff4444',
+    fontSize: 14,
+    fontFamily: 'Poppins',
+    marginBottom: verticalScale(10),
+    textAlign: 'center',
+  },
+  successText: {
+    color: '#4CAF50',
+    fontSize: 14,
+    fontFamily: 'Poppins',
+    marginBottom: verticalScale(10),
+    textAlign: 'center',
+  },
   avatarContainer: {
     alignItems: 'center',
     marginBottom: 30,
@@ -289,7 +443,7 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor:'black',
+    backgroundColor: 'black',
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
@@ -338,11 +492,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 20,
   },
-  updateButtonText: {
-    color: colors.white,
-    fontSize: 16,
-    fontFamily: 'PoppinsSemi',
+  disabledButton: {
+    backgroundColor: '#ccc',
+    opacity: 0.6,
   },
+
   contentContainer: {
     paddingHorizontal: scale(20),
     paddingBottom: verticalScale(20),

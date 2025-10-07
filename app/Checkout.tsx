@@ -23,10 +23,8 @@ const Checkout = () => {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<CheckoutParams>();
   
-  // Parse the items from the URL params or use individual params
   let cartItems: CheckoutParams[] = [];
   
-  // Check if we have items in the cart (from Cart.tsx)
   if (params?.items) {
     try {
       const itemsData = Array.isArray(params.items) ? params.items[0] : params.items;
@@ -35,7 +33,6 @@ const Checkout = () => {
       console.error('Error parsing cart items:', error);
     }
   } 
-  // If no items in cart but we have individual item params (from Mall.tsx)
   else if (params?.name) {
     cartItems = [{
       name: params.name || '',
@@ -49,7 +46,6 @@ const Checkout = () => {
     }];
   }
 
-  // Log the complete params and cart items for debugging
   useEffect(() => {
         return () => {
             // Clear address and shipping when leaving Checkout
@@ -111,8 +107,8 @@ const Checkout = () => {
                 <View style={styles.sectionRow}>
                     <IconSymbol name="location.fill" size={30} color={colors.white} />
                     <View style={{ flex: 1, marginLeft: 10 }}>
-                        <Text style={styles.addressLabel}>{address?.label}</Text>
-                        <Text style={styles.addressDetails}>{address?.desc}</Text>
+                        <Text style={styles.addressLabel}>{address?.label||'Select Address'}</Text>
+                        <Text style={styles.addressDetails}>{address?.desc||'No Address Selected'}</Text>
                     </View>
                     <Button onPress={() => { router.push('/ShippingAddress') }} variant="secondary" style={styles.changeBtn}>
                         Change
@@ -126,8 +122,8 @@ const Checkout = () => {
                     resizeMode='contain'
                     style={{width:scale(30), height:scale(40), tintColor: colors.white}}/>
                     <View style={{ flex: 1, marginLeft: 10 }}>
-                        <Text style={styles.shippingLabel}>{shipping?.label}</Text>
-                        <Text style={styles.shippingEstimate}>{shipping?.desc}</Text>
+                        <Text style={styles.shippingLabel}>{shipping?.label||'Select Shipping'}</Text>
+                        <Text style={styles.shippingEstimate}>{shipping?.desc||'No Shipping Method Selected'}</Text>
                     </View>
                     <Button onPress={() => { router.push('/ChooseShipping') }} variant="secondary" style={styles.changeBtn}>
                         Change

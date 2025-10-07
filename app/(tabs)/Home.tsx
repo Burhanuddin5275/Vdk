@@ -16,6 +16,7 @@ import { fetchAds, type AdsItem } from '../../services/ads';
 import { fetchBrands, type BrandItem } from '../../services/brands';
 import { fetchCategories, type CategoryItem } from '../../services/categories';
 import { fetchProducts } from '../../services/products';
+import { fetchUsers, UserItem } from '@/services/user';
 
 type SalePopupProps = {
   visible: boolean;
@@ -103,12 +104,33 @@ export default function HomeScreen() {
   const [heroContent, setHeroContent] = useState<HeroItem[]>([]);
   const scrollViewRef = useRef<ScrollView>(null);
   const wishlistItems = useWishlistStore((state) => state.items);
-  const { phone } = useAuth();
+  const { phone , token} = useAuth();
+  const [user, setUser] = useState<UserItem | string | null | undefined>(undefined);
+  useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        const users = await fetchUsers();
+        const matchedUser = users.find((u) => u.number === phone);
 
-  // Get points for the current user
-  const userPoints = useAppSelector((state: RootState) =>
-    phone && state.points.userPoints ? state.points.userPoints[phone] || 0 : 0
-  );
+        if (matchedUser) {
+          setUser(matchedUser);
+          console.log('Matched user:', matchedUser);
+        } else {
+          console.log('No user found with phone:', phone);
+          setUser(token);
+        }
+      } catch (error) {
+        console.error('Error loading users:', error);
+        setUser(token);
+      }
+    };
+
+    if (phone) {
+      loadUsers();
+    } else {
+      setUser(token); // Fallback to token if no phone
+    }
+  }, [phone, token]);
 
   // Fetch hero content on component mount
   useEffect(() => {
@@ -129,7 +151,7 @@ export default function HomeScreen() {
   const isInWishlist = (productId: string, variantLabel?: string) => {
     return wishlistItems.some(item => {
       if (item.id !== productId) return false;
-      if (!variantLabel) return true; 
+      if (!variantLabel) return true;
       return item.variant?.label === variantLabel;
     });
   };
@@ -177,7 +199,7 @@ export default function HomeScreen() {
     if (ads.length > 1) {
       const interval = setInterval(() => {
         setCurrentBannerIndex(prev => (prev === ads.length - 1 ? 0 : prev + 1));
-      }, 12000); 
+      }, 12000);
 
       return () => clearInterval(interval);
     }
@@ -212,7 +234,7 @@ export default function HomeScreen() {
                       <Text style={styles.hello}>
                         {heroContent[0].title}
                       </Text>
-                      <Text 
+                      <Text
                         style={styles.subtext}
                         numberOfLines={3}
                         ellipsizeMode="tail"
@@ -225,7 +247,7 @@ export default function HomeScreen() {
                       <Text style={styles.hello}>
                         Hello!{"\n"}Hussain
                       </Text>
-                      <Text 
+                      <Text
                         style={styles.subtext}
                         numberOfLines={5}
                         ellipsizeMode="tail"
@@ -236,8 +258,8 @@ export default function HomeScreen() {
                   )}
                   <View style={styles.rewardBox}>
                     <Text style={styles.rewardLabel}>Reward</Text>
-                    <Text style={styles.rewardPoints}>{userPoints}</Text>
-                    <Text style={styles.rewardPts}>PTS</Text>
+                    <Text style={styles.rewardPoints}>{typeof user === 'object' && user !== null && 'total_points' in user ? (user as UserItem).total_points : '0'}</Text>
+                    <Text style={styles.rewardPts}>PTS</Text> 
                   </View>
                 </View>
                 <View style={{ flex: 1, alignItems: 'flex-end' }}>
@@ -303,7 +325,7 @@ export default function HomeScreen() {
                   <View
                     key={index}
                     style={[
-                  
+
                       index === currentBannerIndex && styles.adIndicatorActive
                     ]}
                   />
@@ -335,14 +357,14 @@ export default function HomeScreen() {
               <Text style={styles.seeAll} onPress={() => { router.push('/BestSeller') }}>See All</Text>
             </View>
             <Text style={styles.bestSellerSubtext}>Find the top most popular items in DKT best sellers.</Text>
-     {/* Wishlist Snackbar */}
-        {wishlistMessage && (
-          <View style={{ position: "absolute", top: verticalScale(80), left: 0, right: 0, alignItems: "center", zIndex: 20 }}>
-            <View style={{ backgroundColor: "#E53935", paddingHorizontal: scale(24), paddingVertical: verticalScale(12), borderRadius: moderateScale(24) }}>
-              <Text style={{ color: "#fff", fontWeight: "bold", fontSize: moderateScale(16) }}>{wishlistMessage}</Text>
-            </View>
-          </View>
-        )} 
+            {/* Wishlist Snackbar */}
+            {wishlistMessage && (
+              <View style={{ position: "absolute", top: verticalScale(80), left: 0, right: 0, alignItems: "center", zIndex: 20 }}>
+                <View style={{ backgroundColor: "#E53935", paddingHorizontal: scale(24), paddingVertical: verticalScale(12), borderRadius: moderateScale(24) }}>
+                  <Text style={{ color: "#fff", fontWeight: "bold", fontSize: moderateScale(16) }}>{wishlistMessage}</Text>
+                </View>
+              </View>
+            )}
             {/* Best Seller Product Slider */}
             <ScrollView
               horizontal
@@ -631,7 +653,7 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: moderateScale(32),
     paddingVertical: verticalScale(10),
     paddingTop: verticalScale(10),
-    height:"auto"
+    height: "auto"
   },
   headerRow: {
     marginTop: verticalScale(30),

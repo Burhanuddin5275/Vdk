@@ -2,17 +2,45 @@ import { useAuth } from '@/hooks/useAuth';
 import { colors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Dimensions, Image, ImageBackground, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { fetchUsers, UserItem } from '@/services/user';
 const { width } = Dimensions.get('window');
 
 export default function Profile() {
   const router = useRouter();
-  const { isAuthenticated, phone, logout } = useAuth();
+  const { isAuthenticated, phone, logout, token } = useAuth();
   const [showDeleteModal, setShowDeleteModal] = React.useState(false);
   const insets = useSafeAreaInsets();
+  const [user, setUser] = useState<UserItem | string | null | undefined>(undefined);
+  useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        const users = await fetchUsers();
+        const matchedUser = users.find((u) => u.number === phone);
+
+        if (matchedUser) {
+          setUser(matchedUser);
+          console.log('Matched user:', matchedUser);
+        } else {
+          console.log('No user found with phone:', phone);
+          setUser(token);
+        }
+      } catch (error) { 
+        console.error('Error loading users:', error);
+        setUser(token);
+      }
+    };
+
+    if (phone) {
+      loadUsers();
+    } else {
+      setUser(token); // Fallback to token if no phone
+    }
+    console.log('image:', typeof user === 'object' && user?.image?.uri ? `${user?.image.uri}` : 'No image available');
+  }, [phone, token]);
   const handleLogout = () => {
     logout();
     router.push('/(tabs)/Home');
@@ -21,16 +49,16 @@ export default function Profile() {
 
   const allMenuItems = [
     { label: 'My orders', icon: 'cart', onPress: () => { router.push('/Orders') } },
-    { label: 'Chat', icon: 'chatbubble-ellipses', onPress: () => {router.push('/Chat')} },
+    { label: 'Chat', icon: 'chatbubble-ellipses', onPress: () => { router.push('/Chat') } },
     { label: 'Wishlist', icon: 'heart', onPress: () => { router.push('/Wishlist') } },
     { label: 'Manage addresses', icon: 'location', onPress: () => { router.push('/ShippingAddress') } },
     { label: 'Manage profile', icon: 'person-circle', onPress: () => { router.push('/ManageProfile') } },
     { label: 'Contact us', icon: 'paper-plane', onPress: () => { } },
     { label: 'About us', icon: 'information-circle', onPress: () => { } },
     { label: 'Terms & conditions', icon: 'document-text', onPress: () => { } },
-    { label: 'Redeemed', icon: 'gift', onPress: () => {router.push('/Redeemed') } },
+    { label: 'Redeemed', icon: 'gift', onPress: () => { router.push('/Redeemed') } },
     { label: 'Privacy policy', icon: 'shield-checkmark', onPress: () => { } },
-    { label: 'Logout', icon: 'log-out', onPress: handleLogout }, 
+    { label: 'Logout', icon: 'log-out', onPress: handleLogout },
   ];
 
   const menuItems = isAuthenticated
@@ -44,84 +72,93 @@ export default function Profile() {
       'Privacy policy',
     ].includes(item.label));
   return (
-          <SafeAreaView style={{flex:1,paddingBottom: Math.max(insets.bottom, verticalScale(4))}}>
-            <ImageBackground
-      source={require('../../assets/images/ss1.png')}
-      style={styles.background}
-      resizeMode="cover"
-    >
-      {showDeleteModal && (
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>Delete this account</Text>
-            <Text style={styles.modalMessage}>
-              Are you sure you want to delete this customer account? By proceeding, all the data will be removed permanently.
-            </Text>
-            <TouchableOpacity onPress={() => setShowDeleteModal(false)}>
-              <Text style={styles.modalCancel}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => {
-                setShowDeleteModal(false);
-                router.replace('/(tabs)/Profile');
-              }}
-            >
-              <Text style={styles.modalDelete}>Yes, delete account</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
-      <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: verticalScale(75) }}>
-        <View style={styles.container}>
-          {/* Header */}
-          <View style={styles.headerRow}>
-            <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-              <Ionicons name="arrow-back" size={moderateScale(28)} color="white" />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Profile</Text>
-          </View>
-          {/* Profile Image & Name */}
-          {isAuthenticated && (
-            <View style={styles.profileSection}>
-              <Image source={require('../../assets/images/Ellipse.png')} style={styles.profileImg} />
-              <Text style={styles.profileName}>{phone ||null}</Text>
+    <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
+      <ImageBackground
+        source={require('../../assets/images/ss1.png')}
+        style={styles.background}
+        resizeMode="cover"
+      >
+        {showDeleteModal && (
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContainer}>
+              <Text style={styles.modalTitle}>Delete this account</Text>
+              <Text style={styles.modalMessage}>
+                Are you sure you want to delete this customer account? By proceeding, all the data will be removed permanently.
+              </Text>
+              <TouchableOpacity onPress={() => setShowDeleteModal(false)}>
+                <Text style={styles.modalCancel}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowDeleteModal(false);
+                  router.replace('/(tabs)/Profile');
+                }}
+              >
+                <Text style={styles.modalDelete}>Yes, delete account</Text>
+              </TouchableOpacity>
             </View>
-          )}
-          {/* Login Prompt */}
-          {!isAuthenticated && (
-            <TouchableOpacity style={styles.loginBox} onPress={() => router.push(`/Signup?returnTo=${encodeURIComponent('/(tabs)/Profile')}`)}>
-              <Text style={styles.loginText}>Login to unlock more Features!</Text>
-            </TouchableOpacity>
-          )}
-          {/* Menu Items */}
-          <View style={styles.menuList}>
-            {menuItems.map((item, idx) => (
-              <View key={item.label}>
-                <TouchableOpacity style={styles.menuItem} onPress={item.onPress} activeOpacity={0.7}>
-                  <View style={styles.iconCircle}>
-                    <Ionicons name={item.icon as any} size={moderateScale(24)} color={colors.primaryDark} />
-                  </View>
-                  <Text style={styles.menuLabel}>{item.label}</Text>
-                  <Ionicons name="chevron-forward" size={moderateScale(24)} color={colors.white} />
-                </TouchableOpacity>
-                {idx !== menuItems.length - 1 && <View style={styles.divider} />}
-              </View>
-            ))}
           </View>
-          {/* Delete Account */}
-          {isAuthenticated && (
-            <TouchableOpacity
-              style={styles.deleteBtn}
-              onPress={() => setShowDeleteModal(true)}
-            >
-              <Text style={styles.deleteText}>Delete this account</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      </ScrollView>
-    </ImageBackground>
-          </SafeAreaView>
-  
+        )}
+        <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: verticalScale(75) }}>
+          <View style={styles.container}>
+            {/* Header */}
+            <View style={styles.headerRow}>
+              <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+                <Ionicons name="arrow-back" size={moderateScale(28)} color="white" />
+              </TouchableOpacity>
+              <Text style={styles.headerTitle}>Profile</Text>
+            </View>
+            {/* Profile Image & Name */}
+            {isAuthenticated && (
+              <View style={styles.profileSection}>
+                 <Image
+                  source={
+                     typeof user === 'object' && user?.image?.uri!==null
+                     ? {uri: `http://192.168.1.112:8000${user?.image.uri}`}
+                     : require('../../assets/images/Ellipse.png') 
+                  }
+                  style={styles.profileImg}
+                />
+               <Text style={styles.profileName}>
+               {typeof user === 'object' && user?.name && user.name !== '' && user.name !== 'null' ? user?.name : phone}
+                </Text>
+              </View>
+            )}
+            {/* Login Prompt */} 
+            {!isAuthenticated && (
+              <TouchableOpacity style={styles.loginBox} onPress={() => router.push(`/Signup?returnTo=${encodeURIComponent('/(tabs)/Profile')}`)}>
+                <Text style={styles.loginText}>Login to unlock more Features!</Text>
+              </TouchableOpacity>
+            )}
+            {/* Menu Items */}
+            <View style={styles.menuList}>
+              {menuItems.map((item, idx) => (
+                <View key={item.label}>
+                  <TouchableOpacity style={styles.menuItem} onPress={item.onPress} activeOpacity={0.7}>
+                    <View style={styles.iconCircle}>
+                      <Ionicons name={item.icon as any} size={moderateScale(24)} color={colors.primaryDark} />
+                    </View>
+                    <Text style={styles.menuLabel}>{item.label}</Text>
+                    <Ionicons name="chevron-forward" size={moderateScale(24)} color={colors.white} />
+                  </TouchableOpacity>
+                  {idx !== menuItems.length - 1 && <View style={styles.divider} />}
+                </View>
+              ))}
+            </View>
+            {/* Delete Account */}
+            {isAuthenticated && (
+              <TouchableOpacity
+                style={styles.deleteBtn}
+                onPress={() => setShowDeleteModal(true)}
+              >
+                <Text style={styles.deleteText}>Delete this account</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </ScrollView>
+      </ImageBackground>
+    </SafeAreaView>
+
   );
 }
 

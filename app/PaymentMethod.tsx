@@ -33,7 +33,7 @@ const MORE_OPTIONS =
             icon: require('../assets/images/jazzcash.png'),
         },
         {
-            id: 'cash',
+            id: 'Cod',
             label: 'Cash on Delivery',
             icon: require('../assets/images/cash.png'),
         },
@@ -137,7 +137,7 @@ const Payment = () => {
             const orderData = {
                 user_id: userId,
                 user_detail: {
-                    number: phone
+                number: phone
                 },
                 address: addressObj?.desc || 'Test',
                 shipping: methodObj?.label || 'Test',

@@ -1,6 +1,5 @@
 import { useAuth } from '@/hooks/useAuth';
 import { fetchOrders, type OrderStatus } from '@/services/orders';
-import { setUserPoints } from '@/store/pointsSlice';
 import { colors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -49,7 +48,6 @@ export default function OrdersScreen() {
   const insets = useSafeAreaInsets();
   const [tabLayouts, setTabLayouts] = useState<{ x: number; width: number }[]>([]);
   const { phone } = useAuth();
-  const dispatch = useDispatch();
 
   useEffect(() => {
     const loadOrders = async () => {
@@ -140,11 +138,6 @@ export default function OrdersScreen() {
         
         setOrders(userOrders);
 
-        console.log('Total points across all orders:', totalUserPoints);
-        
-        if (phone) {
-          dispatch(setUserPoints({ phone, points: totalUserPoints }));
-        }
         
         // Log all unique status values for debugging
         const statuses = [...new Set(apiData.map((order: any) => order.status))];
