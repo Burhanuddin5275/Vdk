@@ -11,6 +11,7 @@ const Signup = () => {
   const { phone: phoneParam } = useLocalSearchParams<{ phone?: string }>();
   const [phone, setPhone] = useState(phoneParam?.replace(/^\+92/, '') || '');
   const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const isFromVerification = !!phoneParam;
@@ -43,6 +44,7 @@ const Signup = () => {
         setIsSubmitting(true);
         const requestBody = {
           number: e164Phone,
+          email:email,
           password: password,
         };
         
@@ -131,6 +133,17 @@ const Signup = () => {
 
           {isFromVerification && (
             <View style={{ marginTop: 16 }}>
+             <View style={[styles.inputWrap, { marginBottom: 15 }]}>
+                <TextInput
+                  style={[styles.input, { paddingRight: 40 }]}
+                  value={email}
+                  onChangeText={setEmail}
+                  placeholder="Create Email"
+                  placeholderTextColor={"#1A1A1A"}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+              </View>
               <View style={[styles.inputWrap, { marginBottom: 4 }]}>
                 <TextInput
                   style={[styles.input, { paddingRight: 40 }]}
@@ -163,9 +176,9 @@ const Signup = () => {
 
           {/* Continue Button */}
           <TouchableOpacity
-            style={[styles.continueBtn, (isSubmitting || (isFromVerification && !password)) && { opacity: 0.7 }]}
+            style={[styles.continueBtn, (isSubmitting || (isFromVerification && !password && !email)) && { opacity: 0.7 }]}
             onPress={handleSendOtp}
-            disabled={isSubmitting || (isFromVerification && !password)}
+            disabled={isSubmitting || (isFromVerification && !password && !email)}
           >
             {isSubmitting ? (
               <ActivityIndicator color={colors.textPrimary} />

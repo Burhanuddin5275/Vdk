@@ -7,6 +7,7 @@ import { Dimensions, Image, ImageBackground, SafeAreaView, ScrollView, StyleShee
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { fetchUsers, UserItem } from '@/services/user';
+import { Api_url, img_url } from '@/url/url';
 const { width } = Dimensions.get('window');
 
 export default function Profile() {
@@ -15,6 +16,7 @@ export default function Profile() {
   const [showDeleteModal, setShowDeleteModal] = React.useState(false);
   const insets = useSafeAreaInsets();
   const [user, setUser] = useState<UserItem | string | null | undefined>(undefined);
+  const [userId, setUserId] = useState<string | number | null>(null);
   useEffect(() => {
     const loadUsers = async () => {
       try {
@@ -23,12 +25,14 @@ export default function Profile() {
 
         if (matchedUser) {
           setUser(matchedUser);
+          setUserId(matchedUser.id);
           console.log('Matched user:', matchedUser);
+          console.log('Matched user ID:', matchedUser.id);
         } else {
           console.log('No user found with phone:', phone);
           setUser(token);
         }
-      } catch (error) { 
+      } catch (error) {
         console.error('Error loading users:', error);
         setUser(token);
       }
@@ -39,14 +43,43 @@ export default function Profile() {
     } else {
       setUser(token); // Fallback to token if no phone
     }
-    console.log('image:', typeof user === 'object' && user?.image?.uri ? `${user?.image.uri}` : 'No image available');
+    console.log('image:', typeof user === 'object' && user?.image?.uri ? `http://192.168.1.110:8000${user?.image.uri}` : 'No image available');
+    console.log("Request URL:", `${Api_url}api/account-delete/${userId}`);
+
   }, [phone, token]);
   const handleLogout = () => {
     logout();
     router.push('/(tabs)/Home');
     router.replace('/(tabs)/Home');
   };
+  const deleteAccount = async (): Promise<void> => {
+    const url = `${Api_url}api/account-delete/${userId}/`;
+    console.log('Attempting to delete account with URL:', url);
+    console.log('userId value:', userId);
 
+    // Add timeout to prevent hanging requests
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+    try {
+      const response = await fetch(url, {
+        method: 'DELETE',
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+      console.log('Response status:', response.status);
+      console.log('Response ok:', response.ok);
+
+      if (!response.ok) {
+        throw new Error(`Failed to delete account: ${response.status} ${response.statusText}`);
+      }
+
+      console.log('Account deletion successful');
+    } catch (error) {
+      clearTimeout(timeoutId);
+    }
+  };
   const allMenuItems = [
     { label: 'My orders', icon: 'cart', onPress: () => { router.push('/Orders') } },
     { label: 'Chat', icon: 'chatbubble-ellipses', onPress: () => { router.push('/Chat') } },
@@ -89,13 +122,23 @@ export default function Profile() {
                 <Text style={styles.modalCancel}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                onPress={() => {
-                  setShowDeleteModal(false);
-                  router.replace('/(tabs)/Profile');
+                onPress={async () => {
+                  try {
+                    setShowDeleteModal(false);
+                    await deleteAccount();
+                    alert('Account deleted successfully!');
+                    logout();
+                    router.replace('/(tabs)/Home');
+                  } catch (error) {
+                    console.error('Error during account deletion process:', error);
+                    alert('Failed to delete account. Please try again later.');
+                    setShowDeleteModal(false);
+                  }
                 }}
               >
                 <Text style={styles.modalDelete}>Yes, delete account</Text>
               </TouchableOpacity>
+
             </View>
           </View>
         )}
@@ -111,20 +154,19 @@ export default function Profile() {
             {/* Profile Image & Name */}
             {isAuthenticated && (
               <View style={styles.profileSection}>
-                 <Image
-                  source={
-                     typeof user === 'object' && user?.image?.uri!==null
-                     ? {uri: `http://192.168.1.112:8000${user?.image.uri}`}
-                     : require('../../assets/images/Ellipse.png') 
+                <Image
+                  source={typeof user === 'object' && user?.image?.uri !== 'null'
+                    ? { uri: `${img_url}${user?.image.uri}` }
+                    : require('../../assets/Icon/blank-profile-picture-973460_1280.webp')
                   }
                   style={styles.profileImg}
                 />
-               <Text style={styles.profileName}>
-               {typeof user === 'object' && user?.name && user.name !== '' && user.name !== 'null' ? user?.name : phone}
+                <Text style={styles.profileName}>
+                  {typeof user === 'object' && user?.name && user.name !== '' && user.name !== 'null' ? user?.name : phone}
                 </Text>
               </View>
             )}
-            {/* Login Prompt */} 
+            {/* Login Prompt */}
             {!isAuthenticated && (
               <TouchableOpacity style={styles.loginBox} onPress={() => router.push(`/Signup?returnTo=${encodeURIComponent('/(tabs)/Profile')}`)}>
                 <Text style={styles.loginText}>Login to unlock more Features!</Text>
