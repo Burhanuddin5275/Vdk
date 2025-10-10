@@ -8,6 +8,7 @@ export type UserItem = {
   image_url: any;
   image: any;
   total_points:number;
+  addresses?: any[];
 };
 
 const API_URL = `${Api_url}api/app-user/list/`;
@@ -19,6 +20,14 @@ function toUser(item: ApiUser): UserItem {
   const total_points = Number(item.total_points ?? null);
   const image_url = { uri:`${img_url}${item.image}` };
   const image = { uri:`${item.image}` };
+  const addresses = item.addresses?.map((addr: any) => ({
+    id: String(addr.id ?? null),
+    street: String(addr.street ?? null),
+    city: String(addr.city ?? null),
+    state: String(addr.state ?? null),
+    postal_code: String(addr.postal_code ?? null),
+    country: String(addr.country ?? null),
+  }));
   return { 
     id,
     name,
@@ -26,6 +35,7 @@ function toUser(item: ApiUser): UserItem {
     image_url,
     image,
     total_points,
+    addresses,
   };
 }
 

@@ -6,7 +6,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { Button } from '../components/Button';
 import { IconSymbol } from '../components/ui/IconSymbol';
-import { useAddressStore } from '../store/addressStore';
 import { useShippingStore } from '../store/shippingStore';
 import { colors } from '../theme/colors';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -49,17 +48,14 @@ const Checkout = () => {
   useEffect(() => {
         return () => {
             // Clear address and shipping when leaving Checkout
-            useAddressStore.getState().setSelectedAddress(null);
-            useShippingStore.getState().setSelectedShipping(null);
+          
         };
     }, []);
  
   
-    const { selectedAddress } = useAddressStore();
-    const { selectedShipping } = useShippingStore();
 
-    const address = selectedAddress
-    const shipping = selectedShipping 
+
+
 
     const renderCartItem = ({ item }: { item: CheckoutParams }) => {
         console.log('Rendering item:', JSON.stringify(item, null, 2));
@@ -107,8 +103,8 @@ const Checkout = () => {
                 <View style={styles.sectionRow}>
                     <IconSymbol name="location.fill" size={30} color={colors.white} />
                     <View style={{ flex: 1, marginLeft: 10 }}>
-                        <Text style={styles.addressLabel}>{address?.label||'Select Address'}</Text>
-                        <Text style={styles.addressDetails}>{address?.desc||'No Address Selected'}</Text>
+                        <Text style={styles.addressLabel}>{'Select Address'}</Text>
+                        <Text style={styles.addressDetails}>{'No Address Selected'}</Text>
                     </View>
                     <Button onPress={() => { router.push('/ShippingAddress') }} variant="secondary" style={styles.changeBtn}>
                         Change
@@ -122,8 +118,8 @@ const Checkout = () => {
                     resizeMode='contain'
                     style={{width:scale(30), height:scale(40), tintColor: colors.white}}/>
                     <View style={{ flex: 1, marginLeft: 10 }}>
-                        <Text style={styles.shippingLabel}>{shipping?.label||'Select Shipping'}</Text>
-                        <Text style={styles.shippingEstimate}>{shipping?.desc||'No Shipping Method Selected'}</Text>
+                        <Text style={styles.shippingLabel}>{'Select Shipping'}</Text>
+                        <Text style={styles.shippingEstimate}>{'No Shipping Method Selected'}</Text>
                     </View>
                     <Button onPress={() => { router.push('/ChooseShipping') }} variant="secondary" style={styles.changeBtn}>
                         Change
@@ -153,15 +149,15 @@ const Checkout = () => {
                         variant="secondary"
                         style={styles.payBtn} 
                         onPress={() => {
-                            if (!selectedAddress) {
-                                alert('Please select a shipping address');
-                                return;
-                            }
+                            // if (!selectedAddress) {
+                            //     alert('Please select a shipping address');
+                            //     return;
+                            // }
                             
-                            if (!selectedShipping) {
-                                alert('Please select a shipping method');
-                                return;
-                            }
+                            // if (!selectedShipping) {
+                            //     alert('Please select a shipping method');
+                            //     return;
+                            // }
                             
                           
                             
@@ -170,8 +166,8 @@ const Checkout = () => {
                                 params: {
                                     cartItems: JSON.stringify(cartItems),
                                 
-                                    shippingAddress: JSON.stringify(selectedAddress),
-                                    shippingMethod: JSON.stringify(selectedShipping)
+                                    // shippingAddress: JSON.stringify(selectedAddress),
+                                    // shippingMethod: JSON.stringify(selectedShipping)
                                 }
                             });
                         }}

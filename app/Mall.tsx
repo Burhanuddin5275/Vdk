@@ -1,11 +1,13 @@
 import { colors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect } from 'react';
-import { Dimensions, ImageBackground, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Alert, Dimensions, ImageBackground, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { Api_url } from '../url/url';
+import axios from 'axios';
+import { useAuth } from '@/hooks/useAuth';
 const { width } = Dimensions.get('window');
 
 // Define the expected params type
@@ -22,28 +24,141 @@ const Mall = () => {
   const params = useLocalSearchParams<MallParams>();
   const insets = useSafeAreaInsets();
   const userpoint = params?.userPoints ? Number(params.userPoints) : 0;
-  const name = params?.name ;
-  const subtitle = params?.subtitle ;
-  const description = params?.description ;
+  const name = params?.name;
+  const subtitle = params?.subtitle;
+  const description = params?.description;
   const points = params?.points ? Number(params.points) : 0;
   const image = params?.image ? `${Api_url}media/redeem/${params.image}` : '';
-  const handleRedeem = () => {
-    if (userpoint >= points) {
-      router.push({
-        pathname: '/Checkout',
-        params: { 
-          name,
-          points: points.toString(),
+  const { isAuthenticated, phone, token, user } = useAuth();
+  const [userId, setUserId] = useState<string | null>(null);
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const response = await axios.get(`${Api_url}api/app-user/list/`);
+        const users = response.data;
+        const matchedUser = users.find((u: any) => u.number === phone);
+
+        if (matchedUser) {
+          setUserId(matchedUser.id);
+          console.log('Matched user ID:', matchedUser.id);
+        } else {
+          console.log('No user found with phone:', phone);
+          setUserId(token);
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+        setUserId(token);
+      }
+    };
+
+    if (phone) {
+      fetchUserData();
+    } else {
+      setUserId(token);
+    }
+  }, [phone, token]);
+
+  const CreateRedeem = async () => {
+    if (userpoint < points) {
+      Alert.alert('Insufficient Points', 'You do not have enough points to redeem this item.');
+      return;
+    }
+
+    try {
+      console.log('Phone number:', phone, 'Type:', typeof phone);
+      const orderData = {
+        user_id: userId,
+        user_detail: {
+          number: phone
+        },
+        address: 'Test',
+        shipping: 'Test',
+        status: 'pending',
+        product: [{
+          name: name,
           image: image || '',
           description: description || '',
-          type: 'redeem',
-          userPoints: userpoint.toString()
+          pts: points,
+        }],
+        created_at: new Date().toISOString()
+      };
+
+      console.log('Sending order data:', JSON.stringify(orderData, null, 2));
+
+      const API_URL = `${Api_url}api/create-order/`;
+      console.log('Sending request to:', API_URL);
+
+
+      try {
+        const response = await fetch(API_URL, {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify(orderData)
+        });
+
+        // Log response status and headers for debugging
+        console.log('Response status:', response.status, response.statusText);
+        console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+
+        const responseText = await response.text();
+        console.log('Raw response text:', responseText);
+
+        // Try to parse as JSON if the response is not empty
+        let responseData;
+        try {
+          responseData = responseText ? JSON.parse(responseText) : {};
+        } catch (jsonError) {
+          console.error('Failed to parse JSON response. Response text:', responseText);
+          throw new Error(`Server returned non-JSON response: ${responseText.substring(0, 200)}`);
         }
-      });
-    } else {
-      alert('Insufficient points to redeem this item');
+
+        // Log parsed response data
+        console.log('Parsed response data:', responseData);
+
+        if (!response.ok) {
+          console.error('API Error Status:', response.status);
+          console.error('API Error Data:', responseData);
+
+          // Handle 400 Bad Request specifically
+          if (response.status === 400) {
+            const errorMessage = responseData.detail ||
+              responseData.message ||
+              responseData.error ||
+              'Bad request';
+            throw new Error(`Validation error: ${errorMessage}`);
+          }
+
+          throw new Error(
+            responseData.detail ||
+            responseData.message ||
+            responseData.error ||
+            `Server error: ${response.status} ${response.statusText}`
+          );
+        }
+
+        // Show success message
+        Alert.alert('Success', 'Your order has been placed successfully!');
+
+        // Navigate to home or orders page 
+        router.replace('/(tabs)/Home');
+
+        return responseData;
+      } catch (error: any) {
+        console.error('Request failed:', error);
+        throw error;
+      }
+    } catch (error: any) {
+      console.error('Order creation error:', error);
+      Alert.alert('Error', error.message || 'Failed to create order');
+    } finally {
+      setIsLoading(false);
     }
   };
+
   return (
     <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
       <ImageBackground
@@ -51,59 +166,59 @@ const Mall = () => {
         style={styles.background}
         resizeMode="cover"
       >
-      {/* Product Image and Header */}
-      <View style={styles.imageHeaderWrap}>
-        <ImageBackground
-          source={{uri:image}}
-          style={styles.productImg}
-          resizeMode="cover"
-          imageStyle={{ borderBottomLeftRadius: 32, borderBottomRightRadius: 32 }}
-        > 
-          <View style={styles.headerRow}>
-            <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-              <Ionicons name="arrow-back" size={28} color={colors.white} />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.heartBtn}>
-              <Ionicons name="heart-outline" size={28} color={colors.white} />
-            </TouchableOpacity>
+        {/* Product Image and Header */}
+        <View style={styles.imageHeaderWrap}>
+          <ImageBackground
+            source={{ uri: image }}
+            style={styles.productImg}
+            resizeMode="cover"
+            imageStyle={{ borderBottomLeftRadius: 32, borderBottomRightRadius: 32 }}
+          >
+            <View style={styles.headerRow}>
+              <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+                <Ionicons name="arrow-back" size={28} color={colors.white} />
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.heartBtn}>
+                <Ionicons name="heart-outline" size={28} color={colors.white} />
+              </TouchableOpacity>
+            </View>
+          </ImageBackground>
+        </View>
+        <ScrollView >
+          {/* Product Card */}
+          <View style={styles.cardWrap}>
+            <Text style={styles.category}>{subtitle}</Text>
+            <Text style={styles.title}>{name}</Text>
+            <Text style={styles.sectionLabel}>Product Details</Text>
+            <Text style={styles.details}>{description}</Text>
+            <View style={styles.divider} />
+            <Text style={styles.sectionLabel}>Reviews</Text>
+            <View style={styles.reviewRow}>
+              <Text style={styles.stars}>★★★★★</Text>
+              <Text style={styles.rating}>4.5</Text>
+            </View>
           </View>
-        </ImageBackground>
-      </View>
-     <ScrollView >
-       {/* Product Card */}
-       <View style={styles.cardWrap}>
-        <Text style={styles.category}>{subtitle}</Text>
-        <Text style={styles.title}>{name}</Text>
-        <Text style={styles.sectionLabel}>Product Details</Text>
-        <Text style={styles.details}>{description}</Text>
-        <View style={styles.divider} />
-        <Text style={styles.sectionLabel}>Reviews</Text>
-        <View style={styles.reviewRow}>
-          <Text style={styles.stars}>★★★★★</Text>
-          <Text style={styles.rating}>4.5</Text>
-        </View>
-      </View>
-     </ScrollView>
-      {/* Bottom Bar */}
-      <View style={styles.footer}>
-        <View style={styles.pointsWrap}>
-          <Text style={styles.pointsLabel}>Total Points Required</Text>
-          <Text style={styles.pointsValue}>{points.toLocaleString()} PTS</Text>
-        </View>
-        <TouchableOpacity 
-  style={[styles.redeemBtn, { opacity: userpoint >= points ? 1 : 0.6 }]} 
-  onPress={handleRedeem}
-  disabled={userpoint < points}
->
-  <Text style={styles.redeemText}>
-    {userpoint >= points 
-      ? `Redeem ` 
-      : `Insufficient 
+        </ScrollView>
+        {/* Bottom Bar */}
+        <View style={styles.footer}>
+          <View style={styles.pointsWrap}>
+            <Text style={styles.pointsLabel}>Total Points Required</Text>
+            <Text style={styles.pointsValue}>{points.toLocaleString()} PTS</Text>
+          </View>
+          <TouchableOpacity
+            style={[styles.redeemBtn, { opacity: userpoint >= points ? 1 : 0.6 }]}
+            onPress={CreateRedeem}
+            disabled={userpoint < points}
+          >
+            <Text style={styles.redeemText}>
+              {userpoint >= points
+                ? `Redeem `
+                : `Insufficient 
       Points`}
-  </Text>
-</TouchableOpacity>
-      </View>
-    </ImageBackground>
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </ImageBackground>
     </SafeAreaView>
   );
 };
@@ -248,3 +363,7 @@ const styles = StyleSheet.create({
 });
 
 export default Mall;
+
+function setIsLoading(arg0: boolean) {
+  throw new Error('Function not implemented.');
+}

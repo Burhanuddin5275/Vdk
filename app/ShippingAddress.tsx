@@ -1,282 +1,293 @@
-import { Button } from '@/components/Button';
-import { IconSymbol } from '@/components/ui/IconSymbol';
-import { useAuth } from '@/hooks/useAuth';
-import { colors } from '@/theme/colors';
-import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  SafeAreaView,
   ActivityIndicator,
   Alert,
-  Dimensions,
   ImageBackground,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+  TouchableWithoutFeedback,
+  Keyboard
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import { useAuth } from '@/hooks/useAuth';
+import { fetchUsers, UserItem } from '@/services/user';
+import { colors } from '@/theme/colors';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
-import { useAddressStore, type Address } from '../store/addressStore';
-
-const { width, height } = Dimensions.get('window');
-
-// Re-export the Address type from the store
-type AddressType = Address & {
-  phone: string; // Add phone field which is specific to local storage
-};
-
-const STORAGE_KEY = 'user_addresses';
 
 const ShippingAddress = () => {
-  const router = useRouter();
-  const insets = useSafeAreaInsets();
-  const { phone, isAuthenticated } = useAuth();
-  const { selectedAddress, setSelectedAddress } = useAddressStore();
-  const [addresses, setAddresses] = useState<AddressType[]>([]);
+  const [user, setUser] = useState<UserItem | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selected, setSelected] = useState<number>(-1);
+  const [expandedAddress, setExpandedAddress] = useState<string | null>(null);
+  const { isAuthenticated, phone } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    const loadUserAddresses = async () => {
+      try {
+        setIsLoading(true);
+        const users = await fetchUsers();
+        if (users?.length > 0) {
+          const currentUser = users.find(u => u.number === phone) || users[0];
+          setUser(currentUser);
+        }
+      } catch (error) {
+        console.error('Error loading addresses:', error);
+        Alert.alert('Error', 'Failed to load addresses');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (isAuthenticated) {
+      loadUserAddresses();
+    } else {
+      setIsLoading(false);
+    }
+  }, [isAuthenticated, phone]);
+
+  const addresses = user?.addresses || [];
 
   const deleteAddress = async (addressId: string) => {
-    try {
-      Alert.alert(
-        'Delete Address',
-        'Are you sure you want to delete this address?',
-        [
-          {
-            text: 'Cancel',
-            style: 'cancel',
-          },
-          {
-            text: 'Delete',
-            style: 'destructive',
-            onPress: async () => {
-              const updatedAddresses = addresses.filter(addr => addr.id !== addressId);
-              await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedAddresses));
-              setAddresses(updatedAddresses);
-              
-              // Reset selection if the deleted address was selected
-              if (selectedAddress?.id === addressId) {
-                setSelectedAddress(null);
-                setSelected(-1);
-              } else if (selected >= updatedAddresses.length) {
-                // Adjust selected index if needed
-                setSelected(updatedAddresses.length - 1);
+    Alert.alert(
+      'Delete Address',
+      'Are you sure you want to delete this address?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+              const API_URL = `http://192.168.1.108:8000/api/delete-user-address/${addressId}/`;
+              console.log('Attempting to delete address at URL:', API_URL);
+  
+              const response = await fetch(API_URL, {
+                method: 'DELETE',
+              });
+  
+              if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(
+                  errorData.message || `HTTP error! status: ${response.status}`
+                );
               }
-              
-              Alert.alert('Success', 'Address deleted successfully');
-            },
+  
+              // Refresh the addresses after successful deletion
+              try {
+                const users = await fetchUsers();
+                if (users?.length > 0) {
+                  const currentUser = users.find(u => u.number === phone) || users[0];
+                  setUser(currentUser);
+                }
+                Alert.alert('Success', 'Address deleted successfully', [
+                  { 
+                    text: 'OK',
+                    onPress: () => {
+                      setSelected(-1);
+                      setExpandedAddress(null);
+                      setUser(prev => prev ? { ...prev } : null);
+                    }
+                  }
+                ]);
+              } catch (refreshError) {
+                console.error('Error refreshing addresses:', refreshError);
+                Alert.alert('Success', 'Address deleted, but could not refresh the list');
+              }
+       
           },
-        ],
-        { cancelable: true }
-      );
-    } catch (error) {
-      console.error('Error deleting address:', error);
-      Alert.alert('Error', 'Failed to delete address');
-    }
+        },
+      ],
+      { cancelable: true }
+    );
+  };
+  const handleSelectAddress = (index: number) => {
+    setSelected(index);
+    // Optionally close the expanded address after selection
+    setExpandedAddress(null);
   };
 
-  const loadAddresses = async () => {
-    if (!isAuthenticated) {
-      setIsLoading(false);
+  const handleUseAddress = () => {
+    if (selected === -1) {
+      Alert.alert('Please select an address');
       return;
     }
-
-    try {
-      const savedAddresses = await AsyncStorage.getItem(STORAGE_KEY);
-      if (savedAddresses) {
-        const parsedAddresses: AddressType[] = JSON.parse(savedAddresses);
-        const userAddresses = parsedAddresses.filter(addr => addr.phone === phone);
-        setAddresses(userAddresses);
-        
-        // Set selected address if one is already selected in the store
-        if (selectedAddress && 'id' in selectedAddress) {
-          const idx = userAddresses.findIndex(addr => 
-            addr.id === selectedAddress.id
-          );
-          if (idx !== -1) setSelected(idx);
-        } else if (userAddresses.length > 0) {
-          // Select the default address if none is selected
-          const defaultIdx = userAddresses.findIndex(addr => addr.isDefault);
-          setSelected(defaultIdx !== -1 ? defaultIdx : 0);
-        }
-      }
-    } catch (error) {
-      console.error('Error loading addresses:', error);
-      Alert.alert('Error', 'Failed to load saved addresses');
-    } finally {
-      setIsLoading(false);
-    }
+    const selectedAddress = addresses[selected];
+    // Here you can add logic to save the selected address to a global state
+    // or navigate back to the previous screen with the selected address
+    router.back();
   };
 
-  // Load saved addresses
-  useEffect(() => {
-    loadAddresses();
-  }, [isAuthenticated, phone, selectedAddress?.id]);
-
-  // Update selected address in store when selection changes
-  useEffect(() => {
-    if (addresses.length > 0 && selected >= 0 && selected < addresses.length) {
-      const { phone, ...addr } = addresses[selected];
-      setSelectedAddress({
-        ...addr,
-        label: addr.address,
-        desc: `${addr.street}, ${addr.city}`,
-      });
-    }
-  }, [selected, addresses]);
-
   return (
-    <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
-      <ImageBackground
-      source={require('../assets/images/ss1.png')}
-      style={styles.background}
-      resizeMode="cover"
-    >
-      <View style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={moderateScale(24)}color={colors.white} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Shipping Address</Text>
-        </View>
+    <TouchableWithoutFeedback onPress={() => {
+      Keyboard.dismiss();
+      setExpandedAddress(null);
+    }}>
+      <SafeAreaView style={styles.safeArea}>
+        <ImageBackground
+          source={require('../assets/images/ss1.png')}
+          style={styles.background}
+          resizeMode="cover"
+        >
+          <View style={styles.container}>
+            <View style={styles.header}>
+              <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                <Ionicons name="arrow-back" size={24} color="#fff" />
+              </TouchableOpacity>
+              <Text style={styles.headerTitle}>My Addresses</Text>
+              <View style={{ width: 24 }} />
+            </View>
 
-        <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
-          <View style={{ marginTop: 16 }}>
-            {isLoading ? (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color={colors.white} />
-                <Text style={styles.loadingText}>Loading addresses...</Text>
-              </View>
-            ) : !isAuthenticated ? (
-              <View style={styles.authMessage}>
-                <Text style={styles.authMessageText}>
-                  Please sign in to view and manage your saved addresses
-                </Text>
-                <Button 
-                  variant="secondary" 
-                  onPress={() => router.push('/Login')}
-                  style={{ marginTop: 16 }}
-                >
-                  Sign In
-                </Button>
-              </View>
-            ) : addresses.length === 0 ? (
-              <View style={styles.noAddresses}>
-                <Ionicons name="location-outline" size={48} color={colors.white} style={{ opacity: 0.6 }} />
-                <Text style={styles.noAddressesText}>No saved addresses</Text>
-                <Text style={styles.noAddressesSubtext}>
-                  Add a new address to get started
-                </Text>
-              </View>
-            ) : (
-              addresses.map((addr, idx) => (
-                <View key={addr.id}>
-                  <TouchableOpacity
-                    style={styles.addressRow}
-                    activeOpacity={0.8}
-                    onPress={() => setSelected(idx)}
-                  >
-                    <IconSymbol 
-                      name="location.fill" 
-                      size={28} 
-                      color={addr.isDefault ? colors.primary : colors.white} 
-                      style={{ marginRight: 12 }} 
-                    />
-                    <View style={{ flex: 1 }}>
-                      <View style={styles.addressHeader}>
-                        <Text style={styles.addressLabel}>
-                          {addr.address}
-                        </Text>
-                        {addr.isDefault && (
-                          <View style={styles.defaultBadge}>
-                            <Text style={styles.defaultBadgeText}>Default</Text>
-                          </View>
-                        )}
-                      </View>
-                      <Text style={styles.addressDesc}>
-                        {`${addr.street}, ${addr.city}`}
-                      </Text>
-                      {addr.block && (
-                        <Text style={styles.addressBlock}>
-                          Block: {addr.block}
-                        </Text>
-                      )}
-                    </View>
-                    <Ionicons
-                      name={selected === idx ? 'radio-button-on' : 'radio-button-off'}
-                      size={26}
-                      color={selected === idx ? colors.white : colors.secondaryDark}
-                      style={{ marginRight: 8 }}
-                    />
-                    <TouchableOpacity 
-                      onPress={() => deleteAddress(addr.id)}
-                      style={styles.deleteButton}
-                      activeOpacity={0.7}
-                    >
-                      <Ionicons name="trash-outline" size={22} color="white" />
-                    </TouchableOpacity>
-                  </TouchableOpacity>
-                  {idx < addresses.length - 1 && <View style={styles.divider} />}
+            <ScrollView
+              style={styles.scrollView}
+              contentContainerStyle={styles.scrollViewContent}
+              keyboardShouldPersistTaps="handled"
+            >
+              {isLoading ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="large" color={colors.primary} />
+                  <Text style={styles.loadingText}>Loading addresses...</Text>
                 </View>
-              ))
-            )}
+              ) : !isAuthenticated ? (
+                <View style={styles.authMessage}>
+                  <Text style={styles.authMessageText}>
+                    Please sign in to view your saved addresses
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.signInButton}
+                    onPress={() => router.push('/Login')}
+                  >
+                    <Text style={styles.signInButtonText}>Sign In</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : addresses.length === 0 ? (
+                <View style={styles.emptyState}>
+                  <Ionicons name="location-outline" size={64} color="#999" />
+                  <Text style={styles.emptyStateTitle}>No addresses saved</Text>
+                  <Text style={styles.emptyStateText}>
+                    You haven't added any shipping addresses yet.
+                  </Text>
+                </View>
+              ) : (
+                addresses.map((address, index) => (
+                  <View key={address.id} style={styles.addressContainer}>
+                    <TouchableOpacity
+                      style={styles.addressHeader}
+                      onPress={() => setExpandedAddress(
+                        expandedAddress === address.id ? null : address.id
+                      )}
+                    >
+                      <View style={styles.addressHeaderContent}>
+                        <Ionicons
+                          name="location"
+                          size={20}
+                          color={selected === index ? colors.primary : '#fff'}
+                        />
+                        <Text style={styles.addressTitle}>
+                          {`Address ${index + 1}`}
+                          {selected === index && ' (Selected)'}
+                        </Text>
+                      </View>
+                      <Ionicons
+                        name={expandedAddress === address.id ? 'chevron-up' : 'chevron-down'}
+                        size={20}
+                        color="#fff"
+                      />
+                    </TouchableOpacity>
+
+                    {expandedAddress === address.id && (
+                      <View style={styles.addressDetails}>
+                        <Text style={styles.addressText}>
+                          {[address.street, address.city, address.state, address.postal_code, address.country]
+                            .filter(Boolean)
+                            .join(', ')}
+                        </Text>
+
+                        <View style={styles.addressActions}>
+                          <TouchableOpacity
+                            style={[
+                              styles.selectButton,
+                              selected === index && styles.selectedButton
+                            ]}
+                            onPress={() => handleSelectAddress(index)}
+                          >
+                            <Ionicons
+                              name={selected === index ? 'checkmark-circle' : 'radio-button-off'}
+                              size={20}
+                              color={selected === index ? colors.primary : '#666'}
+                            />
+                            <Text style={styles.selectButtonText}>
+                              {selected === index ? 'Selected' : 'Select this address'}
+                            </Text>
+                          </TouchableOpacity>
+
+                          <TouchableOpacity
+                            style={styles.deleteButton}
+                            onPress={() => deleteAddress(address.id)}
+                          >
+                            <Ionicons name="trash-outline" size={20} color="#ff3b30" />
+                            <Text style={styles.deleteButtonText}>Delete</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    )}
+                  </View>
+                ))
+              )}
+            </ScrollView>
+            <View style={styles.addButtonContainer}>
+              <TouchableOpacity
+                style={styles.addButton}
+                onPress={() => router.push('/Address')}
+              >
+                <Ionicons name="add" size={24} color={colors.primary} />
+                <Text style={styles.addButtonText}>Add New Address</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.footer}>
+              <TouchableOpacity
+                style={[
+                  styles.useAddressButton,
+                  { opacity: selected === -1 ? 0.6 : 1 }
+                ]}
+                onPress={handleUseAddress}
+                disabled={selected === -1}
+              >
+                <Text style={styles.useAddressButtonText}>Apply</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-
-          {/* Add New Address */}
-          <TouchableOpacity style={styles.addNewBox} activeOpacity={0.85} onPress={() => router.push('/Address')}>
-            <Text style={styles.addNewText}>+ Add New Shipping Address</Text>
-          </TouchableOpacity>
-        </ScrollView>
-
-        {/* Apply Button */}
-        <View style={styles.applyContainer}>
-          <Button
-            variant="secondary"
-            style={[styles.applyBtn, { 
-              alignItems: 'center', 
-              justifyContent: 'center',
-              opacity: !isAuthenticated || addresses.length === 0 ? 0.6 : 1
-            }]}
-            disabled={!isAuthenticated || addresses.length === 0 || selected === -1}
-            onPress={() => {
-              if (addresses[selected]) {
-                const addr = addresses[selected];
-                setSelectedAddress({
-                  id: addr.id,
-                  label: addr.address,
-                  desc: `${addr.street}, ${addr.city}`,
-                  address: addr.address,
-                  city: addr.city,
-                  street: addr.street,
-                  block: addr.block,
-                  isDefault: addr.isDefault
-                });
-              }
-              router.back();
-            }}
-          >
-            {!isAuthenticated ? 'Sign In to Continue' : 
-             addresses.length === 0 ? 'No Addresses' : 'Apply'}
-          </Button>
-        </View>
-      </View>
-    </ImageBackground>
-    </SafeAreaView>
+        </ImageBackground>
+      </SafeAreaView>
+    </TouchableWithoutFeedback>
   );
 };
 
 const styles = StyleSheet.create({
-  background: {
+  safeArea: {
     flex: 1,
-    width: '100%',
-    height: '100%',
   },
   container: {
+    flex: 1,
+  },
+  contentContainer: {
+    flex: 1,
+    justifyContent: 'space-between',
+  },
+  addButtonContainer: {
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: 'transparent',
+    marginBottom: 16,
+  },
+  background: {
     flex: 1,
   },
   header: {
@@ -288,7 +299,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(18),
     marginTop: verticalScale(20),
   },
-  backBtn: {
+  backButton: {
     width: scale(40),
     height: scale(40),
     justifyContent: 'center',
@@ -308,133 +319,177 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     lineHeight: verticalScale(55),
   },
-  addressRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+  scrollView: {
+    flex: 1,
   },
-  deleteButton: {
-    padding: 8,
-    marginLeft: 4,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 59, 48, 0.1)',
-  },
-  addressLabel: {
-    color: colors.white,
-    fontSize: 18,
-    fontFamily: 'PoppinsMedium',
-  },
-  addressDesc: {
-    color: colors.white,
-    fontSize: 15,
-    opacity: 0.8,
-    fontFamily: 'PoppinsRegular',
-    marginTop: 2,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: 'rgba(255,255,255,0.3)',
-    marginHorizontal: 20,
-  },
-  addNewBox: {
-    marginTop: 28,
-    marginHorizontal: 20,
-    borderRadius: 16,
-    borderWidth: 2,
-    borderStyle: 'dashed',
-    borderColor: colors.secondary,
-    backgroundColor: colors.white,
-    alignItems: 'center',
-    paddingVertical: 22,
-  },
-  addNewText: {
-    color: colors.textPrimary,
-    fontSize: 15,
-    fontFamily: 'PoppinsRegular',
-    textAlign: 'center',
+  scrollViewContent: {
+    padding: 16,
+    paddingBottom: 100, // Extra space for the footer
   },
   loadingContainer: {
-    padding: 20,
-    alignItems: 'center',
+    flex: 1,
     justifyContent: 'center',
+    alignItems: 'center',
+    padding: 32,
   },
   loadingText: {
-    color: colors.white,
-    marginTop: 10,
-    fontSize: 16,
+    marginTop: 16,
+    color: '#fff',
   },
   authMessage: {
-    padding: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
     borderRadius: 12,
-    margin: 16,
+    padding: 24,
     alignItems: 'center',
+    marginTop: 32,
   },
   authMessageText: {
-    color: colors.white,
     fontSize: 16,
+    color: '#333',
     textAlign: 'center',
-    lineHeight: 24,
+    marginBottom: 16,
   },
-  noAddresses: {
-    padding: 30,
+  signInButton: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  signInButtonText: {
+    color: 'white',
+    fontWeight: '600',
+  },
+  emptyState: {
     alignItems: 'center',
     justifyContent: 'center',
+    padding: 32,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 12,
+    margin: 16,
   },
-  noAddressesText: {
-    color: colors.white,
+  emptyStateTitle: {
     fontSize: 18,
     fontWeight: '600',
+    color: '#333',
     marginTop: 16,
-    textAlign: 'center',
   },
-  noAddressesSubtext: {
-    color: 'rgba(255, 255, 255, 0.7)',
+  emptyStateText: {
     fontSize: 14,
+    color: '#666',
     marginTop: 8,
     textAlign: 'center',
+  },
+  // Address card styles
+  addressContainer: {
+    marginBottom: 12,
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
   },
   addressHeader: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
+    padding: 16,
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
   },
-  defaultBadge: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
-    marginLeft: 8,
+  addressHeaderContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  defaultBadgeText: {
-    color: colors.white,
-    fontSize: 10,
+  addressTitle: {
+    fontSize: 16,
+    color: '#fff',
+    marginLeft: 12,
+    fontFamily: 'Arial',
     fontWeight: '600',
   },
-  addressBlock: {
-    color: 'rgba(255, 255, 255, 0.7)',
-    fontSize: 14,
-    marginTop: 2,
+  addressDetails: {
+    padding: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
   },
-  applyContainer: {
+  addressText: {
+    fontSize: 14,
+    color: '#333',
+    lineHeight: 20,
+    marginBottom: 16,
+  },
+  addressActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+    paddingTop: 12,
+  },
+  selectButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 8,
+    borderRadius: 4,
+  },
+  selectedButton: {
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+  },
+  selectButtonText: {
+    marginLeft: 8,
+    color: '#333',
+    fontSize: 14,
+  },
+  deleteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 8,
+    borderRadius: 4,
+  },
+  deleteButtonText: {
+    marginLeft: 8,
+    color: '#ff3b30',
+    fontSize: 14,
+  },
+  footer: {
     backgroundColor: colors.secondaryLight,
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
-    padding: 24,
-    paddingBottom: 32,
+    borderTopLeftRadius: 50,
+    borderTopRightRadius: 50,
+    padding: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 8,
-    height:verticalScale(100),
+    marginHorizontal: scale(-20),
+    paddingHorizontal: scale(20),
+    height: verticalScale(100),
   },
-  applyBtn: {
-    width: width - 64,
-    height: verticalScale(50),
-    borderRadius: 22,
+  useAddressButton: {
+    width: '80%',
+    borderRadius: 16,
+    paddingVertical: 16,
     backgroundColor: colors.primary,
-    alignSelf: 'center',
-    paddingVertical: moderateScale(12),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  useAddressButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  addButton: {
+    width: '80%',
+    borderRadius: 15,
+    paddingVertical: 12,
+    backgroundColor: colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
+
+  },
+  addButtonText: {
+    color: colors.primary,
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
   },
 });
 

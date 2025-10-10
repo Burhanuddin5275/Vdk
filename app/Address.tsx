@@ -8,6 +8,8 @@ import { Alert, Dimensions, ImageBackground, KeyboardAvoidingView, Platform, Saf
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { fetchUsers, UserItem } from '@/services/user';
+import { Api_url } from '@/url/url';
 
 const { width } = Dimensions.get('window');
 
@@ -25,111 +27,107 @@ type AddressType = {
 const STORAGE_KEY = 'user_addresses';
 
 const Address = () => {
-  const insets = useSafeAreaInsets();
-  const { phone, isAuthenticated } = useAuth();
-  
-  const [address, setAddress] = useState('');
+  const insets = useSafeAreaInsets(); 
   const [city, setCity] = useState('');
   const [street, setStreet] = useState('');
-  const [block, setBlock] = useState('');
+  const [country, setCountry] = useState('');
+  const [state, setState] = useState('');
+  const [postalCode, setPostalCode] = useState('');
   const [saveAddress, setSaveAddress] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const { isAuthenticated, phone, token } = useAuth();
+  const [userId, setUserId] = useState<string | null>(null);
+  const [user, setUser] = useState<UserItem | string | null | undefined>(undefined);
+ useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        const users = await fetchUsers();
+        const matchedUser = users.find((u) => u.number === phone);
 
-  // Load saved addresses on component mount
-  useEffect(() => {
-    if (isAuthenticated) {
-      loadSavedAddresses();
-    }
-  }, [isAuthenticated]);
-
-  const loadSavedAddresses = async () => {
-    try {
-      const savedAddresses = await AsyncStorage.getItem(STORAGE_KEY);
-      if (savedAddresses) {
-        const addresses = JSON.parse(savedAddresses);
-        // Find if there's a default address for this user
-        const userDefaultAddress = addresses.find(
-          (addr: AddressType) => addr.phone === phone && addr.isDefault
-        );
-        
-        if (userDefaultAddress) {
-          setAddress(userDefaultAddress.address);
-          setCity(userDefaultAddress.city);
-          setStreet(userDefaultAddress.street);
-          setBlock(userDefaultAddress.block);
-          setSaveAddress(true);
+        if (matchedUser) {
+          setUser(matchedUser);
+          setUserId(matchedUser.id.toString());
+          console.log('Matched user:', matchedUser);
+        } else {
+          console.log('No user found with phone:', phone);
+          setUser(token);
         }
+      } catch (error) {
+        console.error('Error loading users:', error);
+        setUser(token);
       }
-    } catch (error) {
-      console.error('Error loading addresses:', error);
-    }
-  };
+    };
 
+    if (phone) {
+      loadUsers();
+    } else {
+      setUser(token); 
+    }
+    console.log('User:', street, city, state, postalCode, country);
+    
+  }, [phone, token]);
   const handleSaveAddress = async () => {
-    if (!address || !city || !street || !block) {
+    console.log('Form values before submit:', { street, city, state, postalCode, country });
+  
+    if (!street || !city || !state || !postalCode || !country) {
       Alert.alert('Error', 'Please fill in all required fields');
       return;
     }
-
+  
     setIsLoading(true);
+  
     try {
-      const newAddress: AddressType = {
-        id: Date.now().toString(),
-        address,
-        city,
-        street,
-        block,
-        phone: phone || '',
-        isDefault: saveAddress
+      const url = `${Api_url}api/app-user-address/${userId}/`;
+  
+      // FormData setup
+      const formData = new FormData();
+  
+      // Construct the address object
+      const address = {
+        street: street,
+        city: city,
+        state: state,
+        postal_code: postalCode,
+        country: country,
       };
-
-      // Get existing addresses
-      const savedAddresses = await AsyncStorage.getItem(STORAGE_KEY);
-      let addresses: AddressType[] = [];
-      
-      if (savedAddresses) {
-        addresses = JSON.parse(savedAddresses);
-        
-        // Remove any existing default address for this user if this is being set as default
-        if (saveAddress) {
-          addresses = addresses.map((addr: AddressType) => 
-            addr.phone === phone ? { ...addr, isDefault: false } : addr
-          );
-        }
-        
-        // Update existing address if it exists, otherwise add new one
-        const existingIndex = addresses.findIndex(
-          (addr: AddressType) => 
-            addr.phone === phone && 
-            addr.address === address && 
-            addr.city === city
-        );
-        
-        if (existingIndex >= 0) {
-          addresses[existingIndex] = { ...newAddress, id: addresses[existingIndex].id };
-        } else {
-          addresses.push(newAddress);
-        }
-      } else {
-        addresses = [newAddress];
+  
+      // Append it as a JSON string to the addresses field
+      formData.append('addresses', JSON.stringify([address]));
+  
+      console.log('Sending form data with addresses:', {
+        addresses: [address]
+      });
+  
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          Authorization: `Token ${token}`,
+        },
+        body: formData,
+      });
+  
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Server response error:', errorText);
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
-
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(addresses));
+  
+      const responseData = await response.json();
+      console.log('Response:', responseData);
+  
+      Alert.alert('Success', 'Address updated successfully');
       
-      Alert.alert('Success', 'Address saved successfully');
-      
-      // Navigate back or to the next screen
-      router.back();
     } catch (error) {
-      console.error('Error saving address:', error);
-      Alert.alert('Error', 'Failed to save address. Please try again.');
+      console.error('Error updating address:', error);
+      Alert.alert('Error', 'Failed to update address. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
-
+  
   return (
-          <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
+   <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
     <ImageBackground
       source={require('../assets/images/ss1.png')}
       style={{ flex: 1 }}
@@ -149,39 +147,53 @@ const Address = () => {
             </View>
             {/* Form */}
             <View style={styles.form}>
-              <Text style={styles.label}>Address*</Text>
+              <Text style={styles.label}>Street*</Text>
               <TextInput
                 style={styles.input}
-                value={address}
-                onChangeText={setAddress}
-                placeholder="*****"
-                placeholderTextColor="#fff"
-              />
-              <Text style={styles.label}>City*</Text>
-              <TextInput
-                style={styles.input}
-                value={city}
-                onChangeText={setCity}
+                value={street}
+                onChangeText={setStreet}
                 placeholder="*****"
                 placeholderTextColor="#fff"
               />
               <View style={styles.rowInputs}>
                 <View style={{ flex: 1, marginRight: scale(8) }}>
-                  <Text style={styles.label}>Street*</Text>
+                  <Text style={styles.label}>Country*</Text>
                   <TextInput
                     style={styles.input}
-                    value={street}
-                    onChangeText={setStreet}
+                    value={country}
+                    onChangeText={setCountry}
                     placeholder=""
                     placeholderTextColor="#fff"
                   />
                 </View>
                 <View style={{ flex: 1, marginLeft: scale(8) }}>
-                  <Text style={styles.label}>Block*</Text>
+                  <Text style={styles.label}>City*</Text>
                   <TextInput
                     style={styles.input}
-                    value={block}
-                    onChangeText={setBlock}
+                    value={city}
+                    onChangeText={setCity}
+                    placeholder=""
+                    placeholderTextColor="#fff"
+                  />
+                </View>
+              </View>
+              <View style={styles.rowInputs}>
+                <View style={{ flex: 1, marginRight: scale(8) }}>
+                  <Text style={styles.label}>State*</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={state}
+                    onChangeText={setState}
+                    placeholder=""
+                    placeholderTextColor="#fff"
+                  />
+                </View>
+                <View style={{ flex: 1, marginLeft: scale(8) }}>
+                  <Text style={styles.label}>Postal Code*</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={postalCode}
+                    onChangeText={setPostalCode}
                     placeholder=""
                     placeholderTextColor="#fff"
                   />

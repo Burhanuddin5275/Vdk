@@ -29,6 +29,11 @@ interface Product {
     sale_price?: number;
     description?: string;
     rating?: number;
+    gallery_images?: Array<{
+        id:number;
+        image: string;
+    }>;
+    gallery_image?:any[]; 
     variants?: Array<{
         id?: number;
         stock?: number;
@@ -46,7 +51,14 @@ const Products = () => {
     const router = useRouter();
     const { id, data, category, backgroundImage } = useLocalSearchParams();
     const [product, setProduct] = useState<Product>(data ? JSON.parse(data as string) : {});
-    const images = [product.img, product.img1, product.img2].filter(Boolean);
+    // Get all possible image sources, prioritizing gallery_images if available
+    const getImageSources = () => {
+        const galleryImages = product.gallery_images?.map(img => img.image) || [];
+        const fallbackImages = [product.img, product.img1, product.img2].filter(Boolean);
+        return [...galleryImages, ...fallbackImages].filter(Boolean);
+    };
+    
+    const images = getImageSources();
     const [selectedImg, setSelectedImg] = useState(images[0] || '');
     const [modalVisible, setModalVisible] = useState(false);
 
@@ -57,6 +69,10 @@ const Products = () => {
         sale_price?: number;
         image?: any;
         stock?: number;
+    }
+    interface gallery_image{
+        id?: number;
+        image?: any;
     }
 
     const processVariants = (): Variant[] => {
