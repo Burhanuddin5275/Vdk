@@ -8,6 +8,8 @@ import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { Api_url } from '../url/url';
 import axios from 'axios';
 import { useAuth } from '@/hooks/useAuth';
+import { useShippingStore } from '@/store/shippingStore';
+import { useAddressStore } from '@/store/addressStore';
 const { width } = Dimensions.get('window');
 
 // Define the expected params type
@@ -23,6 +25,8 @@ const Mall = () => {
   const router = useRouter();
   const params = useLocalSearchParams<MallParams>();
   const insets = useSafeAreaInsets();
+    const { selectedAddress } = useAddressStore();
+      const { selectedShipping } = useShippingStore();
   const userpoint = params?.userPoints ? Number(params.userPoints) : 0;
   const name = params?.name;
   const subtitle = params?.subtitle;
@@ -69,10 +73,10 @@ const Mall = () => {
       const orderData = {
         user_id: userId,
         user_detail: {
-          number: phone
+          number: phone 
         },
-        address: 'Test',
-        shipping: 'Test',
+        address: selectedAddress,
+        shipping: selectedShipping,
         status: 'pending',
         product: [{
           name: name,

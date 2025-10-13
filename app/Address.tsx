@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fetchUsers, UserItem } from '@/services/user';
+import SuccessModal from '@/components/SuccessModal';
 import { Api_url } from '@/url/url';
 
 const { width } = Dimensions.get('window');
@@ -27,7 +28,7 @@ type AddressType = {
 const STORAGE_KEY = 'user_addresses';
 
 const Address = () => {
-  const insets = useSafeAreaInsets(); 
+  const insets = useSafeAreaInsets();
   const [city, setCity] = useState('');
   const [street, setStreet] = useState('');
   const [country, setCountry] = useState('');
@@ -36,9 +37,10 @@ const Address = () => {
   const [saveAddress, setSaveAddress] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { isAuthenticated, phone, token } = useAuth();
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [user, setUser] = useState<UserItem | string | null | undefined>(undefined);
- useEffect(() => {
+  useEffect(() => {
     const loadUsers = async () => {
       try {
         const users = await fetchUsers();
@@ -61,27 +63,27 @@ const Address = () => {
     if (phone) {
       loadUsers();
     } else {
-      setUser(token); 
+      setUser(token);
     }
     console.log('User:', street, city, state, postalCode, country);
-    
+
   }, [phone, token]);
   const handleSaveAddress = async () => {
     console.log('Form values before submit:', { street, city, state, postalCode, country });
-  
+
     if (!street || !city || !state || !postalCode || !country) {
       Alert.alert('Error', 'Please fill in all required fields');
       return;
     }
-  
+
     setIsLoading(true);
-  
+
     try {
       const url = `${Api_url}api/app-user-address/${userId}/`;
-  
+
       // FormData setup
       const formData = new FormData();
-  
+
       // Construct the address object
       const address = {
         street: street,
@@ -90,14 +92,14 @@ const Address = () => {
         postal_code: postalCode,
         country: country,
       };
-  
+
       // Append it as a JSON string to the addresses field
       formData.append('addresses', JSON.stringify([address]));
-  
+
       console.log('Sending form data with addresses:', {
         addresses: [address]
       });
-  
+
       const response = await fetch(url, {
         method: 'POST',
         headers: {
@@ -106,18 +108,18 @@ const Address = () => {
         },
         body: formData,
       });
-  
+
       if (!response.ok) {
         const errorText = await response.text();
         console.error('Server response error:', errorText);
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-  
+
       const responseData = await response.json();
       console.log('Response:', responseData);
-  
-      Alert.alert('Success', 'Address updated successfully');
-      
+
+      setShowSuccessModal(true);
+
     } catch (error) {
       console.error('Error updating address:', error);
       Alert.alert('Error', 'Failed to update address. Please try again.');
@@ -125,14 +127,18 @@ const Address = () => {
       setIsLoading(false);
     }
   };
-  
+  const handleSuccessModalClose = () => {
+    setShowSuccessModal(false);
+    // Navigate back to ShippingAddress screen
+    router.replace('/ShippingAddress');
+  };
   return (
-   <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
-    <ImageBackground
-      source={require('../assets/images/ss1.png')}
-      style={{ flex: 1 }}
-      resizeMode="cover"
-    >
+    <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
+      <ImageBackground
+        source={require('../assets/images/ss1.png')}
+        style={{ flex: 1 }}
+        resizeMode="cover"
+      >
         <KeyboardAvoidingView
           style={{ flex: 1 }}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -195,6 +201,7 @@ const Address = () => {
                     value={postalCode}
                     onChangeText={setPostalCode}
                     placeholder=""
+                    keyboardType="number-pad"
                     placeholderTextColor="#fff"
                   />
                 </View>
@@ -217,10 +224,10 @@ const Address = () => {
                     justifyContent: 'center',
                   }}>
                     {saveAddress && (
-                      <Ionicons 
-                        name="checkmark" 
-                        size={moderateScale(16)} 
-                        color={isAuthenticated ? "#E53935" : "#999"} 
+                      <Ionicons
+                        name="checkmark"
+                        size={moderateScale(16)}
+                        color={isAuthenticated ? "#E53935" : "#999"}
                       />
                     )}
                   </View>
@@ -233,18 +240,25 @@ const Address = () => {
           </View>
           {/* Bottom Add Button */}
           <View style={styles.bottomBar}>
-                 <Button
-                       variant="secondary"
-                       style={[styles.addBtn, { alignItems: 'center', justifyContent: 'center' }]}
-                       onPress={handleSaveAddress}
-                       disabled={isLoading}
-                     >
-                       {isLoading ? 'Saving...' : 'Apply'}
-                     </Button>
+            <Button
+              variant="secondary"
+              style={[styles.addBtn, { alignItems: 'center', justifyContent: 'center' }]}
+              onPress={handleSaveAddress}
+              disabled={isLoading}
+            >
+              {isLoading ? 'Saving...' : 'Add'}
+            </Button>
           </View>
         </KeyboardAvoidingView>
-    </ImageBackground>
-          </SafeAreaView>
+      </ImageBackground>
+      <SuccessModal
+  visible={showSuccessModal}
+  message="Address added successfully"
+  subtitle="You can now use this address for checkout"
+  autoCloseDelay={2000}
+  onClose={handleSuccessModalClose}
+/>
+    </SafeAreaView>
   );
 };
 
@@ -262,13 +276,13 @@ const styles = StyleSheet.create({
     marginTop: verticalScale(20),
   },
   backBtn: {
-      width: scale(40),
+    width: scale(40),
     height: scale(40),
     justifyContent: 'center',
     zIndex: 1,
   },
   headerTitle: {
-   position: 'absolute',
+    position: 'absolute',
     left: 0,
     right: 0,
     top: 0,
@@ -284,7 +298,7 @@ const styles = StyleSheet.create({
   form: {
     marginTop: verticalScale(10),
     flex: 1,
-   paddingHorizontal: scale(20),
+    paddingHorizontal: scale(20),
   },
   label: {
     color: '#fff',
@@ -323,15 +337,15 @@ const styles = StyleSheet.create({
     fontFamily: 'PoppinsMedium',
   },
   bottomBar: {
-     backgroundColor: colors.secondaryLight,
-     borderTopLeftRadius: 32,
-     borderTopRightRadius: 32,
-     padding: 24,
-     paddingBottom: 32,
-     alignItems: 'center',
-     justifyContent: 'center',
-     marginTop: 8,
-     height: verticalScale(100),
+    backgroundColor: colors.secondaryLight,
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    padding: 24,
+    paddingBottom: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
+    height: verticalScale(100),
   },
   addBtn: {
     width: width - 64,

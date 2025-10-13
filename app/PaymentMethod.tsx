@@ -8,6 +8,7 @@ import axios from 'axios';
 import { ActivityIndicator, Alert, Dimensions, Image, ImageBackground, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { Api_url } from '../url/url';
+import { useCartStore } from '@/store/cartStore';
 const { width, height } = Dimensions.get('window');
 
 const PAYMENT_METHODS =
@@ -48,8 +49,8 @@ interface OrderItem {
 }
 
 interface OrderData {
-    address: string;
-    shipping: string;
+    address: any;
+    shipping: any;
     status: string;
     items: OrderItem[];
 }
@@ -59,21 +60,23 @@ const Payment = () => {
     const params = useLocalSearchParams();
     const [selected, setSelected] = useState<string>('');
     const [isLoading, setIsLoading] = useState(false);
-    const { shippingAddress, shippingMethod, cartItems } = useLocalSearchParams<{
-        shippingAddress: any;
-        shippingMethod: any;
+    const { shippingAddress: shippingAddressStr, shippingMethod: shippingMethodStr, cartItems } = useLocalSearchParams<{
+        shippingAddress: string;
+        shippingMethod: string;
         cartItems: string;
     }>();
-
+ const shippingAddress = shippingAddressStr ? JSON.parse(shippingAddressStr) : null;
+ const shippingMethod = shippingMethodStr ? JSON.parse(shippingMethodStr) : null;
     const { isAuthenticated, phone, token, user } = useAuth();
     const [userId, setUserId] = useState<string | null>(null);
+    const { clearCart } = useCartStore();
 
     useEffect(() => {
         const fetchUserData = async () => {
             try {
                 const response = await axios.get(`${Api_url}api/app-user/list/`);
                 const users = response.data; // Assuming the API returns an array of users
-                
+
                 // Find user by phone number
                 const matchedUser = users.find((u: any) => u.number === phone);
 
@@ -137,13 +140,13 @@ const Payment = () => {
             const orderData = {
                 user_id: userId,
                 user_detail: {
-                number: phone
+                    number: phone
                 },
-                address: addressObj?.desc || 'Test',
-                shipping: methodObj?.label || 'Test',
+                address: addressObj,
+                shipping: methodObj,
                 status: 'pending',
                 product: parsedCartItems.map((item: any) => ({
-                    image: item.image ||null,
+                    image: item.image || null,
                     name: item.name || null,
                     pts: item.points || null,
                     quantity: item.quantity || null,
@@ -215,16 +218,18 @@ const Payment = () => {
                     );
                 }
 
+                await clearCart(user?.name);
+                // Show success message
+                Alert.alert('Success', 'Your order has been placed successfully!');
+
+                // Navigate to home or orders page 
+                router.replace('/(tabs)/Home');
+
                 return responseData;
             } catch (error: any) {
                 console.error('Request failed:', error);
                 throw error;
             }
-
-            router.push({
-                pathname: '/Payment',
-
-            });
         } catch (error: any) {
             console.error('Order creation error:', error);
             Alert.alert('Error', error.message || 'Failed to create order');

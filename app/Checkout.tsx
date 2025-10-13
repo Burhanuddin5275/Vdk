@@ -1,14 +1,15 @@
+import { useAuth } from '@/hooks/useAuth';
+import { useAddressStore } from '@/store/addressStore';
+import { useShippingStore } from '@/store/shippingStore';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect } from 'react';
-import { Dimensions, FlatList, Image, ImageBackground, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Dimensions, FlatList, Image, ImageBackground, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { Button } from '../components/Button';
 import { IconSymbol } from '../components/ui/IconSymbol';
-import { useShippingStore } from '../store/shippingStore';
 import { colors } from '../theme/colors';
-import { useLocalSearchParams, useRouter } from 'expo-router';
 const { width, height } = Dimensions.get('window');
 type CheckoutParams = {
     name?: string;
@@ -17,54 +18,49 @@ type CheckoutParams = {
     quantity?: string;
     variant?: string;
     points?: string;
-  } & Record<string, string | string[]>;
+} & Record<string, string | string[]>;
 const Checkout = () => {
-  const insets = useSafeAreaInsets();
-  const params = useLocalSearchParams<CheckoutParams>();
-  
-  let cartItems: CheckoutParams[] = [];
-  
-  if (params?.items) {
-    try {
-      const itemsData = Array.isArray(params.items) ? params.items[0] : params.items;
-      cartItems = JSON.parse(itemsData);
-    } catch (error) {
-      console.error('Error parsing cart items:', error);
-    }
-  } 
-  else if (params?.name) {
-    cartItems = [{
-      name: params.name || '',
-      image: params.image || '',
-      quantity: params.quantity || '1',
-      variant: params.variant || '',
-      points: params.points || '0',
-      description: params.description || '',
-      type: params.type || '',
-      userPoints: params.userPoints || '0'
-    }];
-  }
+    const insets = useSafeAreaInsets();
+    const params = useLocalSearchParams<CheckoutParams>();
+    const { selectedAddress } = useAddressStore();
+    const { selectedShipping } = useShippingStore();
+    const { isAuthenticated } = useAuth();
+    let cartItems: CheckoutParams[] = [];
 
-  useEffect(() => {
+    if (params?.items) {
+        try {
+            const itemsData = Array.isArray(params.items) ? params.items[0] : params.items;
+            cartItems = JSON.parse(itemsData);
+        } catch (error) {
+            console.error('Error parsing cart items:', error);
+        }
+    } else if (params?.name) {
+        cartItems = [{
+            name: params.name || '',
+            image: params.image || '',
+            quantity: params.quantity || '1',
+            variant: params.variant || '',
+            points: params.points || '0',
+            description: params.description || '',
+            type: params.type || '',
+            userPoints: params.userPoints || '0'
+        }];
+    }
+
+    useEffect(() => {
         return () => {
             // Clear address and shipping when leaving Checkout
-          
         };
     }, []);
- 
-  
-
-
-
 
     const renderCartItem = ({ item }: { item: CheckoutParams }) => {
         console.log('Rendering item:', JSON.stringify(item, null, 2));
         return (
             <View style={styles.cartItem}>
-                <Image 
-                    source={typeof item.image === 'string' ? { uri: item.image } : item.image} 
-                    style={styles.cartImage} 
-                    resizeMode="cover" 
+                <Image
+                    source={typeof item.image === 'string' ? { uri: item.image } : item.image}
+                    style={styles.cartImage}
+                    resizeMode="cover"
                 />
                 <View style={{ flex: 1, marginLeft: 12 }}>
                     <Text style={styles.cartName}>
@@ -84,99 +80,151 @@ const Checkout = () => {
     };
 
     return (
-        <SafeAreaView style={{flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4))}}>
+        <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
             <ImageBackground
                 source={require('../assets/images/ss1.png')}
                 style={styles.bg}
             >
                 <View style={styles.container}>
-                {/* Header */}
-                <View style={styles.headerRow}>
-                    <TouchableOpacity style={styles.backBtn} onPress={router.back}>
-                        <Ionicons name="arrow-back" size={moderateScale(28)} color="white" />
-                    </TouchableOpacity>
-                    <Text style={styles.headerTitle}>Checkout</Text>
-                </View>
-
-                {/* Address */}
-                <Text style={styles.sectionTitle}>Shipping Address</Text>
-                <View style={styles.sectionRow}>
-                    <IconSymbol name="location.fill" size={30} color={colors.white} />
-                    <View style={{ flex: 1, marginLeft: 10 }}>
-                        <Text style={styles.addressLabel}>{'Select Address'}</Text>
-                        <Text style={styles.addressDetails}>{'No Address Selected'}</Text>
+                    {/* Header */}
+                    <View style={styles.headerRow}>
+                        <TouchableOpacity style={styles.backBtn} onPress={router.back}>
+                            <Ionicons name="arrow-back" size={moderateScale(28)} color="white" />
+                        </TouchableOpacity>
+                        <Text style={styles.headerTitle}>Checkout</Text>
                     </View>
-                    <Button onPress={() => { router.push('/ShippingAddress') }} variant="secondary" style={styles.changeBtn}>
-                        Change
-                    </Button>
-                </View>
 
-                {/* Shipping */}
-                <Text style={styles.sectionTitle}>Choose Shipping</Text>
-                <View style={styles.sectionRow}>
-                    <Image source={require('../assets/Icon/Box.png')} 
-                    resizeMode='contain'
-                    style={{width:scale(30), height:scale(40), tintColor: colors.white}}/>
-                    <View style={{ flex: 1, marginLeft: 10 }}>
-                        <Text style={styles.shippingLabel}>{'Select Shipping'}</Text>
-                        <Text style={styles.shippingEstimate}>{'No Shipping Method Selected'}</Text>
-                    </View>
-                    <Button onPress={() => { router.push('/ChooseShipping') }} variant="secondary" style={styles.changeBtn}>
-                        Change
-                    </Button>
-                </View>
+                    {/* Address - Only show for logged-in users */}
+                    {isAuthenticated ? (
+                        <>
+                            <Text style={styles.sectionTitle}>Shipping Address</Text>
+                            <View style={styles.sectionRow}>
+                                <IconSymbol name="location.fill" size={30} color={colors.white} />
+                                <View style={{ flex: 1, marginLeft: 10 }}>
+                                    <Text style={styles.addressLabel}>
+                                        {selectedAddress ? `${selectedAddress.street}` : 'Select Address'}
+                                    </Text>
+                                    {selectedAddress ? (
+                                        <View>
+                                            <Text style={styles.addressDetails}>{selectedAddress.street}</Text>
+                                            <Text style={styles.addressDetails}>
+                                                {selectedAddress.city}{selectedAddress.block ? `, ${selectedAddress.block}` : ''}
+                                            </Text>
 
-                {/* Cart Items */}
-                <FlatList
-                    data={cartItems}
-                    renderItem={renderCartItem}
-                    keyExtractor={(item, index) => {
-                        const variantKey = item.variant ? `-${JSON.stringify(item.variant)}` : '';
-                        return `${item.name || 'item'}-${index}${variantKey}`;
-                    }}
-                    style={{ marginTop: 18, marginBottom: 18 }}
-                    showsVerticalScrollIndicator={false}
-                    ListEmptyComponent={
-                        <Text style={{color: colors.white, textAlign: 'center', marginTop: 20}}>
-                            No items in cart
-                        </Text>
-                    }
-                />
+                                        </View>
+                                    ) : (
+                                        <Text style={styles.addressDetails}>No Address Selected</Text>
+                                    )}
+                                </View>
+                                <Button
+                                    onPress={() => router.push('/ShippingAddress')}
+                                    variant="secondary"
+                                    style={styles.changeBtn}
+                                >
+                                    {selectedAddress ? 'Change' : 'Change'}
+                                </Button>
+                            </View>
 
-                {/* Continue to Payment Button */}
-                <View style={styles.footer}>
-                    <Button 
-                        variant="secondary"
-                        style={styles.payBtn} 
-                        onPress={() => {
-                            // if (!selectedAddress) {
-                            //     alert('Please select a shipping address');
-                            //     return;
-                            // }
-                            
-                            // if (!selectedShipping) {
-                            //     alert('Please select a shipping method');
-                            //     return;
-                            // }
-                            
-                          
-                            
-                            router.push({
-                                pathname: '/PaymentMethod',
-                                params: {
-                                    cartItems: JSON.stringify(cartItems),
-                                
-                                    // shippingAddress: JSON.stringify(selectedAddress),
-                                    // shippingMethod: JSON.stringify(selectedShipping)
-                                }
-                            });
+                            {/* Shipping - Only show for logged-in users */}
+                            <Text style={styles.sectionTitle}>Shipping Method</Text>
+                            <View style={styles.sectionRow}>
+                                {selectedShipping ? (
+                                    <Image
+                                        source={selectedShipping.image}
+                                        resizeMode='contain'
+                                        style={{ width: scale(30), height: scale(40), tintColor: colors.white }}
+                                    />
+                                ) : (
+                                    <Image
+                                        source={require('../assets/Icon/Box.png')}
+                                        resizeMode='contain'
+                                        style={{ width: scale(30), height: scale(40), tintColor: colors.white }}
+                                    />
+                                )}
+                                <View style={{ flex: 1, marginLeft: 10 }}>
+                                    <Text style={styles.shippingLabel}>
+                                        {selectedShipping ? selectedShipping.label : 'Select Shipping'}
+                                    </Text>
+                                    <Text style={styles.shippingEstimate}>
+                                        {selectedShipping ? selectedShipping.desc : 'No Shipping Method Selected'}
+                                    </Text>
+                                </View>
+                                <Button
+                                    onPress={() => router.push('/ChooseShipping')}
+                                    variant="secondary"
+                                    style={styles.changeBtn}
+                                >
+                                    {selectedShipping ? 'Change' : 'Select'}
+                                </Button>
+                            </View>
+                        </>
+                    ) : (
+                        <View style={styles.loginPrompt}>
+                            <Text style={styles.loginText}>Please log in to manage shipping options</Text>
+                            <Button
+                                onPress={() => router.push('/Login')}
+                                variant="secondary"
+                                style={styles.loginButton}
+                            >
+                                Log In
+                            </Button>
+                        </View>
+                    )}
+
+                    {/* Cart Items */}
+                    <FlatList
+                        data={cartItems}
+                        renderItem={renderCartItem}
+                        keyExtractor={(item, index) => {
+                            const variantKey = item.variant ? `-${JSON.stringify(item.variant)}` : '';
+                            return `${item.name || 'item'}-${index}${variantKey}`;
                         }}
-                    >
-                        Continue to Payment
-                    </Button>
+                        style={{ marginTop: 18, marginBottom: 18 }}
+                        showsVerticalScrollIndicator={false}
+                        ListEmptyComponent={
+                            <Text style={{ color: colors.white, textAlign: 'center', marginTop: 20 }}>
+                                No items in cart
+                            </Text>
+                        }
+                    />
+
+                    {/* Continue to Payment Button */}
+                    <View style={styles.footer}>
+                        <Button
+                            variant="secondary"
+                            style={styles.payBtn}
+                            onPress={() => {
+                                if (!isAuthenticated) {
+                                    Alert.alert('Login Required', 'Please log in to proceed with checkout');
+                                    router.push('/Login');
+                                    return;
+                                }
+
+                                if (!selectedAddress) {
+                                    Alert.alert('Error', 'Please select a shipping address');
+                                    return;
+                                }
+
+                                if (!selectedShipping) {
+                                    Alert.alert('Error', 'Please select a shipping method');
+                                    return;
+                                }
+
+                                router.push({
+                                    pathname: '/PaymentMethod',
+                                    params: {
+                                        cartItems: JSON.stringify(cartItems),
+                                        shippingAddress: JSON.stringify(selectedAddress),
+                                        shippingMethod: JSON.stringify(selectedShipping)
+                                    }
+                                });
+                            }}
+                        >
+                            Continue to Payment
+                        </Button>
+                    </View>
                 </View>
-            </View>
-        </ImageBackground>
+            </ImageBackground>
         </SafeAreaView>
     );
 };
@@ -189,36 +237,36 @@ const styles = StyleSheet.create({
     },
     container: {
         flex: 1,
-        paddingHorizontal:scale(20),
+        paddingHorizontal: scale(20),
     },
-    headerRow: { 
-         flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    height: verticalScale(80),
-    position: 'relative',
-    paddingHorizontal: scale(18),
-    marginTop: verticalScale(20),
+    headerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'flex-start',
+        height: verticalScale(80),
+        position: 'relative',
+        paddingHorizontal: scale(18),
+        marginTop: verticalScale(20),
     },
     backBtn: {
-      width: scale(40),
-    height: scale(40),
-    justifyContent: 'center',
-    zIndex: 1,
+        width: scale(40),
+        height: scale(40),
+        justifyContent: 'center',
+        zIndex: 1,
     },
     headerTitle: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0,
-    textAlign: 'center',
-    textAlignVertical: 'center',
-    fontSize: moderateScale(28),
-    color: '#fff',
-    fontFamily: 'Sigmar',
-    letterSpacing: 1,
-    lineHeight: verticalScale(55),
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        top: 0,
+        bottom: 0,
+        textAlign: 'center',
+        textAlignVertical: 'center',
+        fontSize: moderateScale(28),
+        color: '#fff',
+        fontFamily: 'Sigmar',
+        letterSpacing: 1,
+        lineHeight: verticalScale(55),
     },
     sectionTitle: {
         color: colors.white,
@@ -238,7 +286,7 @@ const styles = StyleSheet.create({
         color: colors.white,
         fontFamily: 'PoppinsMedium',
         fontSize: moderateScale(18),
-        lineHeight:verticalScale(18),
+        lineHeight: verticalScale(18),
     },
     addressDetails: {
         color: colors.white,
@@ -262,7 +310,7 @@ const styles = StyleSheet.create({
         color: colors.white,
         fontFamily: 'PoppinsMedium',
         fontSize: moderateScale(18),
-        lineHeight:verticalScale(18),
+        lineHeight: verticalScale(18),
     },
     shippingEstimate: {
         color: colors.white,
@@ -301,7 +349,24 @@ const styles = StyleSheet.create({
         fontSize: moderateScale(16),
         marginTop: 2,
     },
-
+    loginPrompt: {
+        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+        borderRadius: 12,
+        padding: 16,
+        marginTop: 10,
+        alignItems: 'center',
+    },
+    loginText: {
+        color: colors.white,
+        fontFamily: 'PoppinsMedium',
+        fontSize: moderateScale(16),
+        marginBottom: 12,
+        textAlign: 'center',
+    },
+    loginButton: {
+        width: '60%',
+        borderRadius: 8,
+    },
     footer: {
         backgroundColor: colors.secondaryLight,
         borderTopLeftRadius: 28,

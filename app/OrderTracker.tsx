@@ -48,7 +48,7 @@ const formatDate = (dateString: string) => {
 const getStatusSteps = (status: string, createdAt: string) => {
   const baseDate = new Date(createdAt);
   const now = new Date();
-  
+
   // Calculate time differences for each step
   const pendingTime = new Date(baseDate);
   const processingTime = new Date(pendingTime.getTime() + (status !== 'pending' ? 0 : 0));
@@ -56,39 +56,35 @@ const getStatusSteps = (status: string, createdAt: string) => {
   const deliveredTime = new Date(onTheWayTime.getTime() + (['delivered', 'cancelled'].includes(status) ? 2 * 60 * 60 * 1000 : 0));
 
   const steps = [
-    { 
-      label: 'Order placed!', 
-      date: formatDate(pendingTime.toISOString()),
+    {
+      label: 'Order placed!',
       done: true,
       active: status === 'pending'
     },
-    { 
+    {
       label: 'Preparing for dispatch',
-      date: status !== 'pending' ? formatDate(processingTime.toISOString()) : '',
       done: ['process', 'on_the_way', 'delivered', 'cancelled'].includes(status),
       active: status === 'process'
     },
-    {  
+    {
       label: 'Out for delivery',
-      date: ['on_the_way', 'delivered', 'cancelled'].includes(status) ? formatDate(onTheWayTime.toISOString()) : '',
       done: ['on_the_way', 'delivered', 'cancelled'].includes(status),
       active: status === 'on_the_way'
     },
-    { 
+    {
       label: status === 'cancelled' ? 'Order cancelled' : 'Order delivered',
-      date: ['delivered', 'cancelled'].includes(status) ? formatDate(deliveredTime.toISOString()) : '',
       done: ['delivered', 'cancelled'].includes(status),
       active: ['delivered', 'cancelled'].includes(status)
     },
   ];
-  
+
   return steps;
 };
 
 const OrderTracker = () => {
   const { order: orderString } = useLocalSearchParams();
   const insets = useSafeAreaInsets();
-  
+
   // Parse the order data from the route params
   const [order, setOrder] = useState<OrderData | null>(orderString ? JSON.parse(orderString as string) : null);
   const [isCancelling, setIsCancelling] = useState(false);
@@ -101,12 +97,12 @@ const OrderTracker = () => {
   const handleCancelOrder = async () => {
     if (!order) return;
     setShowCancelModal(false);
-    
+
     try {
       setIsCancelling(true);
-      const url = `http://192.168.1.110:8000/api/update-order-status/${order.id}/`;
+      const url = `${Api_url}api/update-order-status/${order.id}/`;
       console.log('Attempting to cancel order at URL:', url);
-      
+
       const response = await fetch(url, {
         method: 'PATCH',
         headers: {
@@ -123,7 +119,7 @@ const OrderTracker = () => {
         statusText: response.statusText,
         body: responseText
       });
-  
+
       // Define the expected response shape
       interface ApiResponse {
         message?: string;
@@ -131,7 +127,7 @@ const OrderTracker = () => {
         status?: string;
         [key: string]: any;
       }
-      
+
       // Try to parse JSON, but don't fail if it's not JSON
       let data: ApiResponse = {};
       try {
@@ -139,15 +135,15 @@ const OrderTracker = () => {
       } catch (e) {
         console.warn('Response is not JSON, but that might be okay');
       }
-  
+
       if (!response.ok) {
         throw new Error(
-          data.message || 
-          data.detail || 
+          data.message ||
+          data.detail ||
           `Request failed with status ${response.status}`
         );
       }
-  
+
       // If we get here, the request was successful
       setOrder(prev => ({
         ...prev!,
@@ -161,7 +157,7 @@ const OrderTracker = () => {
     } catch (error) {
       console.error('Error cancelling order:', error);
       Alert.alert(
-        'Error', 
+        'Error',
         error instanceof Error ? error.message : 'Failed to cancel order. Please try again.'
       );
     } finally {
@@ -170,168 +166,168 @@ const OrderTracker = () => {
   };
   // Get status steps based on order status
   const statusSteps = order ? getStatusSteps(order.status, order.created_at) : [];
-  
+
   // Format the order date
   const orderDate = order ? new Date(order.created_at).toLocaleDateString() : '';
-  
+
   // Calculate total items
   const totalItems = order?.items?.reduce((sum, item) => sum + (item.quantity || 1), 0) || 0;
+
   return (
-    <SafeAreaView style={{flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4))}}>
+    <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
       <ImageBackground source={bgImage} style={styles.background} resizeMode="cover">
         <View style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.backBtn} onPress={router.back}>
-            <Ionicons name="arrow-back" size={moderateScale(28)} color="white" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Order Tracker</Text>
-        </View>
-        {/* Order Number with Action Icons */}
-        <View style={styles.orderHeader}>
-          <View>
-            <Text style={styles.orderNumber}>Order # {order?.id || 'N/A'}</Text>
-            <Text style={styles.orderDate}>Placed on: {orderDate}</Text>
-          </View>
-           <View style={{flexDirection:'row', gap:8, marginLeft:verticalScale(90)}}>
-           <TouchableOpacity 
-              style={styles.actionButton} 
-              onPress={() => router.push({
-                pathname: '/Chat',
-                params: { orderId: order?.id }
-              })}
-            >
-              <Ionicons name="chatbubble-ellipses-outline" size={24} color="red" />
+          {/* Header */}
+          <View style={styles.header}>
+            <TouchableOpacity style={styles.backBtn} onPress={router.back}>
+              <Ionicons name="arrow-back" size={moderateScale(28)} color="white" />
             </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.actionButton} 
+            <Text style={styles.headerTitle}>Order Tracker</Text>
+          </View>
+          {/* Order Number with Action Icons */}
+          <View style={styles.orderHeader}>
+            <View>
+              <Text style={styles.orderNumber}>Order # {order?.id || 'N/A'}</Text>
+              <Text style={styles.orderDate}>Placed on: {orderDate}</Text>
+            </View>
+            <View style={{ flexDirection: 'row', gap: 8, marginLeft: verticalScale(90) }}>
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={() => router.push({
+                  pathname: '/Chat',
+                  params: { orderId: order?.id }
+                })}
+              >
+                <Ionicons name="chatbubble-ellipses-outline" size={24} color="red" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.actionButton}
                 onPress={handleCancelPress}
                 disabled={isCancelling}
               >
                 <Ionicons name="close-circle-outline" size={24} color="#ff4444" />
               </TouchableOpacity>
 
-           </View>
-        </View> 
-        <View style={styles.divider} />
-        {/* Status Timeline */}
-        <View style={styles.timelineContainer}>
-          {statusSteps.map((step, idx) => (
-            <View key={idx} style={styles.timelineStep}>
-              <View style={styles.timelineLeft}>
-                <View style={[styles.circle, step.done && styles.circleActive]} />
-                {idx < statusSteps.length - 1 && (
-                  <View style={styles.verticalLine} />
+            </View>
+          </View>
+          <View style={styles.divider} />
+          {/* Status Timeline */}
+          <View style={styles.timelineContainer}>
+            {statusSteps.map((step, idx) => (
+              <View key={idx} style={styles.timelineStep}>
+                <View style={styles.timelineLeft}>
+                  <View style={[styles.circle, step.done && styles.circleActive]} />
+                  {idx < statusSteps.length - 1 && (
+                    <View style={styles.verticalLine} />
+                  )}
+                </View>
+                <View style={styles.timelineContent}>
+                  <Text style={[styles.timelineLabel, step.done && styles.timelineLabelActive]}>{step.label}</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+          <View style={styles.divider} />
+          {/* Order Items Header */}
+          <View style={styles.itemsHeader}>
+            <Text style={styles.itemsHeaderText}>Order items</Text>
+            <Text style={styles.itemsHeaderText}>{totalItems} {totalItems === 1 ? 'item' : 'items'}</Text>
+          </View>
+          {/* Product List */}
+          <FlatList
+            data={order?.items || []}
+            keyExtractor={(item, index) => `${item.id}-${index}`}
+            renderItem={({ item }) => (
+              <View style={styles.productRow}>
+                {item.image ? (
+                  <Image
+                    source={{
+                      uri: item.image && !item.image.startsWith('http')
+                        ? `${Api_url}${item.image.startsWith('/') ? '' : '/'}${item.image}`
+                        : item.image
+                    }}
+                    style={styles.productImage}
+                    onError={(e) => console.log('Image load error:', e.nativeEvent.error)}
+                  />
+                ) : (
+                  <View style={[styles.productImage, styles.placeholderImage]}>
+                    <Ionicons name="image-outline" size={24} color="#999" />
+                  </View>
                 )}
-              </View>
-              <View style={styles.timelineContent}>
-                <Text style={[styles.timelineLabel, step.done && styles.timelineLabelActive]}>{step.label}</Text>
-                {!!step.date && <Text style={styles.timelineDate}>{step.date}</Text>}
-              </View>
-            </View>
-          ))}
-        </View>
-        <View style={styles.divider} />
-        {/* Order Items Header */}
-        <View style={styles.itemsHeader}>
-          <Text style={styles.itemsHeaderText}>Order items</Text>
-          <Text style={styles.itemsHeaderText}>{totalItems} {totalItems === 1 ? 'item' : 'items'}</Text>
-        </View>
-        {/* Product List */}
-        <FlatList
-          data={order?.items || []}
-          keyExtractor={(item, index) => `${item.id}-${index}`}
-          renderItem={({ item }) => (
-            <View style={styles.productRow}>
-              {item.image ? (
-                <Image 
-                  source={{ 
-                    uri: item.image && !item.image.startsWith('http') 
-                      ? `${Api_url}${item.image.startsWith('/') ? '' : '/'}${item.image}`
-                      : item.image 
-                  }} 
-                  style={styles.productImage}
-                  onError={(e) => console.log('Image load error:', e.nativeEvent.error)}
-                />
-              ) : (
-                <View style={[styles.productImage, styles.placeholderImage]}>
-                  <Ionicons name="image-outline" size={24} color="#999" />
-                </View>
-              )}
-              <View style={styles.productInfo}>
-                <View>
-                  <Text style={styles.productName}>{item.name || 'Product'}</Text>
-                  <Text style={styles.quantityText}>Qty: {item.quantity || 1}</Text>
-                  <Text style={styles.productPack}>Pts: {item.pts}</Text>
-                </View>
-                <View style={styles.priceContainer}>
-                  <Text style={styles.productPrice}>Rs. {parseFloat(item.price || '0').toFixed(2)}</Text>
+                <View style={styles.productInfo}>
+                  <View>
+                    <Text style={styles.productName}>{item.name || 'Product'}</Text>
+                    <Text style={styles.quantityText}>Qty: {item.quantity || 1}</Text>
+                    <Text style={styles.productPack}>Pts: {item.pts}</Text>
+                  </View>
+                  <View style={styles.priceContainer}>
+                    <Text style={styles.productPrice}>Rs. {parseFloat(item.price || '0').toFixed(2)}</Text>
+                  </View>
                 </View>
               </View>
-            </View>
-          )}
-          ListEmptyComponent={
-            <View >
-              <Text >No items found in this order</Text> 
-            </View>
-          }
-          style={{ flexGrow: 0 }}
-        />
-        
-        {/* Order Total */}
-        {order?.items && order.items.length > 0 ? (
-  <View style={styles.totalContainer}>
-    <View style={styles.totalRow}>
-      <Text style={styles.totalLabel}>Order Total:</Text>
-      <Text style={styles.totalAmount}>
-        Rs. {order.items.reduce((sum, item) => sum + (parseFloat(item.price)), 0).toFixed(2)}
-      </Text>
-    </View>
-  </View>
-) : null}
-      </View>
-      
-      <TabLayout />
-      
-      {/* Success Modal */}
-      {showSuccessModal && (
-        <View style={styles.successModalOverlay}>
-          <View style={styles.successModalContent}>
-            <Ionicons name="checkmark-circle" size={48} color="white" />
-            <Text style={styles.successModalText}>Your order has been cancelled successfully</Text>
-          </View>
-        </View>
-      )}
-      
-      {/* Custom Cancel Confirmation Modal */}
-      {showCancelModal && (
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Cancel Order</Text>
-            <Text style={styles.modalText}>
-              Are you sure you want to cancel this order? This action cannot be undone.
-            </Text>
-            <View style={styles.modalButtons}>
-              <TouchableOpacity 
-                style={styles.cancelButton}
-                onPress={() => setShowCancelModal(false)}
-              >
-                <Text style={styles.cancelButtonText}>No, Keep It</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.confirmButton}
-                onPress={handleCancelOrder}
-                disabled={isCancelling}
-              >
-                <Text style={styles.confirmButtonText}>
-                  {isCancelling ? 'Cancelling...' : 'Yes, Cancel Order'}
+            )}
+            ListEmptyComponent={
+              <View >
+                <Text >No items found in this order</Text>
+              </View>
+            }
+            style={{ flexGrow: 0 }}
+          />
+
+          {/* Order Total */}
+          {order?.items && order.items.length > 0 ? (
+            <View style={styles.totalContainer}>
+              <View style={styles.totalRow}>
+                <Text style={styles.totalLabel}>Order Total:</Text>
+                <Text style={styles.totalAmount}>
+                  Rs. {order.items.reduce((sum, item) => sum + (parseFloat(item.price)), 0).toFixed(2)}
                 </Text>
-              </TouchableOpacity>
+              </View>
+            </View>
+          ) : null}
+        </View>
+
+        <TabLayout />
+
+        {/* Success Modal */}
+        {showSuccessModal && (
+          <View style={styles.successModalOverlay}>
+            <View style={styles.successModalContent}>
+              <Ionicons name="checkmark-circle" size={48} color="white" />
+              <Text style={styles.successModalText}>Your order has been cancelled successfully</Text>
             </View>
           </View>
-        </View>
-      )}
-    </ImageBackground>
+        )}
+
+        {/* Custom Cancel Confirmation Modal */}
+        {showCancelModal && (
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Cancel Order</Text>
+              <Text style={styles.modalText}>
+                Are you sure you want to cancel this order? This action cannot be undone.
+              </Text>
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={styles.cancelButton}
+                  onPress={() => setShowCancelModal(false)}
+                >
+                  <Text style={styles.cancelButtonText}>No, Keep It</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.confirmButton}
+                  onPress={handleCancelOrder}
+                  disabled={isCancelling}
+                >
+                  <Text style={styles.confirmButtonText}>
+                    {isCancelling ? 'Cancelling...' : 'Yes, Cancel Order'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        )}
+      </ImageBackground>
     </SafeAreaView>
   );
 };
@@ -458,7 +454,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   header: {
-         flexDirection: 'row',
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-start',
     height: verticalScale(80),
@@ -467,7 +463,7 @@ const styles = StyleSheet.create({
     marginTop: verticalScale(20),
   },
   backBtn: {
-      width: scale(40),
+    width: scale(40),
     height: scale(40),
     justifyContent: 'center',
     zIndex: 1,
@@ -516,7 +512,7 @@ const styles = StyleSheet.create({
     marginVertical: 10,
     marginLeft: 2,
     marginBottom: 18,
-  paddingHorizontal: 20,
+    paddingHorizontal: 20,
   },
   timelineStep: {
     flexDirection: 'row',
@@ -533,7 +529,7 @@ const styles = StyleSheet.create({
     borderRadius: scale(7),
     borderWidth: 2,
     borderColor: '#fff',
-    backgroundColor: 'transparent', 
+    backgroundColor: 'transparent',
     marginBottom: 2,
   },
   circleActive: {
@@ -541,7 +537,7 @@ const styles = StyleSheet.create({
   },
   verticalLine: {
     width: 2,
-    height: 32,
+    height: verticalScale(20),
     backgroundColor: '#fff',
     opacity: 0.5,
     marginTop: 0,
@@ -554,10 +550,10 @@ const styles = StyleSheet.create({
   timelineLabel: {
     color: '#fff',
     fontSize: moderateScale(16),
-    fontFamily:"Montserrat"
+    fontFamily: "Montserrat"
   },
   timelineLabelActive: {
-    fontFamily:"Montserrat"
+    fontFamily: "Montserrat"
   },
   timelineDate: {
     color: '#fff',
@@ -570,18 +566,18 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 8,
     marginTop: 8,
-      paddingHorizontal: scale(20),
+    paddingHorizontal: scale(20),
   },
   itemsHeaderText: {
     color: '#fff',
     fontSize: moderateScale(16),
-    fontFamily:"Montserrat"
+    fontFamily: "Montserrat"
   },
   productRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 16,
-      paddingHorizontal: scale(20),
+    paddingHorizontal: scale(20),
   },
   productImage: {
     width: scale(60),
@@ -599,17 +595,17 @@ const styles = StyleSheet.create({
   productName: {
     color: '#fff',
     fontSize: moderateScale(16),
-    fontFamily:"PoppinsMedium"
+    fontFamily: "PoppinsMedium"
   },
   productPack: {
     color: '#fff',
     fontSize: moderateScale(14),
-    fontFamily:"PoppinsMedium"
+    fontFamily: "PoppinsMedium"
   },
   productPrice: {
     color: '#fff',
     fontSize: moderateScale(16),
-    fontFamily:"PoppinsSemiBold",
+    fontFamily: "PoppinsSemiBold",
   },
   priceContainer: {
     alignItems: 'flex-end',

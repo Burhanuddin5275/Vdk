@@ -10,7 +10,8 @@ import {
   Alert,
   ImageBackground,
   TouchableWithoutFeedback,
-  Keyboard
+  Keyboard,
+  Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -18,11 +19,14 @@ import { useAuth } from '@/hooks/useAuth';
 import { fetchUsers, UserItem } from '@/services/user';
 import { colors } from '@/theme/colors';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
+import SuccessModal from '@/components/SuccessModal';
+import { Address, useAddressStore } from '@/store/addressStore';
 
 const ShippingAddress = () => {
   const [user, setUser] = useState<UserItem | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selected, setSelected] = useState<number>(-1);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [expandedAddress, setExpandedAddress] = useState<string | null>(null);
   const { isAuthenticated, phone } = useAuth();
   const router = useRouter();
@@ -66,42 +70,56 @@ const ShippingAddress = () => {
           text: 'Delete',
           style: 'destructive',
           onPress: async () => {
+            setIsLoading(true);
+            try {
               const API_URL = `http://192.168.1.108:8000/api/delete-user-address/${addressId}/`;
-              console.log('Attempting to delete address at URL:', API_URL);
-  
-              const response = await fetch(API_URL, {
-                method: 'DELETE',
-              });
-  
-              if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(
-                  errorData.message || `HTTP error! status: ${response.status}`
-                );
-              }
-  
-              // Refresh the addresses after successful deletion
+
+              // First try to delete the address
               try {
-                const users = await fetchUsers();
-                if (users?.length > 0) {
-                  const currentUser = users.find(u => u.number === phone) || users[0];
-                  setUser(currentUser);
-                }
-                Alert.alert('Success', 'Address deleted successfully', [
-                  { 
-                    text: 'OK',
-                    onPress: () => {
-                      setSelected(-1);
-                      setExpandedAddress(null);
-                      setUser(prev => prev ? { ...prev } : null);
-                    }
-                  }
-                ]);
-              } catch (refreshError) {
-                console.error('Error refreshing addresses:', refreshError);
-                Alert.alert('Success', 'Address deleted, but could not refresh the list');
+                await fetch(API_URL, {
+                  method: 'DELETE',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                });
+                // Don't throw error here even if request fails
+                // We'll check if the address was actually deleted below
+              } catch (e) {
+                console.log('Delete request may have failed, but will verify...');
               }
-       
+
+              // Always try to refresh the addresses
+              const users = await fetchUsers();
+              if (users?.length > 0) {
+
+                const currentUser = users.find(u => u.number === phone) || users[0];
+                const wasDeleted = !currentUser.addresses?.some(addr => addr.id === addressId);
+
+                if (wasDeleted) {
+                  // Address was successfully deleted
+                  setUser(currentUser);
+                  setShowSuccessModal(true);
+                  setTimeout(() => {
+                    setShowSuccessModal(false);
+                    setSelected(-1);
+                    setExpandedAddress(null);
+                  }, 2000);
+                  return;
+                }
+              }
+
+              // If we get here, the address wasn't deleted
+              throw new Error('Failed to delete address. Please try again.');
+
+            } catch (error: any) {
+              console.error('Delete error:', error);
+              // Only show alert if it's not a network error
+              if (error.message !== 'Network request failed') {
+                Alert.alert('Error', error.message);
+              }
+            } finally {
+              setIsLoading(false);
+            }
           },
         },
       ],
@@ -113,18 +131,33 @@ const ShippingAddress = () => {
     // Optionally close the expanded address after selection
     setExpandedAddress(null);
   };
-
+const { setSelectedAddress } = useAddressStore(); 
   const handleUseAddress = () => {
     if (selected === -1) {
       Alert.alert('Please select an address');
       return;
     }
+      
     const selectedAddress = addresses[selected];
-    // Here you can add logic to save the selected address to a global state
-    // or navigate back to the previous screen with the selected address
-    router.back();
-  };
+ const addressForStore: Address = {
+ id: selectedAddress.id || Date.now().toString(),
+ country: selectedAddress.country || '',
+ state: selectedAddress.state || '',
+ postal_code: selectedAddress.postal_code || '',
+ city: selectedAddress.city || '',
+ street: selectedAddress.street || '',
+ block: selectedAddress.block || '',
 
+ };
+ // Save the selected address to the store
+ setSelectedAddress(addressForStore);
+ router.back();
+  };
+  const handleSuccessModalClose = () => {
+    setShowSuccessModal(false);
+    // Navigate back to ShippingAddress screen
+    router.replace('/ShippingAddress');
+  };
   return (
     <TouchableWithoutFeedback onPress={() => {
       Keyboard.dismiss();
@@ -203,12 +236,30 @@ const ShippingAddress = () => {
                     </TouchableOpacity>
 
                     {expandedAddress === address.id && (
-                      <View style={styles.addressDetails}>
-                        <Text style={styles.addressText}>
-                          {[address.street, address.city, address.state, address.postal_code, address.country]
-                            .filter(Boolean)
-                            .join(', ')}
-                        </Text>
+                      <TouchableOpacity
+                        style={styles.addressDetails}
+                        onPress={() => handleSelectAddress(index)}
+                      >
+                        <View style={styles.addressRow}>
+                          <Text style={styles.addressLabel}>Street:</Text>
+                          <Text style={styles.addressValue}>{address.street}</Text>
+                        </View>
+                        <View style={styles.addressRow}>
+                          <Text style={styles.addressLabel}>City:</Text>
+                          <Text style={styles.addressValue}>{address.city}</Text>
+                        </View>
+                        <View style={styles.addressRow}>
+                          <Text style={styles.addressLabel}>State:</Text>
+                          <Text style={styles.addressValue}>{address.state}</Text>
+                        </View>
+                        <View style={styles.addressRow}>
+                          <Text style={styles.addressLabel}>Postal Code:</Text>
+                          <Text style={styles.addressValue}>{address.postal_code}</Text>
+                        </View>
+                        <View style={styles.addressRow}>
+                          <Text style={styles.addressLabel}>Country:</Text>
+                          <Text style={styles.addressValue}>{address.country}</Text>
+                        </View>
 
                         <View style={styles.addressActions}>
                           <TouchableOpacity
@@ -221,11 +272,8 @@ const ShippingAddress = () => {
                             <Ionicons
                               name={selected === index ? 'checkmark-circle' : 'radio-button-off'}
                               size={20}
-                              color={selected === index ? colors.primary : '#666'}
+                              color={selected === index ? colors.primary : colors.primary}
                             />
-                            <Text style={styles.selectButtonText}>
-                              {selected === index ? 'Selected' : 'Select this address'}
-                            </Text>
                           </TouchableOpacity>
 
                           <TouchableOpacity
@@ -233,10 +281,10 @@ const ShippingAddress = () => {
                             onPress={() => deleteAddress(address.id)}
                           >
                             <Ionicons name="trash-outline" size={20} color="#ff3b30" />
-                            <Text style={styles.deleteButtonText}>Delete</Text>
+
                           </TouchableOpacity>
                         </View>
-                      </View>
+                      </TouchableOpacity>
                     )}
                   </View>
                 ))
@@ -265,10 +313,18 @@ const ShippingAddress = () => {
             </View>
           </View>
         </ImageBackground>
+        <SuccessModal
+          visible={showSuccessModal}
+          message="Address deleted successfully"
+          autoCloseDelay={2000}
+          onClose={handleSuccessModalClose}
+        />
       </SafeAreaView>
     </TouchableWithoutFeedback>
   );
 };
+
+
 
 const styles = StyleSheet.create({
   safeArea: {
@@ -349,6 +405,61 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 16,
   },
+  addressRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+    paddingHorizontal: 8,
+  },
+  addressLabel: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+    width: '40%',
+  },
+  addressValue: {
+    color: '#fff',
+    fontSize: 14,
+    width: '55%',
+    textAlign: 'right',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: colors.primaryDark,
+    borderRadius: 16,
+    padding: 24,
+    width: '90%',
+    maxWidth: 400,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  modalIcon: {
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: colors.white,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  modalText: {
+    fontSize: 16,
+    color: colors.white,
+    textAlign: 'center',
+    lineHeight: 22,
+    opacity: 0.8,
+  },
   signInButton: {
     backgroundColor: colors.primary,
     paddingHorizontal: 24,
@@ -406,7 +517,7 @@ const styles = StyleSheet.create({
   },
   addressDetails: {
     padding: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    backgroundColor: 'rgba(193, 128, 128, 0.2)',
   },
   addressText: {
     fontSize: 14,
@@ -417,8 +528,6 @@ const styles = StyleSheet.create({
   addressActions: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
     paddingTop: 12,
   },
   selectButton: {
@@ -426,26 +535,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 8,
     borderRadius: 4,
+    backgroundColor: colors.white,
   },
   selectedButton: {
-    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    backgroundColor: colors.white,
   },
-  selectButtonText: {
-    marginLeft: 8,
-    color: '#333',
-    fontSize: 14,
-  },
+
   deleteButton: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 8,
     borderRadius: 4,
+    backgroundColor: colors.white,
   },
-  deleteButtonText: {
-    marginLeft: 8,
-    color: '#ff3b30',
-    fontSize: 14,
-  },
+
   footer: {
     backgroundColor: colors.secondaryLight,
     borderTopLeftRadius: 50,
