@@ -5,7 +5,7 @@ import { colors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Image, ImageBackground, Modal, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, ImageBackground, Modal, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { useCartStore } from '../../store/cartStore';
@@ -38,13 +38,18 @@ export default function CartScreen() {
   const phone = useAppSelector(selectPhone);
   const [loading, setLoading] = useState(true);
   const allCartItems = useCartStore((state: any) => state.cartItems);
-  const cartItems = allCartItems.filter((item: any) => item.user === phone);
+  const cartItems = allCartItems.filter((item: any) =>
+    String(item.user) === String(phone)
+  );
   const [checkoutModalVisible, setCheckoutModalVisible] = useState(false);
   const [promoCode, setPromoCode] = useState('');
+  const [discount, setDiscount] = useState(0);
+  const [discountMessage, setDiscountMessage] = useState('');
+  const [isValidating, setIsValidating] = useState(false);
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [selectedItem, setSelectedItem] = useState<CartItem | null>(null);
   const [addToCartModalVisible, setAddToCartModalVisible] = useState(false);
-  const [selectedSize, setSelectedSize] = useState('Pack of 3');
+  const [selectedSize, setSelectedSize] = useState('');
   const [qty, setQty] = useState(1);
   const [emptyCartMessage, setEmptyCartMessage] = useState('');
   const insets = useSafeAreaInsets();
@@ -68,9 +73,71 @@ export default function CartScreen() {
   }
 
   const subTotal = cartItems.reduce((sum: number, item: CartItem) => sum + (item.price * item.quantity), 0);
-  const deliveryFee = 120;
-  const discount = Math.round(subTotal * 0.10); // 10% discount
+  const deliveryFee = 0;
   const totalCost = subTotal + deliveryFee - discount;
+  const validatePromoCode = async () => {
+    if (!promoCode.trim()) {
+      setDiscountMessage('Please enter a promo code');
+      return;
+    }
+
+    setIsValidating(true);
+    setDiscountMessage('');
+
+    try {
+      console.log('Sending request to validate promo code:', promoCode.trim());
+      const response = await fetch('http://192.168.1.108:8000/api/discounts/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({
+          code: promoCode.trim(),
+          total: subTotal,
+          products: cartItems.map((item: any) => Number(item.id)), 
+          items: cartItems.map((item: any) => ({
+            id: Number(item.id),
+            price: item.price,
+            quantity: item.quantity, 
+          })),
+        }),
+      });
+
+      console.log('Response status:', response.status);
+
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        throw new Error('Invalid coupon code for this product');
+      }
+
+      const data = await response.json(); 
+      console.log('Response data:', data);
+
+      if (!response.ok) {
+        const errorMessage = data.detail || data.message || `Server error: ${response.status}`;
+        throw new Error(errorMessage);
+      }
+
+      if (data.valid) {
+ 
+
+        setDiscount(data.discount_amount);
+        setDiscountMessage(data.message || 'Promo code applied successfully!');
+      } else {
+        setDiscount(0);
+        setDiscountMessage(data.message || 'Invalid promo code');
+        Alert.alert('Invalid Code', data.message || 'The promo code is not valid.');
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to validate promo code';
+      setDiscount(0);
+      setDiscountMessage(errorMessage);
+    } finally {
+      setIsValidating(false);
+    }
+  };
 
   return (
     <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
@@ -88,8 +155,6 @@ export default function CartScreen() {
             <Text style={styles.headerTitle}>Cart</Text>
             <View style={styles.backButton} />
           </View>
-
-          {/* Cart Items */}
           <ScrollView style={styles.cartList} showsVerticalScrollIndicator={false}>
             {cartItems.map((item: CartItem, index: number) => {
               const variantKey = item.variant ? `-${JSON.stringify(item.variant)}` : '';
@@ -138,10 +203,10 @@ export default function CartScreen() {
                           onPress={() => useCartStore.getState().updateQuantity(item.id, 1, undefined, item.variant)}
                           disabled={item.stock !== null && item.quantity >= item.stock}
                         >
-                          <Ionicons 
-                            name="add" 
-                            size={moderateScale(20)} 
-                            color={item.stock !== null && item.quantity >= item.stock ? '#cccccc' : 'red'} 
+                          <Ionicons
+                            name="add"
+                            size={moderateScale(20)}
+                            color={item.stock !== null && item.quantity >= item.stock ? '#cccccc' : 'red'}
                           />
                         </TouchableOpacity>
                       </View>
@@ -214,8 +279,8 @@ export default function CartScreen() {
                       if (selectedItem) {
                         useCartStore.getState().removeItem(
                           selectedItem.id,
-                          undefined, 
-                          selectedItem.variant 
+                          undefined,
+                          selectedItem.variant
                         );
                         setDeleteModalVisible(false);
                         setSelectedItem(null);
@@ -245,11 +310,34 @@ export default function CartScreen() {
                       value={promoCode}
                       onChangeText={setPromoCode}
                     />
-                    <TouchableOpacity style={checkoutModalStyles.applyButton}>
-                      <Text style={checkoutModalStyles.applyButtonText}>Apply</Text>
+                    <TouchableOpacity
+                      style={[checkoutModalStyles.applyButton, isValidating && { opacity: 0.6 }]}
+                      onPress={validatePromoCode}
+                      disabled={!promoCode.trim() || isValidating}
+                    >
+                      <Text style={checkoutModalStyles.applyButtonText}>
+                        {isValidating ? 'Validating...' : 'Apply'}
+                      </Text>
                     </TouchableOpacity>
                   </View>
                 </View>
+                {/* Discount Message */}
+                {discountMessage ? (
+                  <View style={[
+                    styles.discountMessage,
+                    {
+                      backgroundColor: discount > 0 ? 'rgba(40, 167, 69, 0.1)' : 'rgba(220, 53, 69, 0.1)',
+                      borderLeftColor: discount > 0 ? '#28a745' : '#dc3545'
+                    }
+                  ]}>
+                    <Text style={[
+                      styles.discountMessageText,
+                      { color: discount > 0 ? '#28a745' : '#dc3545' }
+                    ]}>
+                      {discountMessage}
+                    </Text>
+                  </View>
+                ) : null}
                 <View style={checkoutModalStyles.calcRow}>
                   <Text style={checkoutModalStyles.label}>Sub-Total</Text>
                   <Text style={checkoutModalStyles.valueBold}>Pkr {subTotal.toLocaleString()}</Text>
@@ -258,10 +346,14 @@ export default function CartScreen() {
                   <Text style={checkoutModalStyles.label}>Delivery Fee</Text>
                   <Text style={checkoutModalStyles.valueBold}>Pkr {deliveryFee.toLocaleString()}</Text>
                 </View>
-                <View style={checkoutModalStyles.calcRow}>
-                  <Text style={checkoutModalStyles.label}>Discount</Text>
-                  <Text style={checkoutModalStyles.discountValue}>10%(Pkr-{discount})</Text>
-                </View>
+                {discount > 0 && (
+                  <View style={checkoutModalStyles.calcRow}>
+                    <Text style={checkoutModalStyles.label}>Discount Applied</Text>
+                    <Text style={[checkoutModalStyles.discountValue, { color: '#28a745' }]}>
+                      - Pkr {discount.toLocaleString()}
+                    </Text>
+                  </View>
+                )}
                 <View style={checkoutModalStyles.divider} />
                 <View style={checkoutModalStyles.calcRow}>
                   <Text style={checkoutModalStyles.label}>Total Cost</Text>
@@ -286,10 +378,10 @@ export default function CartScreen() {
                       variant: item.pack,
                       points: item.points,
                     })));
-                    
+
                     router.push({
                       pathname: '/Checkout',
-                      params: { 
+                      params: {
                         items: itemsParam
                       }
                     });
@@ -435,6 +527,18 @@ const styles = StyleSheet.create({
   imageContainer: {
     alignItems: 'center',
     marginRight: scale(15),
+  },
+  discountMessage: {
+    padding: verticalScale(10),
+    marginHorizontal: scale(20),
+    borderRadius: moderateScale(8),
+    marginBottom: verticalScale(10),
+  },
+  discountMessageText: {
+    fontSize: moderateScale(14),
+    fontFamily: "PoppinsMedium",
+    color: '#28a745',
+    textAlign: 'center',
   },
   productImage: {
     width: moderateScale(80),

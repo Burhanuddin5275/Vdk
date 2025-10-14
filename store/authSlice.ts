@@ -4,6 +4,7 @@ import { PersistConfig } from 'redux-persist';
 export interface AuthState {
   phone: string | null;
   token: string | null;
+  password: string | null;
 }
 
 // This is a partial config that will be extended in store.ts
@@ -15,19 +16,22 @@ export const authPersistConfig = {
 const initialState: AuthState = {
   phone: null,
   token: null,
+  password: null,
 };
 
 const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
-    login: (state, action: PayloadAction<{ phone: string; token: string }>) => {
+    login: (state, action: PayloadAction<{ phone: string; token: string, password: string}>) => {
       state.phone = action.payload.phone;
       state.token = action.payload.token;
+      state.password = action.payload.password;
     },
     logout: (state) => {
       state.phone = null;
       state.token = null;
+      state.password = null;
     },
   },
 });
@@ -57,4 +61,9 @@ export const selectToken = createSelector(
 export const selectUser = createSelector(
   [selectPhone],
   (phone) => phone ? { name: phone } : null
+);
+
+export const selectPassword = createSelector(
+  [selectAuthState],
+  (auth) => auth.password ?? null
 );

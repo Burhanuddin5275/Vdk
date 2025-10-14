@@ -81,7 +81,7 @@ const Login = () => {
       }
       
       // Save phone number and token to auth context
-      login({ phone: userPhone, token });
+      login({ phone: userPhone, token, password });
       
       // Redirect to the previous screen or default to Profile
       const redirectTo = returnTo ? decodeURIComponent(returnTo as string) : '/(tabs)/Profile';
@@ -89,7 +89,7 @@ const Login = () => {
       // Navigate to the target screen with phone number in params
       router.replace({
         pathname: redirectTo as any,
-        params: { phone: userPhone }
+        params: { phone: userPhone, password: password }
       });
     } catch (err: any) {
       console.error('Login error:', err);

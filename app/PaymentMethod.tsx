@@ -69,7 +69,6 @@ const Payment = () => {
  const shippingMethod = shippingMethodStr ? JSON.parse(shippingMethodStr) : null;
     const { isAuthenticated, phone, token, user } = useAuth();
     const [userId, setUserId] = useState<string | null>(null);
-    const { clearCart } = useCartStore();
 
     useEffect(() => {
         const fetchUserData = async () => {
@@ -218,7 +217,6 @@ const Payment = () => {
                     );
                 }
 
-                await clearCart(user?.name);
                 // Show success message
                 Alert.alert('Success', 'Your order has been placed successfully!');
 
