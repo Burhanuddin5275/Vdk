@@ -1,5 +1,6 @@
 import { Button } from '@/components/Button';
 import { useAuth } from '@/hooks/useAuth';
+import { useCartStore } from '@/store/cartStore';
 import { colors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -8,7 +9,6 @@ import axios from 'axios';
 import { ActivityIndicator, Alert, Dimensions, Image, ImageBackground, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { Api_url } from '../url/url';
-import { useCartStore } from '@/store/cartStore';
 const { width, height } = Dimensions.get('window');
 
 const PAYMENT_METHODS =
@@ -60,13 +60,14 @@ const Payment = () => {
     const params = useLocalSearchParams();
     const [selected, setSelected] = useState<string>('');
     const [isLoading, setIsLoading] = useState(false);
+    const { clearCart } = useCartStore();
     const { shippingAddress: shippingAddressStr, shippingMethod: shippingMethodStr, cartItems } = useLocalSearchParams<{
         shippingAddress: string;
         shippingMethod: string;
         cartItems: string;
     }>();
- const shippingAddress = shippingAddressStr ? JSON.parse(shippingAddressStr) : null;
- const shippingMethod = shippingMethodStr ? JSON.parse(shippingMethodStr) : null;
+    const shippingAddress = shippingAddressStr ? JSON.parse(shippingAddressStr) : null;
+    const shippingMethod = shippingMethodStr ? JSON.parse(shippingMethodStr) : null;
     const { isAuthenticated, phone, token, user } = useAuth();
     const [userId, setUserId] = useState<string | null>(null);
 
@@ -133,7 +134,6 @@ const Payment = () => {
             const methodObj = typeof shippingMethod === 'string'
                 ? JSON.parse(shippingMethod)
                 : shippingMethod;
-
 
             console.log('Phone number:', phone, 'Type:', typeof phone);
             const orderData = {
@@ -217,11 +217,23 @@ const Payment = () => {
                     );
                 }
 
+                // Clear the cart after successful order
+                try {
+                    clearCart();
+                    console.log('Cart cleared after successful order');
+                } catch (error) {
+                    console.error('Error clearing cart:', error);
+                    // Don't fail the order if cart clearing fails
+                }
+
                 // Show success message
                 Alert.alert('Success', 'Your order has been placed successfully!');
 
                 // Navigate to home or orders page 
-                router.replace('/(tabs)/Home');
+                router.replace({
+                    pathname: '/(tabs)/Orders',
+                    params: { orderPlaced: 'true' }
+                });
 
                 return responseData;
             } catch (error: any) {

@@ -29,7 +29,9 @@ const ShippingAddress = () => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [expandedAddress, setExpandedAddress] = useState<string | null>(null);
   const { isAuthenticated, phone } = useAuth();
+  const { selectedAddress, setSelectedAddress } = useAddressStore();
   const router = useRouter();
+  const [userAddresses, setUserAddresses] = useState<Address[]>([]);
 
   useEffect(() => {
     const loadUserAddresses = async () => {
@@ -131,28 +133,47 @@ const ShippingAddress = () => {
     // Optionally close the expanded address after selection
     setExpandedAddress(null);
   };
-const { setSelectedAddress } = useAddressStore(); 
+
   const handleUseAddress = () => {
     if (selected === -1) {
       Alert.alert('Please select an address');
       return;
     }
       
-    const selectedAddress = addresses[selected];
- const addressForStore: Address = {
- id: selectedAddress.id || Date.now().toString(),
- country: selectedAddress.country || '',
- state: selectedAddress.state || '',
- postal_code: selectedAddress.postal_code || '',
- city: selectedAddress.city || '',
- street: selectedAddress.street || '',
- block: selectedAddress.block || '',
-
- };
- // Save the selected address to the store
- setSelectedAddress(addressForStore);
- router.back();
+    const selectedAddress = userAddresses[selected];
+    const addressForStore: Address = {
+      id: selectedAddress.id || Date.now().toString(),
+      country: selectedAddress.country || '',
+      state: selectedAddress.state || '',
+      postal_code: selectedAddress.postal_code || '',
+      city: selectedAddress.city || '',
+      street: selectedAddress.street || '',
+      block: selectedAddress.block || '',
+    };
+    // Save the selected address to the store
+    setSelectedAddress(addressForStore);
+    router.back();
   };
+
+  // Set initial selected address when user or selectedAddress changes
+  useEffect(() => {
+    if (user && Array.isArray(user.addresses) && user.addresses.length > 0 && selectedAddress) {
+      const initialSelectedIndex = user.addresses.findIndex(addr => 
+        addr.id === selectedAddress.id
+      );
+      if (initialSelectedIndex !== -1) {
+        setSelected(initialSelectedIndex);
+      }
+    }
+  }, [user, selectedAddress]);
+
+  // Update userAddresses when user changes
+  useEffect(() => {
+    if (user?.addresses) {
+      setUserAddresses(user.addresses);
+    }
+  }, [user]);
+
   const handleSuccessModalClose = () => {
     setShowSuccessModal(false);
     // Navigate back to ShippingAddress screen

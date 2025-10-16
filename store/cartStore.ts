@@ -33,6 +33,7 @@ interface CartState {
   updateQuantity: (id: string, change: number, userId?: string, variant?: { price: number; sale_price?: number }) => Promise<void>;
   removeItem: (id: string, userId?: string, variant?: { price: number; sale_price?: number }) => Promise<void>;
   loadCart: (userId?: string) => Promise<void>;
+  clearCart: (userId?: string) => Promise<void>;
 }
 
 export const useCartStore = create<CartState>((set, get) => ({
@@ -41,6 +42,11 @@ export const useCartStore = create<CartState>((set, get) => ({
     const userCartKey = getUserCartKey(userId);
     const stored = await AsyncStorage.getItem(userCartKey);
     if (stored) set({ cartItems: JSON.parse(stored) });
+  },
+  clearCart: async (userId?: string) => {
+    const userCartKey = getUserCartKey(userId);
+    set({ cartItems: [] });
+    await AsyncStorage.setItem(userCartKey, JSON.stringify([]));
   },
   addToCart: async (item: CartItem, userId?: string) => {
     // Create a unique key based on product ID and variant (if exists)
