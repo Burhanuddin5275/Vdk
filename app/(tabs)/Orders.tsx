@@ -461,12 +461,26 @@ export default function OrdersScreen() {
                         } 
                       });
                     } else if (activeTab === 'Cancelled') {
-                      // Show order details for cancelled orders
-                      router.push({ 
-                        pathname: '/OrderDetails', 
-                        params: { 
-                          order: JSON.stringify(order) 
-                        } 
+                      // Re-order functionality - navigate to checkout with order items
+                      const itemsForCheckout = order.items.map(item => ({
+                        id: item.id,
+                        name: item.name,
+                        price: item.price,
+                        quantity: item.quantity.toString(),
+                        image: item.image 
+                          ? item.image.startsWith('http') 
+                            ? item.image 
+                            : `http://192.168.1.109:8000${item.image}`
+                          : '',
+                        points: item.pts?.toString() || '0'
+                      }));
+                      
+                      router.push({
+                        pathname: '/Checkout',
+                        params: {
+                          items: JSON.stringify(itemsForCheckout),
+                          fromOrder: 'true'
+                        }
                       });
                     } else {
                       
@@ -483,7 +497,7 @@ export default function OrdersScreen() {
                     {activeTab === 'Completed' 
                       ? 'Review Order' 
                       : activeTab === 'Cancelled' 
-                        ? 'View Details' 
+                        ? 'Re-order' 
                         : 'Track Order'}
                   </Text>
                 </TouchableOpacity>
