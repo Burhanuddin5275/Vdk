@@ -6,6 +6,7 @@ export type orders = {
   address: string;
   shipping: string;
   status: OrderStatus;
+  type: string;
   user_detail:string;
   items: any[];
   payments: any[];
@@ -22,6 +23,7 @@ function toProduct(item: ApiOrders): orders {
   const address = item.address ?? item.address ?? "Product";
   const shipping = item.shipping ?? item.shipping ?? "Unknown";
 const user_detail = item.user_detail ?? item.user_detail ?? "Product";
+const type = item.type ?? item.type ?? "Product";
   const statusValue = item.status ? String(item.status).toLowerCase() : '';
   const status: OrderStatus = (['pending', 'process', 'on_the_way', 'delivered', 'cancelled'].includes(statusValue))
     ? statusValue as OrderStatus
@@ -37,6 +39,7 @@ const user_detail = item.user_detail ?? item.user_detail ?? "Product";
     status,
     user_detail,
     items,
+    type,
     payments,
     created_at,
   };

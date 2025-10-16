@@ -34,6 +34,7 @@ interface DisplayOrder {
   status: OrderStatus;
   created_at: string;
   items: OrderItem[];
+  type: string;
 }
 
 export default function OrdersScreen() {
@@ -121,6 +122,7 @@ export default function OrdersScreen() {
               total: total.toString(),
               user_detail: userDetail,
               status: order.status,
+              type: order.type,
               created_at: order.created_at || new Date().toISOString(),
               items: Array.isArray(order.items) ? order.items.map((item: any) => ({
                 id: item.id?.toString() || '',
@@ -152,15 +154,41 @@ export default function OrdersScreen() {
     loadOrders();
   }, []);
 
+  const filterOrdersByTab = (orders: DisplayOrder[]) => {
+    if (activeTab === 'All') return orders;
+    if (activeTab === 'Active') return orders.filter(o => o.status === 'process');
+    if (activeTab === 'Completed') return orders.filter(o => o.status === 'delivered');
+    if (activeTab === 'Cancelled') return orders.filter(o => o.status === 'cancelled');
+    return orders;
+  };
 
+  const filterOrdersByDate = (orders: DisplayOrder[]) => {
+    if (!startDate && !endDate) return orders;
+    
+    return orders.filter(order => {
+      const orderDate = new Date(order.created_at);
+      orderDate.setHours(0, 0, 0, 0); // Reset time part for date comparison
+      
+      const start = startDate ? new Date(startDate) : null;
+      const end = endDate ? new Date(endDate) : null;
+      
+      if (start) start.setHours(0, 0, 0, 0);
+      if (end) end.setHours(23, 59, 59, 999); // End of the day
+      
+      if (start && end) {
+        return orderDate >= start && orderDate <= end;
+      } else if (start) {
+        return orderDate >= start;
+      } else if (end) {
+        return orderDate <= end;
+      }
+      
+      return true;
+    });
+  };
 
-  const filteredOrders = activeTab === 'All' 
-    ? orders // Show all orders
-    : activeTab === 'Active' 
-      ? orders.filter(o => o.status === 'process' ) // Show Processing or Pending orders
-      : activeTab === 'Completed' 
-        ? orders.filter(o => o.status === 'delivered' ) // Show Delivered or Shipped orders
-        : orders.filter(o => o.status === 'cancelled'); // Show only Cancelled orders
+  // Apply both tab and date filters
+  const filteredOrders = filterOrdersByDate(filterOrdersByTab(orders));
 
   // Loading state
   if (loading) {

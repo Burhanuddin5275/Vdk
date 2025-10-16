@@ -27,7 +27,8 @@ interface OrderData {
   items: OrderItem[];
   address?: string;
   shipping?: string;
-  user_id?: string;  // Add user_id to the interface
+  user_id?: string;
+  type?: string;
 }
 
 // Helper function to format date
@@ -278,9 +279,14 @@ const OrderTracker = () => {
           {order?.items && order.items.length > 0 ? (
             <View style={styles.totalContainer}>
               <View style={styles.totalRow}>
-                <Text style={styles.totalLabel}>Order Total:</Text>
+                <Text style={styles.totalLabel}>
+                  {order.type === 'redeem' ? 'Redeem' : 'Order Total:'}
+                </Text>
                 <Text style={styles.totalAmount}>
-                  Rs. {order.items.reduce((sum, item) => sum + (parseFloat(item.price)), 0).toFixed(2)}
+                  {order.type === 'redeem' 
+                    ? `${order.items[0]?.pts || 0} PTS`
+                    : `Rs. ${order.items.reduce((sum, item) => sum + (parseFloat(item.price)), 0).toFixed(2)}`
+                  }
                 </Text>
               </View>
             </View>
