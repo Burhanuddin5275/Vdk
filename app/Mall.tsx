@@ -25,8 +25,8 @@ const Mall = () => {
   const router = useRouter();
   const params = useLocalSearchParams<MallParams>();
   const insets = useSafeAreaInsets();
-    const { selectedAddress } = useAddressStore();
-      const { selectedShipping } = useShippingStore();
+  const { selectedAddress } = useAddressStore();
+  const { selectedShipping } = useShippingStore();
   const userpoint = params?.userPoints ? Number(params.userPoints) : 0;
   const name = params?.name;
   const subtitle = params?.subtitle;
@@ -68,12 +68,24 @@ const Mall = () => {
       return;
     }
 
+    // Check if address is selected
+    if (!selectedAddress) {
+      Alert.alert('Address Required', 'Please add a shipping address before redeeming.');
+      router.push('/ShippingAddress');
+      return;
+    }
+    else if (!selectedShipping) {
+      Alert.alert('Shipping Required', 'Please add a shipping method before redeeming.');
+      router.push('/ChooseShipping');
+      return;
+    }
+
     try {
       console.log('Phone number:', phone, 'Type:', typeof phone);
       const orderData = {
         user_id: userId,
         user_detail: {
-          number: phone 
+          number: phone
         },
         address: selectedAddress,
         shipping: selectedShipping,
@@ -144,12 +156,11 @@ const Mall = () => {
           );
         }
 
-        // Show success message
+        // Handle successful response
+        console.log('Order created successfully:', responseData);
         Alert.alert('Success', 'Your order has been placed successfully!');
-
-        // Navigate to home or orders page 
-        router.replace('/(tabs)/Home');
-
+        // Navigate to Redeemed screen after successful order creation
+        router.replace('/Redeem');
         return responseData;
       } catch (error: any) {
         console.error('Request failed:', error);

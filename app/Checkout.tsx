@@ -47,11 +47,7 @@ const Checkout = () => {
         }];
     }
 
-    useEffect(() => {
-        return () => {
-            // Clear address and shipping when leaving Checkout
-        };
-    }, []);
+
 
     const renderCartItem = ({ item }: { item: CheckoutParams }) => {
         console.log('Rendering item:', JSON.stringify(item, null, 2));
@@ -60,7 +56,7 @@ const Checkout = () => {
                 <Image
                     source={typeof item.image === 'string' ? { uri: item.image } : item.image}
                     style={styles.cartImage}
-                    resizeMode="cover"
+                    resizeMode="contain"
                 />
                 <View style={{ flex: 1, marginLeft: 12 }}>
                     <Text style={styles.cartName}>
@@ -136,7 +132,7 @@ const Checkout = () => {
                                     />
                                 ) : (
                                     <Image
-                                        source={require('../assets/Icon/Box.png')}
+                                        source={require('../assets/images/Box.png')}
                                         resizeMode='contain'
                                         style={{ width: scale(30), height: scale(40), tintColor: colors.white }}
                                     />

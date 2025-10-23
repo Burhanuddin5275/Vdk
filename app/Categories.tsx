@@ -377,7 +377,7 @@ const Categories = () => {
                       >
                         <View style={styles.footerLeft}>
                           <Text
-                            style={[styles.cardTitle, isVidaBrand && { color: vidaColors.text }]} numberOfLines={3}
+                            style={[styles.cardTitle, isVidaBrand && { color: vidaColors.text }]} numberOfLines={2}
                           >
                             {prod.name}
                           </Text>

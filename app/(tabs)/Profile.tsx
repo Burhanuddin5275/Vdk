@@ -8,6 +8,7 @@ import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { fetchUsers, UserItem } from '@/services/user';
 import { Api_url, img_url } from '@/url/url';
+import SuccessModal from '@/components/SuccessModal';
 const { width } = Dimensions.get('window');
 
 export default function Profile() {
@@ -17,6 +18,7 @@ export default function Profile() {
   const insets = useSafeAreaInsets();
   const [user, setUser] = useState<UserItem | string | null | undefined>(undefined);
   const [userId, setUserId] = useState<string | number | null>(null);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
   useEffect(() => {
     const loadUsers = async () => {
       try {
@@ -74,7 +76,7 @@ export default function Profile() {
       if (!response.ok) {
         throw new Error(`Failed to delete account: ${response.status} ${response.statusText}`);
       }
-
+      setShowSuccessModal(true); 
       console.log('Account deletion successful');
     } catch (error) {
       clearTimeout(timeoutId);
@@ -104,6 +106,10 @@ export default function Profile() {
       'Redeemed',
       'Privacy policy',
     ].includes(item.label));
+  const handleSuccessModalClose = () => {
+    setShowSuccessModal(false);
+    router.replace('/(tabs)/Home');
+  };
   return (
     <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
       <ImageBackground
@@ -126,7 +132,7 @@ export default function Profile() {
                   try {
                     setShowDeleteModal(false);
                     await deleteAccount();
-                    alert('Account deleted successfully!');
+                    setShowSuccessModal(true);
                     logout();
                     router.replace('/(tabs)/Home');
                   } catch (error) {
@@ -157,7 +163,7 @@ export default function Profile() {
                 <Image
                   source={typeof user === 'object' && user?.image?.uri !== 'null'
                     ? { uri: `${img_url}${user?.image.uri}` }
-                    : require('../../assets/Icon/blank-profile-picture-973460_1280.webp')
+                    : require('../../assets/images/blank-profile-picture-973460_1280.webp')
                   }
                   style={styles.profileImg}
                 />
@@ -199,6 +205,13 @@ export default function Profile() {
           </View>
         </ScrollView>
       </ImageBackground>
+      <SuccessModal
+        visible={showSuccessModal}
+        message="Account deleted successfully"
+        subtitle="Now you cannot use this account for login"
+        autoCloseDelay={2000}
+        onClose={handleSuccessModalClose}
+      />
     </SafeAreaView>
 
   );

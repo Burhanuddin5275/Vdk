@@ -1,3 +1,4 @@
+import SuccessModal from '@/components/SuccessModal';
 import { colors } from '@/theme/colors';
 import { Api_url } from '@/url/url';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,6 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, verticalScale } from 'react-native-size-matters';
 
 const Signup = () => {
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const { phone: phoneParam } = useLocalSearchParams<{ phone?: string }>();
   const [phone, setPhone] = useState(phoneParam?.replace(/^\+92/, '') || '');
   const [password, setPassword] = useState('');
@@ -30,12 +32,12 @@ const Signup = () => {
       Alert.alert('Invalid number', 'Please enter a valid 10-digit phone number.');
       return;
     }
-    
+
     if (isFromVerification && (!password || password.length < 8)) {
       Alert.alert('Password Required', 'Please enter a password with at least 8 characters.');
       return;
     }
-    
+
     const e164Phone = `+92${digitsOnly}`;
 
     // If we're in verification mode (from verification screen) and password is provided
@@ -44,10 +46,10 @@ const Signup = () => {
         setIsSubmitting(true);
         const requestBody = {
           number: e164Phone,
-          email:email,
+          email: email,
           password: password,
         };
-        
+
         console.log('Sending request to register user:', {
           url: `${Api_url}/api/app-users/`,
           method: 'POST',
@@ -71,18 +73,13 @@ const Signup = () => {
         });
 
         if (!response.ok) {
-          const errorMessage = responseData.detail || 
-                             responseData.message || 
-                             Object.values(responseData).flat().join('\n') ||
-                             `HTTP ${response.status} - ${response.statusText}`;
+          const errorMessage = responseData.detail ||
+            responseData.message ||
+            Object.values(responseData).flat().join('\n') ||
+            `HTTP ${response.status} - ${response.statusText}`;
           throw new Error(errorMessage);
         }
-
-        // Navigate to login or home screen after successful registration
-        Alert.alert('Success', 'Account created successfully! Please login to continue.', [
-          { text: 'OK', onPress: () => router.replace('/Login') }
-        ]);
-
+        setShowSuccessModal(true);
       } catch (error: any) {
         Alert.alert('Error', error.message || 'Failed to create account. Please try again.');
       } finally {
@@ -104,7 +101,11 @@ const Signup = () => {
       }
     }
   };
-
+  const handleSuccessModalClose = () => {
+    setShowSuccessModal(false);
+    // Navigate back to ShippingAddress screen
+    router.replace('/Login');
+  };
   return (
     <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
       <ImageBackground source={require('../assets/images/ss1.png')} style={styles.bg} resizeMode="cover">
@@ -133,7 +134,7 @@ const Signup = () => {
 
           {isFromVerification && (
             <View style={{ marginTop: 16 }}>
-             <View style={[styles.inputWrap, { marginBottom: 15 }]}>
+              <View style={[styles.inputWrap, { marginBottom: 15 }]}>
                 <TextInput
                   style={[styles.input, { paddingRight: 40 }]}
                   value={email}
@@ -159,10 +160,10 @@ const Signup = () => {
                   style={styles.passwordToggle}
                   onPress={() => setShowPassword(!showPassword)}
                 >
-                  <Ionicons 
-                    name={showPassword ? 'eye-off' : 'eye'} 
-                    size={20} 
-                    color="#666" 
+                  <Ionicons
+                    name={showPassword ? 'eye-off' : 'eye'}
+                    size={20}
+                    color="#666"
                   />
                 </TouchableOpacity>
               </View>
@@ -204,6 +205,13 @@ const Signup = () => {
           </Text>
         </View>
       </ImageBackground>
+      <SuccessModal
+        visible={showSuccessModal}
+        message="Account created successfully"
+        subtitle="You can now use this account for login"
+        autoCloseDelay={2000}
+        onClose={handleSuccessModalClose}
+      />
     </SafeAreaView>
   );
 };

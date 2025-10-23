@@ -121,7 +121,7 @@ export default function TabLayout() {
           title: 'Orders',
           tabBarIcon: ({ color, focused }) => (
             <Image
-              source={require('../../assets/Icon/order.png')}
+              source={require('../../assets/images/order.png')}
               style={{
                 width: getIconSize(focused),
                 height: getIconSize(focused),
@@ -148,7 +148,7 @@ export default function TabLayout() {
           title: 'Rewards',
           tabBarIcon: ({ color, focused }) => (
             <Image
-              source={require('../../assets/Icon/reward.png')}
+              source={require('../../assets/images/reward.png')}
               style={{
                 width: getIconSize(focused),
                 height: getIconSize(focused),

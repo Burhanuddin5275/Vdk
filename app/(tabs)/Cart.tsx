@@ -169,7 +169,7 @@ export default function CartScreen() {
                     </View>
 
                     <View style={styles.productInfo}>
-                      <Text style={styles.productName}>{item.name}</Text>
+                      <Text style={styles.productName} numberOfLines={2}>{item.name}</Text>
                       {item.pack && <Text style={styles.productPack}>{item.pack}</Text>}
                       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                         {item.sale_price ? (
@@ -541,7 +541,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   productImage: {
-    width: moderateScale(80),
+    width:"100%",
+    resizeMode:'contain',
     height: moderateScale(80),
     borderRadius: moderateScale(8),
     marginBottom: verticalScale(4),

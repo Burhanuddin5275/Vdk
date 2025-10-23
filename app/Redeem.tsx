@@ -11,7 +11,7 @@ const { width } = Dimensions.get('window');
 const Redeem = () => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  
+
   return (
     <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
       <ImageBackground
@@ -19,33 +19,36 @@ const Redeem = () => {
         style={styles.background}
         resizeMode="cover"
       >
-      <View style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={moderateScale(28)} color={colors.white} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Redeem</Text>
-        </View>
-        {/* Success Icon */}
-        <View style={styles.iconWrap}>
-          <Image
-            source={require('../assets/images/Check.png')}
-            style={styles.checkImg}
-            resizeMode="contain"
-          />
-        </View>
-        {/* Success Text */}
-        <Text style={styles.successText}>{`Redeem Application
+        <View style={styles.container}>
+          {/* Header */}
+          <View style={styles.header}>
+            <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+              <Ionicons name="arrow-back" size={moderateScale(28)} color={colors.white} />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Redeem</Text>
+          </View>
+          {/* Success Icon */}
+          <View style={styles.iconWrap}>
+            <Image
+              source={require('../assets/images/Check.png')}
+              style={styles.checkImg}
+              resizeMode="contain"
+            />
+          </View>
+          {/* Success Text */}
+          <Text style={styles.successText}>{`Redeem Application
 Sent Successful!`}</Text>
-      </View>
-      {/* Footer */}
-      <View style={styles.footer}>
-        <TouchableOpacity style={styles.redeemBtn}>
-          <Text style={styles.redeemBtnText}>View Redeemed Item</Text>
-        </TouchableOpacity>
-      </View>
-    </ImageBackground>
+        </View>
+        {/* Footer */}
+        <View style={styles.footer}>
+          <TouchableOpacity
+            style={styles.redeemBtn}
+            onPress={() => router.push('/Redeemed')}
+          >
+            <Text style={styles.redeemBtnText}>View Redeemed Item</Text>
+          </TouchableOpacity>
+        </View>
+      </ImageBackground>
     </SafeAreaView>
   );
 };

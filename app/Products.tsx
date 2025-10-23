@@ -614,9 +614,18 @@ const Products = () => {
                                     </View>
                                 </View>
                                 {isOutOfStock ? (
-                                    <View style={[styles.outOfStockContainer, { borderColor: mainColor, marginTop: 10 }]}>
+                                    <View style={[{
+                                        backgroundColor: 'gray',
+                                        borderRadius: 24,
+                                        flexDirection: 'row',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        paddingHorizontal: 22,
+                                        paddingVertical: 12
+                                    }]}>
+                                        <Ionicons name="cart" size={20} color="#fff" style={{ marginRight: 8 }} />
                                         <Text style={{ color: '#fff', fontFamily: 'PoppinsMedium', fontSize: moderateScale(15) }}>
-                                            out of stock
+                                            Out of stock
                                         </Text>
                                     </View>
                                 ) : (

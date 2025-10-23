@@ -83,14 +83,15 @@ const Login = () => {
       // Save phone number and token to auth context
       login({ phone: userPhone, token, password });
       
-      // Redirect to the previous screen or default to Profile
-      const redirectTo = returnTo ? decodeURIComponent(returnTo as string) : '/(tabs)/Profile';
-      
-      // Navigate to the target screen with phone number in params
-      router.replace({
-        pathname: redirectTo as any,
-        params: { phone: userPhone, password: password }
-      });
+         const decodedReturnTo = decodeURIComponent(returnTo as string);
+      // Ensure the path starts with a valid route pattern
+      if (decodedReturnTo.startsWith('/') || decodedReturnTo.startsWith('/(tabs)')) {
+        router.replace(decodedReturnTo as any); // Type assertion needed for dynamic paths
+      } else {
+        // If the path doesn't match expected patterns, default to Home
+        router.replace('/(tabs)/Home');
+      } 
+   
     } catch (err: any) {
       console.error('Login error:', err);
       setError(err.message || 'Failed to connect to server. Please try again.');
@@ -160,6 +161,12 @@ const Login = () => {
             </Text>
           </TouchableOpacity>
           {/* Terms */}
+             <View style={styles.signupContainer}>
+            <Text style={styles.signupText}>Don't have an account? </Text>
+            <TouchableOpacity onPress={() => router.push('/Signup')}>
+              <Text style={[styles.link, { fontFamily: 'MontserratSemi' }]}>Sign up</Text>
+            </TouchableOpacity>
+          </View>
           <Text style={styles.terms}>
             By continuing, you agree to{''}
             <Text style={styles.link}>Terms & conditions</Text> and <Text style={styles.link}>Privacy policy</Text>.
@@ -286,6 +293,17 @@ const styles = StyleSheet.create({
     color: '#fff',
     textDecorationLine: 'underline',
     fontFamily: 'InterBold',
+  },
+  signupContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  signupText: {
+    color: '#fff',
+    fontFamily: 'InterRegular',
+    fontSize: moderateScale(14),
   },
 });
 

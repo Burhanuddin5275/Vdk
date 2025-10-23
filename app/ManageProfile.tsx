@@ -133,9 +133,9 @@ const ProfileTab = () => {
             <Image source={{ uri: profileImage }} style={styles.avatar} />
           ) : (
             <View style={styles.avatarPlaceholder}>
-              { typeof user === 'object' && user?.image?.uri!=='null' ? (
+              {typeof user === 'object' && user?.image?.uri !== 'null' ? (
                 <Image
-                  source={{uri: `${img_url}${user?.image.uri}`}}
+                  source={{ uri: `${img_url}${user?.image.uri}` }}
                   style={styles.avatar}
                 />
               ) : (
@@ -148,7 +148,6 @@ const ProfileTab = () => {
           </View>
         </TouchableOpacity>
       </View>
-
       <View style={styles.formGroup}>
         <Text style={styles.label}>Full Name</Text>
         <TextInput
@@ -189,15 +188,15 @@ const ChangePasswordTab = () => {
     console.log(password);
     console.log(isCurrentPasswordValid);
   }, [currentPassword, password]);
-const handleChange = async () => {
-  if (currentPassword === password) {
-    setIsCurrentPasswordValid(true);
-  } else {
-    setIsCurrentPasswordValid(false);  
+  const handleChange = async () => {
+    if (currentPassword === password) {
+      setIsCurrentPasswordValid(true);
+    } else {
+      setIsCurrentPasswordValid(false);
+    }
   }
-}
   const handleChangePassword = async () => {
-   
+
     try {
       const response = await fetch(`${Api_url}api/update-user//`, {
         method: 'PATCH',
@@ -231,62 +230,62 @@ const handleChange = async () => {
   };
 
   return (
-      <ScrollView style={styles.tabContent} contentContainerStyle={styles.profileContent}>
-        {isCurrentPasswordValid === false? (
-          <>
-            <View style={styles.formGroup}>
-              <Text style={styles.label}>Current Password</Text>
-              <TextInput
-                style={styles.input}
-                value={currentPassword}
-                onChangeText={setCurrentPassword}
-                placeholder="Enter your current password"
-                placeholderTextColor="#999"
-                secureTextEntry
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-            </View>
-            <TouchableOpacity
-              style={[styles.updateButton, isLoading && styles.disabledButton]}
-              onPress={handleChange}
-              disabled={isLoading}
-            >
-              <Text style={styles.updateButtonText}>
-                Continue
-              </Text>
-            </TouchableOpacity>
-          </>
-        ) : (
-          <>
-            <View style={styles.formGroup}>
-              <Text style={styles.label}>New Password</Text>
-              <TextInput
-                style={styles.input}
-                value={newPassword}
-                onChangeText={setNewPassword}
-                placeholder="Enter your new password"
-                placeholderTextColor="#999"
-                secureTextEntry
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-            </View>
-            <TouchableOpacity
-              style={[styles.updateButton, isLoading && styles.disabledButton]}
-              onPress={handleChangePassword}
-              disabled={isLoading}
-            >
-              <Text style={styles.updateButtonText}>
-                Update Password
-              </Text>
-            </TouchableOpacity>
-          </>
-        )}
-  
-        {error && <Text style={styles.errorText}>{error}</Text>}
-        {success && <Text style={styles.successText}>{success}</Text>}
-      </ScrollView>
+    <ScrollView style={styles.tabContent} contentContainerStyle={styles.profileContent}>
+      {/* {isCurrentPasswordValid === false ? (
+        <>
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Current Password</Text>
+            <TextInput
+              style={styles.input}
+              value={currentPassword}
+              onChangeText={setCurrentPassword}
+              placeholder="Enter your current password"
+              placeholderTextColor="#999"
+              secureTextEntry
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+          </View>
+          <TouchableOpacity
+            style={[styles.updateButton, isLoading && styles.disabledButton]}
+            onPress={handleChange}
+            disabled={isLoading}
+          >
+            <Text style={styles.updateButtonText}>
+              Continue
+            </Text>
+          </TouchableOpacity>
+        </>
+      ) : (
+        <>
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>New Password</Text>
+            <TextInput
+              style={styles.input}
+              value={newPassword}
+              onChangeText={setNewPassword}
+              placeholder="Enter your new password"
+              placeholderTextColor="#999"
+              secureTextEntry
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+          </View>
+          <TouchableOpacity
+            style={[styles.updateButton, isLoading && styles.disabledButton]}
+            onPress={handleChangePassword}
+            disabled={isLoading}
+          >
+            <Text style={styles.updateButtonText}>
+              Update Password
+            </Text>
+          </TouchableOpacity>
+        </>
+      )}
+
+      {error && <Text style={styles.errorText}>{error}</Text>}
+      {success && <Text style={styles.successText}>{success}</Text>} */}
+    </ScrollView>
   );
 };
 

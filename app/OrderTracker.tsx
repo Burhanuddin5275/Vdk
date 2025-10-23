@@ -256,7 +256,7 @@ const OrderTracker = () => {
                   </View>
                 )}
                 <View style={styles.productInfo}>
-                  <View>
+                  <View style={{ width: scale(150) }}>
                     <Text style={styles.productName}>{item.name || 'Product'}</Text>
                     <Text style={styles.quantityText}>Qty: {item.quantity || 1}</Text>
                     <Text style={styles.productPack}>Pts: {item.pts}</Text>
@@ -590,7 +590,7 @@ const styles = StyleSheet.create({
     height: scale(60),
     borderRadius: 8,
     marginRight: 10,
-    resizeMode: 'cover',
+    resizeMode: 'contain',
   },
   productInfo: {
     flex: 1,
@@ -601,7 +601,7 @@ const styles = StyleSheet.create({
   productName: {
     color: '#fff',
     fontSize: moderateScale(16),
-    fontFamily: "PoppinsMedium"
+    fontFamily: "PoppinsMedium",
   },
   productPack: {
     color: '#fff',

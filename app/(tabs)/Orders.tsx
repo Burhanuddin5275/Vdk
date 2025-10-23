@@ -1,6 +1,7 @@
 import { useAuth } from '@/hooks/useAuth';
 import { fetchOrders, type OrderStatus } from '@/services/orders';
 import { colors } from '@/theme/colors';
+import { img_url } from '@/url/url';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -435,7 +436,7 @@ export default function OrdersScreen() {
               <View key={order.id} style={styles.orderCard}>
                   <View style={styles.imgPlaceholder}>
                       <Image 
-                      source={require('../../assets/Icon/order.png')} 
+                      source={require('../../assets/images/order.png')} 
                         style={styles.img} 
                         resizeMode="contain"
                       /> 
@@ -470,7 +471,7 @@ export default function OrdersScreen() {
                         image: item.image 
                           ? item.image.startsWith('http') 
                             ? item.image 
-                            : `http://192.168.1.109:8000${item.image}`
+                            : `${img_url}${item.image}`
                           : '',
                         points: item.pts?.toString() || '0'
                       }));

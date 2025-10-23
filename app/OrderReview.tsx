@@ -24,6 +24,7 @@ interface OrderData {
   status: string;
   created_at: string;
   items: OrderItem[];
+    type?: string;
 }
 
 const formatDate = (dateString: string) => {
@@ -44,22 +45,18 @@ const getStatusSteps = (status: string, createdAt: string) => {
   const steps = [
     {
       label: 'Order placed!',
-      date: formatDate(createdAt),
       done: true
     },
     {
       label: 'Preparing for dispatch',
-      date: status !== 'pending' ? formatDate(new Date(baseDate.getTime() + 2 * 60 * 60 * 1000).toISOString()) : '',
       done: ['process', 'delivered', 'cancelled'].includes(status)
     },
     {
       label: 'Out for delivery',
-      date: ['delivered', 'cancelled'].includes(status) ? formatDate(new Date(baseDate.getTime() + 4 * 60 * 60 * 1000).toISOString()) : '',
       done: ['delivered', 'cancelled'].includes(status)
     },
     {
       label: status === 'cancelled' ? 'Order cancelled' : 'Order delivered',
-      date: status === 'delivered' || status === 'cancelled' ? formatDate(new Date(baseDate.getTime() + 6 * 60 * 60 * 1000).toISOString()) : '',
       done: ['delivered', 'cancelled'].includes(status)
     },
   ];
@@ -114,7 +111,6 @@ const OrderReview = () => {
                 </View>
                 <View style={styles.timelineContent}>
                   <Text style={[styles.timelineLabel, step.done && styles.timelineLabelActive]}>{step.label}</Text>
-                  {!!step.date && <Text style={styles.timelineDate}>{step.date}</Text>}
                 </View>
               </View>
             ))}
@@ -167,16 +163,21 @@ const OrderReview = () => {
             }
             style={{ flexGrow: 0 }}
           />
-          {order?.items?.length > 0 && (
-            <View style={styles.totalContainer}>
-              <View style={styles.totalRow}>
-                <Text style={styles.totalLabel}>Order Total:</Text>
-                <Text style={styles.totalAmount}>
-                  Rs. {order.items.reduce((sum, item) => sum + (parseFloat(item.price)), 0).toFixed(2)}
-                </Text>
-              </View>
-            </View>
-          )}
+           {order?.items && order.items.length > 0 ? (
+                   <View style={styles.totalContainer}>
+                     <View style={styles.totalRow}>
+                       <Text style={styles.totalLabel}>
+                         {order.type === 'redeem' ? 'Redeem' : 'Order Total:'}
+                       </Text>
+                       <Text style={styles.totalAmount}>
+                         {order.type === 'redeem' 
+                           ? `${order.items[0]?.pts || 0} PTS`
+                           : `Rs. ${order.items.reduce((sum, item) => sum + (parseFloat(item.price)), 0).toFixed(2)}`
+                         }
+                       </Text>
+                     </View>
+                   </View>
+                 ) : null}
         </View>
         <Modal
           visible={modalVisible}
@@ -286,7 +287,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
     borderRadius: 8,
     padding: 16,
-    margin: 16,
+    marginBottom: 12,
     marginTop: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -424,7 +425,6 @@ const styles = StyleSheet.create({
   timelineStep: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: 8,
   },
   timelineLeft: {
     alignItems: 'center',

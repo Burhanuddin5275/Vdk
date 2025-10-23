@@ -47,14 +47,13 @@ const SalePopup = ({ visible, onClose }: SalePopupProps) => {
 
       return () => clearTimeout(timer);
     } else {
-      scaleAnim.setValue(0); // reset scale when hidden
+      scaleAnim.setValue(0); 
     }
   }, [visible]);
 
   return (
     <Modal visible={visible} transparent animationType="fade">
       <View style={popupStyles.overlay}>
-        {/* 🎉 Confetti Background */}
         {visible && showGiftAnimation && (
           <Image
             source={require('../../assets/animations/confetti.gif')}
@@ -104,35 +103,52 @@ export default function HomeScreen() {
   const [heroContent, setHeroContent] = useState<HeroItem[]>([]);
   const scrollViewRef = useRef<ScrollView>(null);
   const wishlistItems = useWishlistStore((state) => state.items);
-  const { phone , token} = useAuth();
+  const { phone, token } = useAuth();
+  const loadWishlist = useWishlistStore(state => state.loadWishlist);
   const [user, setUser] = useState<UserItem | string | null | undefined>(undefined);
   useEffect(() => {
-    const loadUsers = async () => {
-      try {
-        const users = await fetchUsers();
-        const matchedUser = users.find((u) => u.number === phone);
+  const loadUsers = async () => {
+  try {
+    const users = await fetchUsers();
+    const matchedUser = users.find((u) => u.number === phone);
 
-        if (matchedUser) {
-          setUser(matchedUser);
-          console.log('Matched user:', matchedUser);
-        } else {
-          console.log('No user found with phone:', phone);
-          setUser(token);
-        }
-      } catch (error) {
-        console.error('Error loading users:', error);
-        setUser(token);
-      }
-    };
-
+    if (matchedUser) {
+      setUser(matchedUser);
+      console.log('Matched user:', matchedUser);
+    } else {
+      console.log('No user found with phone:', phone);
+      setUser(token);
+    }
+  } catch (error) {
+    console.error('Error loading users:', error);
+    setUser(token);
+  }
+};
     if (phone) {
       loadUsers();
     } else {
-      setUser(token); // Fallback to token if no phone
+      setUser(token);
     }
-  }, [phone, token]);
+  },);
 
-  // Fetch hero content on component mount
+useEffect(() => {
+  const initWishlistAndUser = async () => {
+    try {
+      if (phone) {
+        // 2. Use the setPhone from useWishlistStore
+        const { setPhone } = useWishlistStore.getState();
+        setPhone(phone);
+        await loadWishlist();
+      } else {
+        setUser(token);
+      }
+    } catch (error) {
+      console.error('Error initializing wishlist or user:', error);
+    }
+  };
+
+  initWishlistAndUser();
+}, [phone, token, loadWishlist]); 
   useEffect(() => {
     const loadHeroContent = async () => {
       try {
@@ -256,11 +272,27 @@ export default function HomeScreen() {
                       </Text>
                     </>
                   )}
-                  <View style={styles.rewardBox}>
-                    <Text style={styles.rewardLabel}>Reward</Text>
-                    <Text style={styles.rewardPoints}>{typeof user === 'object' && user !== null && 'total_points' in user ? (user as UserItem).total_points : '0'}</Text>
-                    <Text style={styles.rewardPts}>PTS</Text> 
-                  </View>
+             <View style={styles.rewardBox}>
+  {isAuthenticated ? (
+    <>
+      <Text style={styles.rewardLabel}>Reward</Text>
+      <Text style={styles.rewardPoints}>
+        {typeof user === 'object' && user !== null && 'total_points' in user 
+          ? (user as UserItem).total_points 
+          : '0'
+        }
+      </Text>
+      <Text style={styles.rewardPts}>PTS</Text>
+    </>
+  ) : (
+    <TouchableOpacity 
+      onPress={() => router.push('/Login')}
+      style={styles.loginButton}
+    >
+      <Text style={styles.loginButtonText}>Login</Text>
+    </TouchableOpacity>
+  )}
+</View>
                 </View>
                 <View style={{ flex: 1, alignItems: 'flex-end' }}>
                   <Image
@@ -703,6 +735,20 @@ const styles = StyleSheet.create({
     color: "red",
     fontFamily: 'PoppinsBold',
   },
+  loginButton: {
+  backgroundColor: '#E82A2F',
+  paddingVertical: 6,
+  paddingHorizontal: 12,
+  borderRadius: 15,
+  justifyContent: 'center',
+  alignItems: 'center',
+  marginTop: scale(15),
+},
+loginButtonText: {
+  color: 'white',
+  fontWeight: 'bold',
+  fontSize: moderateScale(14),
+},
   familyImg: {
     width: "100%",
     height: verticalScale(250),
@@ -725,7 +771,7 @@ const styles = StyleSheet.create({
   categoryCard: {
     marginTop: verticalScale(5),
     borderRadius: moderateScale(18),
-    width: scale(223),
+    width: scale(225),
     height: verticalScale(220),
     alignItems: 'center',
     justifyContent: 'center',
@@ -738,9 +784,10 @@ const styles = StyleSheet.create({
   },
   categoryLabel: {
     color: 'white',
-    fontSize: moderateScale(22),
+    fontSize: moderateScale(20),
     fontFamily: "Sigmar",
     lineHeight: moderateScale(36),
+    textAlign: 'center',
   },
   adSliderContainer: {
     width: '100%',
@@ -775,7 +822,7 @@ const styles = StyleSheet.create({
   },
   brandImg: {
     width: "100%",
-    height: verticalScale(46),
+    height: verticalScale(100),
   },
   bestSellerRow: {
     flexDirection: 'row',
@@ -798,3 +845,5 @@ const styles = StyleSheet.create({
     marginBottom: verticalScale(16),
   },
 });
+
+

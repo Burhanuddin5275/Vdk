@@ -25,19 +25,19 @@ const SHIPPING_OPTIONS = [
     id: 'economy',
     label: 'Economy', 
     desc: 'Estimated Arrival: 25 Aug 2025',
-    image: require('../assets/Icon/Box.png')
+    image: require('../assets/images/Box.png')
   },
   { 
     id: 'regular',
     label: 'Regular', 
     desc: 'Estimated Arrival: 24 Aug 2025',
-    image: require('../assets/Icon/Box.png')
+    image: require('../assets/images/Box.png')
   },
   { 
     id: 'cargo',
     label: 'Cargo', 
     desc: 'Estimated Arrival: 22 Aug 2025',
-    image: require('../assets/Icon/Truck.png')
+    image: require('../assets/images/Truck.png')
   },
 ];
 
