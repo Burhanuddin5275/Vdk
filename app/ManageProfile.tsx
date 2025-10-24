@@ -1,7 +1,7 @@
 import { colors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
-import { useRouter } from 'expo-router';
+import { router, useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useEffect, useState } from 'react';
 import { Dimensions, Image, ImageBackground, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -10,6 +10,7 @@ import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { fetchUsers, UserItem } from '@/services/user';
 import { useAuth } from '@/hooks/useAuth';
 import { Api_url, img_url } from '@/url/url';
+import SuccessModal from '@/components/SuccessModal';
 const screenWidth = Dimensions.get('window').width;
 const COLUMN_GAP = scale(12);
 const CARD_WIDTH = (screenWidth - COLUMN_GAP * 3) / 2
@@ -23,6 +24,11 @@ const ProfileTab = () => {
   const { isAuthenticated, phone, token } = useAuth();
   const [userId, setUserId] = useState<string | null>(null);
   const [user, setUser] = useState<UserItem | string | null | undefined>(undefined);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const handleSuccessModalClose = () => {
+  setShowSuccessModal(false);
+  router.replace('/(tabs)/Profile');
+  };
   useEffect(() => {
     const loadUsers = async () => {
       try {
@@ -70,6 +76,7 @@ const ProfileTab = () => {
       setIsLoading(false);
     }
   };
+  
   const handleUpdateProfile = async () => {
     if (!name.trim()) {
       setError('Please enter your name');
@@ -116,7 +123,8 @@ const ProfileTab = () => {
       }
 
       console.log('Profile updated successfully:', responseData);
-      alert('Profile updated successfully!');
+      setShowSuccessModal(true);
+      
     } catch (err) {
       console.error('Error updating profile:', err);
       setError('Failed to update profile. Please try again.');
@@ -164,7 +172,15 @@ const ProfileTab = () => {
       >
         <Text style={styles.updateButtonText}>Update Profile</Text>
       </TouchableOpacity>
+       <SuccessModal
+        visible={showSuccessModal}
+        message="Profile Updated"
+        subtitle="Your profile has been updated successfully"
+        autoCloseDelay={2000}
+        onClose={handleSuccessModalClose}
+      />
     </ScrollView>
+    
   );
 };
 

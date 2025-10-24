@@ -145,8 +145,8 @@ const OrderReview = () => {
                   </View>
                 )}
                 <View style={styles.productInfo}>
-                  <View>
-                    <Text style={styles.productName}>{item.name || 'Product'}</Text>
+                  <View  style={{ width: scale(150)}}>
+                    <Text style={styles.productName} numberOfLines={2}>{item.name || 'Product'}</Text>
                     <Text style={styles.quantityText}>Qty: {item.quantity || 1}</Text>
                     <Text style={styles.productPack}>Pts: {item.pts}</Text>
                   </View>
@@ -369,7 +369,7 @@ const styles = StyleSheet.create({
     height: scale(60),
     borderRadius: 8,
     marginRight: 10,
-    resizeMode: 'cover',
+    resizeMode: 'contain',
   },
   placeholderImage: {
     backgroundColor: 'rgba(255, 255, 255, 0.1)',

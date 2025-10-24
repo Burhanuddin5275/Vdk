@@ -45,8 +45,6 @@ export default function Profile() {
     } else {
       setUser(token); // Fallback to token if no phone
     }
-    console.log('image:', typeof user === 'object' && user?.image?.uri ? `http://192.168.1.110:8000${user?.image.uri}` : 'No image available');
-    console.log("Request URL:", `${Api_url}api/account-delete/${userId}`);
 
   }, [phone, token]);
   const handleLogout = () => {
@@ -174,7 +172,7 @@ export default function Profile() {
             )}
             {/* Login Prompt */}
             {!isAuthenticated && (
-              <TouchableOpacity style={styles.loginBox} onPress={() => router.push(`/Signup?returnTo=${encodeURIComponent('/(tabs)/Profile')}`)}>
+              <TouchableOpacity style={styles.loginBox} onPress={() => router.push(`/Login?returnTo=${encodeURIComponent('/(tabs)/Profile')}`)}>
                 <Text style={styles.loginText}>Login to unlock more Features!</Text>
               </TouchableOpacity>
             )}

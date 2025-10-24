@@ -225,24 +225,34 @@ export default function CartScreen() {
                 </View>
               );
             })}
-            {/* Checkout Button */}
-            <View style={styles.checkoutContainer}>
-              <Button
-                variant="primary"
-                style={styles.checkoutButton}
-                onPress={() => {
-                  if (cartItems.length > 0) {
-                    setCheckoutModalVisible(true);
-                  } else {
-                    setEmptyCartMessage('Please add a product to your cart before checking out.');
-                    setTimeout(() => setEmptyCartMessage(''), 2000);
-                  }
-                }}
-                disabled={cartItems.length === 0}
-              >
-                Checkout
-              </Button>
-            </View>
+          {/* Checkout Button */}
+<View style={styles.checkoutContainer}>
+  {!phone ? (
+    <Button
+      variant="primary"
+      style={styles.checkoutButton}
+      onPress={() => router.push('/Login')}
+    >
+      Login to Checkout
+    </Button>
+  ) : (
+    <Button
+      variant="primary"
+      style={styles.checkoutButton}
+      onPress={() => {
+        if (cartItems.length > 0) {
+          setCheckoutModalVisible(true);
+        } else {
+          setEmptyCartMessage('Please add a product to your cart before checking out.');
+          setTimeout(() => setEmptyCartMessage(''), 2000);
+        }
+      }}
+      disabled={cartItems.length === 0}
+    >
+      Checkout
+    </Button>
+  )}
+</View>
           </ScrollView>
 
           {/* Delete Modal */}

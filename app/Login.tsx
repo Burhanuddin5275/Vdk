@@ -68,7 +68,7 @@ const Login = () => {
       });
 
       if (!response.ok) {
-        throw new Error(data.detail || 'Invalid credentials');
+        throw new Error( 'Invalid phone number or password');
       }
 
       // Get the token from the api_token field
@@ -136,7 +136,8 @@ const Login = () => {
               onChangeText={setPassword}
               placeholder="Password"
               placeholderTextColor={"#1A1A1A"}
-              secureTextEntry={!showPassword}
+              secureTextEntry={!showPassword} 
+               autoCapitalize="none"
             />
             <TouchableOpacity 
               style={styles.passwordToggle}
@@ -254,7 +255,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   errorText: {
-    color: '#FF6B6B',
+    color: colors.white,
     marginBottom: 10,
     width: '100%',
     textAlign: 'left',

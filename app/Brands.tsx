@@ -303,7 +303,7 @@ const Brands = () => {
                     prod.brand === 'Vidafem' && { backgroundColor: '#C3FFFA' }
                   ]}>
                     <View style={styles.footerLeft}>
-                      <Text style={[styles.cardTitle, prod.brand === 'Vidafem' && { color: '#006400' }]} numberOfLines={3}>
+                      <Text style={[styles.cardTitle, prod.brand === 'Vidafem' && { color: '#006400' }]} numberOfLines={2}>
                         {prod.name}
                       </Text>
                       <Text style={styles.cardRating}>Ratings <Text style={{ color: '#FFD600' }}>{'★'.repeat(prod.rating)}</Text></Text>

@@ -158,54 +158,62 @@ const Categories = () => {
             <Text style={styles.headerTitle}>{selectedCategory ? selectedCategory : 'Condom'}</Text>
           </View>
 
-          <View style={styles.adSliderContainer}>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              pagingEnabled
-              onMomentumScrollEnd={(event) => {
-                const index = Math.round(event.nativeEvent.contentOffset.x / screenWidth);
-                setCurrentAdIndex(index);
-              }}
-              ref={scrollViewRef}
-            >
-              {banner
-                .filter(ad => displayList.some(product =>
-                  'brand' in product &&
-                  'Category' in product &&
-                  product.brand === ad.brand &&
-                  ad.category.toLowerCase() === String(selectedCategory).toLowerCase()
-                ))
-                .map((ad, index) => (
-                  <View key={index} style={styles.adSlide}>
-                    <Image
-                      source={ad.image}
-                      style={styles.adSlideImage}
-                      resizeMode="contain"
-                    />
-                  </View>
-                ))}
-            </ScrollView>
+        <View style={styles.adSliderContainer}>
+  {/* Update the banner filtering logic in the return statement */}
+  <ScrollView
+    horizontal
+    showsHorizontalScrollIndicator={false}
+    pagingEnabled
+    onMomentumScrollEnd={(event) => {
+      const index = Math.round(event.nativeEvent.contentOffset.x / screenWidth);
+      setCurrentAdIndex(index);
+    }}
+    ref={scrollViewRef}
+  >
+    {banner
+      .filter(ad => {
+        if (!selectedCategory) return true; // Show all banners if no category is selected
+        
+        const adCategory = ad.category?.toLowerCase();
+        const currentCategory = String(selectedCategory).toLowerCase();
+        
+        // Match exact category or handle plural/singular forms
+        return adCategory === currentCategory || 
+               adCategory === currentCategory + 's' || 
+               adCategory + 's' === currentCategory;
+      })
+      .map((ad, index) => (
+        <View key={index} style={styles.adSlide}>
+          <Image
+            source={ad.image}
+            style={styles.adSlideImage}
+            resizeMode="contain"
+          />
+        </View>
+      ))}
+  </ScrollView>
 
-            <View style={styles.adIndicators}>
-              {banner
-                .filter(ad => displayList.some(product =>
-                  'brand' in product &&
-                  'Category' in product &&
-                  product.brand === ad.brand &&
-                  ad.category.toLowerCase() === String(selectedCategory).toLowerCase()
-                ))
-                .map((_, index) => (
-                  <View
-                    key={index}
-                    style={[
-                      styles.adIndicator,
-                      index === currentAdIndex && styles.adIndicatorActive
-                    ]}
-                  />
-                ))}
-            </View>
-          </View>
+  <View style={styles.adIndicators}>
+    {banner
+      .filter(ad => {
+        if (!selectedCategory) return true;
+        const adCategory = ad.category?.toLowerCase();
+        const currentCategory = String(selectedCategory).toLowerCase();
+        return adCategory === currentCategory || 
+               adCategory === currentCategory + 's' || 
+               adCategory + 's' === currentCategory;
+      })
+      .map((_, index) => (
+        <View
+          key={index}
+          style={[
+            styles.adIndicator,
+            index === currentAdIndex && styles.adIndicatorActive
+          ]}
+        />
+      ))}
+  </View>
+</View>
 
           {!selectedCategory ? (
             <>
@@ -618,8 +626,8 @@ const styles = StyleSheet.create({
   },
   adSliderContainer: {
     width: '100%',
-    height: verticalScale(140),
-    marginBottom: verticalScale(10),
+    height: verticalScale(150),
+    marginBottom: verticalScale(15),
     position: 'relative',
   },
   adSlide: {
@@ -628,7 +636,7 @@ const styles = StyleSheet.create({
   },
   adSlideImage: {
     width: '100%',
-    height: '100%',
+    height: verticalScale(137)
   },
   adIndicators: {
     flexDirection: 'row',

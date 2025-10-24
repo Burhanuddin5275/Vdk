@@ -10,6 +10,9 @@ import axios from 'axios';
 import { useAuth } from '@/hooks/useAuth';
 import { useShippingStore } from '@/store/shippingStore';
 import { useAddressStore } from '@/store/addressStore';
+import SuccessModal from '@/components/SuccessModal';
+import AlertModal from '@/components/Alert';
+import Address from './Address';
 const { width } = Dimensions.get('window');
 
 // Define the expected params type
@@ -35,6 +38,29 @@ const Mall = () => {
   const image = params?.image ? `${Api_url}media/redeem/${params.image}` : '';
   const { isAuthenticated, phone, token, user } = useAuth();
   const [userId, setUserId] = useState<string | null>(null);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [orderSuccess, setOrderSuccess] = useState(false);
+  const [AddressModal, setAddressModal] = useState(false);
+  const [ShippingModal, setShippingModal] = useState(false);
+const handleAddressModalClose = () => {
+  setAddressModal(false);
+  router.push('/ShippingAddress'); 
+};
+
+const handleShippingModalClose = () => {
+  setShippingModal(false);
+  router.push('/ChooseShipping'); 
+};
+    const handleSuccessModalClose = () => {
+    setShowSuccessModal(false);
+    router.replace({ 
+      pathname: '/Redeemed', 
+      params: {
+        showSuccess: 'true',
+        orderSuccess: 'true'
+      }
+    });
+  };
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -70,13 +96,11 @@ const Mall = () => {
 
     // Check if address is selected
     if (!selectedAddress) {
-      Alert.alert('Address Required', 'Please add a shipping address before redeeming.');
-      router.push('/ShippingAddress');
+      setAddressModal(true)
       return;
     }
     else if (!selectedShipping) {
-      Alert.alert('Shipping Required', 'Please add a shipping method before redeeming.');
-      router.push('/ChooseShipping');
+      setShippingModal(true)
       return;
     }
 
@@ -123,7 +147,6 @@ const Mall = () => {
         const responseText = await response.text();
         console.log('Raw response text:', responseText);
 
-        // Try to parse as JSON if the response is not empty
         let responseData;
         try {
           responseData = responseText ? JSON.parse(responseText) : {};
@@ -132,40 +155,21 @@ const Mall = () => {
           throw new Error(`Server returned non-JSON response: ${responseText.substring(0, 200)}`);
         }
 
-        // Log parsed response data
         console.log('Parsed response data:', responseData);
-
-        if (!response.ok) {
-          console.error('API Error Status:', response.status);
-          console.error('API Error Data:', responseData);
-
-          // Handle 400 Bad Request specifically
-          if (response.status === 400) {
-            const errorMessage = responseData.detail ||
-              responseData.message ||
-              responseData.error ||
-              'Bad request';
-            throw new Error(`Validation error: ${errorMessage}`);
-          }
-
+        if (response.ok) {
+          setShowSuccessModal(true);
+          setOrderSuccess(true);
+        } else {
           throw new Error(
-            responseData.detail ||
             responseData.message ||
-            responseData.error ||
             `Server error: ${response.status} ${response.statusText}`
           );
         }
-
-        // Handle successful response
-        console.log('Order created successfully:', responseData);
-        Alert.alert('Success', 'Your order has been placed successfully!');
-        // Navigate to Redeemed screen after successful order creation
-        router.replace('/Redeem');
-        return responseData;
       } catch (error: any) {
         console.error('Request failed:', error);
         throw error;
       }
+
     } catch (error: any) {
       console.error('Order creation error:', error);
       Alert.alert('Error', error.message || 'Failed to create order');
@@ -176,6 +180,20 @@ const Mall = () => {
 
   return (
     <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
+            <AlertModal
+        visible={AddressModal}
+        message="Address Required"
+        subtitle="Please add an address before redeeming."
+        autoCloseDelay={1000}
+        onClose={handleAddressModalClose}
+      />
+          <AlertModal
+        visible={ShippingModal}
+        message="Shipping Required"
+        subtitle="Please add a shipping method before redeeming."
+        autoCloseDelay={1000}
+        onClose={handleShippingModalClose}
+      />
       <ImageBackground
         source={require('../assets/images/ss1.png')}
         style={styles.background}
@@ -234,6 +252,15 @@ const Mall = () => {
           </TouchableOpacity>
         </View>
       </ImageBackground>
+      <SuccessModal
+        visible={showSuccessModal}
+        message={orderSuccess ? "Redeemed Successfully!" : "Redeemed Failed"}
+        subtitle={orderSuccess
+          ? "Your order has been redeemed successfully"
+          : "There was an error processing your order. Please try again."}
+        autoCloseDelay={orderSuccess ? 1000 : 2000}
+        onClose={handleSuccessModalClose}
+      />
     </SafeAreaView>
   );
 };

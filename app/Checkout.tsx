@@ -3,13 +3,14 @@ import { useAddressStore } from '@/store/addressStore';
 import { useShippingStore } from '@/store/shippingStore';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Alert, Dimensions, FlatList, Image, ImageBackground, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { Button } from '../components/Button';
 import { IconSymbol } from '../components/ui/IconSymbol';
 import { colors } from '../theme/colors';
+import AlertModal from '@/components/Alert';
 const { width, height } = Dimensions.get('window');
 type CheckoutParams = {
     name?: string;
@@ -25,6 +26,18 @@ const Checkout = () => {
     const { selectedAddress } = useAddressStore();
     const { selectedShipping } = useShippingStore();
     const { isAuthenticated } = useAuth();
+    const [AddressModal, setAddressModal] = useState(false);
+    const [ShippingModal, setShippingModal] = useState(false);
+    const handleAddressModalClose = () => {
+        setAddressModal(false);
+        router.push('/ShippingAddress');
+    };
+
+    const handleShippingModalClose = () => {
+        setShippingModal(false);
+        router.push('/ChooseShipping');
+    };
+
     let cartItems: CheckoutParams[] = [];
 
     if (params?.items) {
@@ -120,8 +133,14 @@ const Checkout = () => {
                                     {selectedAddress ? 'Change' : 'Change'}
                                 </Button>
                             </View>
-
-                            {/* Shipping - Only show for logged-in users */}
+                            <AlertModal
+                                visible={AddressModal}
+                                message="Address Required"
+                                subtitle="Please add an address before redeeming."
+                                autoCloseDelay={1000}
+                                onClose={handleAddressModalClose}
+                            />
+                        
                             <Text style={styles.sectionTitle}>Shipping Method</Text>
                             <View style={styles.sectionRow}>
                                 {selectedShipping ? (
@@ -153,6 +172,13 @@ const Checkout = () => {
                                     {selectedShipping ? 'Change' : 'Select'}
                                 </Button>
                             </View>
+                            <AlertModal
+                                visible={ShippingModal}
+                                message="Shipping Required"
+                                subtitle="Please add a shipping method before redeeming."
+                                autoCloseDelay={1000}
+                                onClose={handleShippingModalClose}
+                            />
                         </>
                     ) : (
                         <View style={styles.loginPrompt}>
@@ -197,12 +223,12 @@ const Checkout = () => {
                                 }
 
                                 if (!selectedAddress) {
-                                    Alert.alert('Error', 'Please select a shipping address');
+                                   setAddressModal(true)
                                     return;
                                 }
 
                                 if (!selectedShipping) {
-                                    Alert.alert('Error', 'Please select a shipping method');
+                                  setShippingModal(true)
                                     return;
                                 }
 

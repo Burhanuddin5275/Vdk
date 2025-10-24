@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
+import SuccessModal from '@/components/SuccessModal';
 import { Alert, Dimensions, FlatList, Image, ImageBackground, Platform, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
@@ -47,15 +48,8 @@ const formatDate = (dateString: string) => {
 
 // Determine status steps based on order status
 const getStatusSteps = (status: string, createdAt: string) => {
-  const baseDate = new Date(createdAt);
-  const now = new Date();
 
-  // Calculate time differences for each step
-  const pendingTime = new Date(baseDate);
-  const processingTime = new Date(pendingTime.getTime() + (status !== 'pending' ? 0 : 0));
-  const onTheWayTime = new Date(processingTime.getTime() + (['on_the_way', 'delivered', 'cancelled'].includes(status) ? 2 * 60 * 60 * 1000 : 0));
-  const deliveredTime = new Date(onTheWayTime.getTime() + (['delivered', 'cancelled'].includes(status) ? 2 * 60 * 60 * 1000 : 0));
-
+ 
   const steps = [
     {
       label: 'Order placed!',
@@ -176,6 +170,12 @@ const OrderTracker = () => {
 
   return (
     <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
+      <SuccessModal
+        visible={showSuccessModal}
+        message="Your order has been cancelled successfully"
+        onClose={() => setShowSuccessModal(false)}
+        autoCloseDelay={2000}
+      />
       <ImageBackground source={bgImage} style={styles.background} resizeMode="cover">
         <View style={styles.container}>
           {/* Header */}
@@ -295,15 +295,6 @@ const OrderTracker = () => {
 
         <TabLayout />
 
-        {/* Success Modal */}
-        {showSuccessModal && (
-          <View style={styles.successModalOverlay}>
-            <View style={styles.successModalContent}>
-              <Ionicons name="checkmark-circle" size={48} color="white" />
-              <Text style={styles.successModalText}>Your order has been cancelled successfully</Text>
-            </View>
-          </View>
-        )}
 
         {/* Custom Cancel Confirmation Modal */}
         {showCancelModal && (

@@ -8,7 +8,6 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, ImageBackground, Modal, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
-import { useDispatch } from 'react-redux';
 
 const TABS = ['All', 'Active', 'Completed', 'Cancelled'];
 
@@ -159,7 +158,7 @@ export default function OrdersScreen() {
     if (activeTab === 'All') return orders;
     if (activeTab === 'Active') return orders.filter(o => o.status === 'process');
     if (activeTab === 'Completed') return orders.filter(o => o.status === 'delivered');
-    if (activeTab === 'Cancelled') return orders.filter(o => o.status === 'cancelled');
+    if (activeTab === 'Cancelled') return orders.filter(o => o.status === 'cancelled' && o.type !== 'redeem');
     return orders;
   };
 
@@ -432,14 +431,94 @@ export default function OrdersScreen() {
         {/* Orders List */}
         <ScrollView contentContainerStyle={styles.ordersList} showsVerticalScrollIndicator={false}>
           {filteredOrders.length > 0 ? (
-            filteredOrders.map((order) => (
-              <View key={order.id} style={styles.orderCard}>
+            filteredOrders.map((order) => {
+              // Get button configuration based on order status
+              const getButtonConfig = () => {
+                switch(order.status) {
+                  case 'delivered':
+                    return {
+                      text: 'Review Order',
+                      onPress: () => {
+                        router.push({ 
+                          pathname: '/OrderReview', 
+                          params: { order: JSON.stringify(order) } 
+                        });
+                      },
+                      style: styles.reviewBtn
+                    };
+                  case 'cancelled':
+                    return {
+                      text: 'Reorder',
+                      onPress: () => {
+                        const itemsForCheckout = order.items.map(item => ({
+                          id: item.id,
+                          name: item.name,
+                          price: item.price,
+                          quantity: item.quantity.toString(),
+                          image: item.image 
+                            ? item.image.startsWith('http') 
+                              ? item.image 
+                              : `${img_url}${item.image}`
+                            : '',
+                          points: item.pts?.toString() || '0'
+                        }));
+                        
+                        router.push({
+                          pathname: '/Checkout',
+                          params: {
+                            items: JSON.stringify(itemsForCheckout),
+                            fromOrder: 'true'
+                          }
+                        });
+                      },
+                      style: styles.reorderBtn
+                    };
+                  case 'process':
+                    return {
+                      text: 'Track Order',
+                      onPress: () => {
+                        router.push({ 
+                          pathname: '/OrderTracker', 
+                          params: { order: JSON.stringify(order) } 
+                        });
+                      },
+                      style: styles.trackBtn
+                    };
+                  case 'on_the_way':
+                    return {
+                      text: 'Track Order',
+                      onPress: () => {
+                        router.push({ 
+                          pathname: '/OrderTracker', 
+                          params: { order: JSON.stringify(order) } 
+                        });
+                      },
+                      style: styles.trackBtn
+                    };
+                  default:
+                    return {
+                      text: 'Track Order',
+                      onPress: () => {
+                        router.push({ 
+                          pathname: '/OrderTracker', 
+                          params: { order: JSON.stringify(order) } 
+                        });
+                      },
+                      style: styles.trackBtn
+                    };
+                }
+              };
+
+              const buttonConfig = getButtonConfig();
+
+              return (
+                <View key={order.id} style={styles.orderCard}>
                   <View style={styles.imgPlaceholder}>
-                      <Image 
+                    <Image 
                       source={require('../../assets/images/order.png')} 
-                        style={styles.img} 
-                        resizeMode="contain"
-                      /> 
+                      style={styles.img} 
+                      resizeMode="contain"
+                    /> 
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.orderNum}>Order #{order.id}</Text>
@@ -448,62 +527,17 @@ export default function OrdersScreen() {
                       {new Date(order.created_at).toLocaleDateString()}
                     </Text>
                   </View>
-                <TouchableOpacity 
-                  style={[
-                    styles.actionBtn,
-                  ]}
-                  onPress={() => {
-                    if (activeTab === 'Completed') {
-                      // Navigate to review page for completed orders
-                      router.push({ 
-                        pathname: '/OrderReview', 
-                        params: { 
-                          order: JSON.stringify(order) 
-                        } 
-                      });
-                    } else if (activeTab === 'Cancelled') {
-                      // Re-order functionality - navigate to checkout with order items
-                      const itemsForCheckout = order.items.map(item => ({
-                        id: item.id,
-                        name: item.name,
-                        price: item.price,
-                        quantity: item.quantity.toString(),
-                        image: item.image 
-                          ? item.image.startsWith('http') 
-                            ? item.image 
-                            : `${img_url}${item.image}`
-                          : '',
-                        points: item.pts?.toString() || '0'
-                      }));
-                      
-                      router.push({
-                        pathname: '/Checkout',
-                        params: {
-                          items: JSON.stringify(itemsForCheckout),
-                          fromOrder: 'true'
-                        }
-                      });
-                    } else {
-                      
-                      router.push({ 
-                        pathname: '/OrderTracker', 
-                        params: { 
-                          order: JSON.stringify(order) 
-                        } 
-                      });
-                    }
-                  }}
-                >
-                  <Text style={styles.actionBtnText}>
-                    {activeTab === 'Completed' 
-                      ? 'Review Order' 
-                      : activeTab === 'Cancelled' 
-                        ? 'Re-order' 
-                        : 'Track Order'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            ))
+                  <TouchableOpacity 
+                    style={[styles.actionBtn, buttonConfig.style]}
+                    onPress={buttonConfig.onPress}
+                  >
+                    <Text style={styles.actionBtnText}>
+                      {buttonConfig.text}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              );
+            })
           ) : (
             <View style={styles.emptyContainer}>
               <Ionicons name="receipt-outline" size={60} color="#CCCCCC" />
@@ -679,23 +713,25 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  reviewBtn: {
+    backgroundColor: 'white',
+    borderColor: colors.primary,
+    borderWidth: 1,
+  },
+  reorderBtn: {
+    backgroundColor: 'white',
+    borderColor: colors.primary,
+    borderWidth: 1,
+  },
+  trackBtn: {
+    backgroundColor: 'white',
+  },
+
   actionBtnText: {
-    color: colors.textPrimary,
+    color: colors.primary,
     fontFamily: 'PoppinsMedium',
     fontSize: moderateScale(12),
     textAlign: 'center'
-  },
-  trackOrderBtn: {
-    backgroundColor: 'transparent',
-    borderColor: '#E53935',
-    borderWidth: 1,
-    borderRadius: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    marginLeft: 10,
-    width: scale(110),
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   modalOverlay: {
     flex: 1,

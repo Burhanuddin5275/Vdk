@@ -9,6 +9,7 @@ import axios from 'axios';
 import { ActivityIndicator, Alert, Dimensions, Image, ImageBackground, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { Api_url } from '../url/url';
+import SuccessModal from '@/components/SuccessModal';
 const { width, height } = Dimensions.get('window');
 
 const PAYMENT_METHODS =
@@ -70,7 +71,19 @@ const Payment = () => {
     const shippingMethod = shippingMethodStr ? JSON.parse(shippingMethodStr) : null;
     const { isAuthenticated, phone, token, user } = useAuth();
     const [userId, setUserId] = useState<string | null>(null);
-
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [orderSuccess, setOrderSuccess] = useState(false);
+    const handleSuccessModalClose = () => {
+        setShowSuccessModal(false);
+        // Move navigation here
+        router.replace({
+            pathname: '/(tabs)/Orders',
+            params: {
+                showSuccess: 'true',
+                orderSuccess: 'true'
+            }
+        });
+    };
     useEffect(() => {
         const fetchUserData = async () => {
             try {
@@ -177,14 +190,9 @@ const Payment = () => {
                     body: JSON.stringify(orderData)
                 });
 
-                // Log response status and headers for debugging
-                console.log('Response status:', response.status, response.statusText);
-                console.log('Response headers:', Object.fromEntries(response.headers.entries()));
-
                 const responseText = await response.text();
                 console.log('Raw response text:', responseText);
 
-                // Try to parse as JSON if the response is not empty
                 let responseData;
                 try {
                     responseData = responseText ? JSON.parse(responseText) : {};
@@ -193,49 +201,29 @@ const Payment = () => {
                     throw new Error(`Server returned non-JSON response: ${responseText.substring(0, 200)}`);
                 }
 
-                // Log parsed response data
                 console.log('Parsed response data:', responseData);
 
-                if (!response.ok) {
-                    console.error('API Error Status:', response.status);
-                    console.error('API Error Data:', responseData);
-
-                    // Handle 400 Bad Request specifically
-                    if (response.status === 400) {
-                        const errorMessage = responseData.detail ||
-                            responseData.message ||
-                            responseData.error ||
-                            'Bad request';
-                        throw new Error(`Validation error: ${errorMessage}`);
+                // In your order creation success block:
+                if (response.ok) {
+                    try {
+                        await clearCart();
+                        console.log('Cart cleared after successful order');
+                    } catch (error) {
+                        console.error('Error clearing cart:', error);
+                        // Don't fail the order if cart clearing fails
                     }
-
+                    // Just show the modal, navigation will happen when modal is closed
+                    setShowSuccessModal(true);
+                    setOrderSuccess(true);
+                } else {
                     throw new Error(
-                        responseData.detail ||
                         responseData.message ||
-                        responseData.error ||
                         `Server error: ${response.status} ${response.statusText}`
                     );
                 }
 
-                // Clear the cart after successful order
-                try {
-                    clearCart();
-                    console.log('Cart cleared after successful order');
-                } catch (error) {
-                    console.error('Error clearing cart:', error);
-                    // Don't fail the order if cart clearing fails
-                }
 
-                // Show success message
-                Alert.alert('Success', 'Your order has been placed successfully!');
 
-                // Navigate to home or orders page 
-                router.replace({
-                    pathname: '/(tabs)/Orders',
-                    params: { orderPlaced: 'true' }
-                });
-
-                return responseData;
             } catch (error: any) {
                 console.error('Request failed:', error);
                 throw error;
@@ -243,8 +231,6 @@ const Payment = () => {
         } catch (error: any) {
             console.error('Order creation error:', error);
             Alert.alert('Error', error.message || 'Failed to create order');
-        } finally {
-            setIsLoading(false);
         }
     };
 
@@ -319,6 +305,15 @@ const Payment = () => {
                     </View>
                 </View>
             </ImageBackground>
+            <SuccessModal
+                visible={showSuccessModal}
+                message={orderSuccess ? "Order Placed Successfully!" : "Order Failed"}
+                subtitle={orderSuccess
+                    ? "Your order has been placed successfully"
+                    : "There was an error processing your order. Please try again."}
+                autoCloseDelay={orderSuccess ? 1000 : 2000}
+                onClose={handleSuccessModalClose}
+            />
         </SafeAreaView>
     );
 };

@@ -4,7 +4,7 @@ import { Api_url } from '@/url/url';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Image, ImageBackground, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, ImageBackground, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, verticalScale } from 'react-native-size-matters';
 
@@ -103,7 +103,6 @@ const Signup = () => {
   };
   const handleSuccessModalClose = () => {
     setShowSuccessModal(false);
-    // Navigate back to ShippingAddress screen
     router.replace('/Login');
   };
   return (
@@ -114,7 +113,7 @@ const Signup = () => {
           <Image source={require('../assets/images/dkt.png')} style={styles.logo} resizeMode="contain" />
           <Text style={styles.welcome}>Welcome! Create your account</Text>
 
-          {/* Phone Input */}
+        
           <View style={styles.inputWrap}>
             <View style={styles.flagWrap}>
               <Image source={require('../assets/images/flag.png')} style={styles.flag} resizeMode="contain" />
@@ -124,14 +123,19 @@ const Signup = () => {
               style={styles.input}
               value={phone}
               onChangeText={setPhone}
-              keyboardType="number-pad"
+              keyboardType="number-pad" 
               placeholder="Phone Number"
               placeholderTextColor={"#1A1A1A"}
               maxLength={10}
-              editable={!phoneParam} // Disable editing if phone is pre-filled
+              editable={!phoneParam} 
             />
           </View>
-
+<ScrollView 
+  style={{ width:'100%'}}
+  contentContainerStyle={{ paddingBottom:150 }}
+  keyboardShouldPersistTaps="handled"
+  showsVerticalScrollIndicator={false}
+>
           {isFromVerification && (
             <View style={{ marginTop: 16 }}>
               <View style={[styles.inputWrap, { marginBottom: 15 }]}>
@@ -203,6 +207,7 @@ const Signup = () => {
             <Text style={styles.link}> Terms & conditions </Text> and
             <Text style={styles.link}> Privacy policy</Text>.
           </Text>
+          </ScrollView>
         </View>
       </ImageBackground>
       <SuccessModal

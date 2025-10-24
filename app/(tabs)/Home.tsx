@@ -47,7 +47,7 @@ const SalePopup = ({ visible, onClose }: SalePopupProps) => {
 
       return () => clearTimeout(timer);
     } else {
-      scaleAnim.setValue(0); 
+      scaleAnim.setValue(0);
     }
   }, [visible]);
 
@@ -107,23 +107,23 @@ export default function HomeScreen() {
   const loadWishlist = useWishlistStore(state => state.loadWishlist);
   const [user, setUser] = useState<UserItem | string | null | undefined>(undefined);
   useEffect(() => {
-  const loadUsers = async () => {
-  try {
-    const users = await fetchUsers();
-    const matchedUser = users.find((u) => u.number === phone);
+    const loadUsers = async () => {
+      try {
+        const users = await fetchUsers();
+        const matchedUser = users.find((u) => u.number === phone);
 
-    if (matchedUser) {
-      setUser(matchedUser);
-      console.log('Matched user:', matchedUser);
-    } else {
-      console.log('No user found with phone:', phone);
-      setUser(token);
-    }
-  } catch (error) {
-    console.error('Error loading users:', error);
-    setUser(token);
-  }
-};
+        if (matchedUser) {
+          setUser(matchedUser);
+          console.log('Matched user:', matchedUser);
+        } else {
+          console.log('No user found with phone:', phone);
+          setUser(token);
+        }
+      } catch (error) {
+        console.error('Error loading users:', error);
+        setUser(token);
+      }
+    };
     if (phone) {
       loadUsers();
     } else {
@@ -131,24 +131,24 @@ export default function HomeScreen() {
     }
   },);
 
-useEffect(() => {
-  const initWishlistAndUser = async () => {
-    try {
-      if (phone) {
-        // 2. Use the setPhone from useWishlistStore
-        const { setPhone } = useWishlistStore.getState();
-        setPhone(phone);
-        await loadWishlist();
-      } else {
-        setUser(token);
+  useEffect(() => {
+    const initWishlistAndUser = async () => {
+      try {
+        if (phone) {
+          // 2. Use the setPhone from useWishlistStore
+          const { setPhone } = useWishlistStore.getState();
+          setPhone(phone);
+          await loadWishlist();
+        } else {
+          setUser(token);
+        }
+      } catch (error) {
+        console.error('Error initializing wishlist or user:', error);
       }
-    } catch (error) {
-      console.error('Error initializing wishlist or user:', error);
-    }
-  };
+    };
 
-  initWishlistAndUser();
-}, [phone, token, loadWishlist]); 
+    initWishlistAndUser();
+  }, [phone, token, loadWishlist]);
   useEffect(() => {
     const loadHeroContent = async () => {
       try {
@@ -272,27 +272,30 @@ useEffect(() => {
                       </Text>
                     </>
                   )}
-             <View style={styles.rewardBox}>
-  {isAuthenticated ? (
-    <>
-      <Text style={styles.rewardLabel}>Reward</Text>
-      <Text style={styles.rewardPoints}>
-        {typeof user === 'object' && user !== null && 'total_points' in user 
-          ? (user as UserItem).total_points 
-          : '0'
-        }
-      </Text>
-      <Text style={styles.rewardPts}>PTS</Text>
-    </>
-  ) : (
-    <TouchableOpacity 
-      onPress={() => router.push('/Login')}
-      style={styles.loginButton}
-    >
-      <Text style={styles.loginButtonText}>Login</Text>
-    </TouchableOpacity>
-  )}
-</View>
+                 
+                    {isAuthenticated ? (
+                      <>
+                       <View style={styles.rewardBox}>
+                        <Text style={styles.rewardLabel}>Reward</Text>
+                        <Text style={styles.rewardPoints}>
+                          {typeof user === 'object' && user !== null && 'total_points' in user
+                            ? (user as UserItem).total_points
+                            : '0'
+                          }
+                        </Text>
+                        <Text style={styles.rewardPts}>PTS</Text>
+                              </View>
+                      </>
+                    ) : (
+                      <>
+                        <TouchableOpacity
+                          onPress={() => router.push('/Login')}
+                          style={styles.loginButton}
+                        >
+                          <Text style={styles.loginButtonText}>Login to see Points</Text>
+                        </TouchableOpacity>
+                      </>
+                    )}
                 </View>
                 <View style={{ flex: 1, alignItems: 'flex-end' }}>
                   <Image
@@ -584,7 +587,7 @@ const popupStyles = StyleSheet.create({
   },
   saleText: {
     fontSize: moderateScale(46),
-    lineHeight: moderateScale(35),
+    lineHeight: moderateScale(40),
     color: '#E53935',
     fontFamily: 'Sigmar',
   },
@@ -596,7 +599,6 @@ const popupStyles = StyleSheet.create({
   },
   discountText: {
     fontSize: moderateScale(28),
-    lineHeight: moderateScale(22),
     color: '#E53935',
     fontFamily: 'PoppinsRegular',
   },
@@ -643,12 +645,12 @@ const bestSellerStyles = StyleSheet.create({
     paddingHorizontal: moderateScale(3),
     paddingVertical: verticalScale(2),
     marginTop: verticalScale(-8),
-    height: verticalScale(40),
+    height: verticalScale(48),
     width: scale(195)
   },
   cardTitle: {
     fontFamily: 'InterBold',
-    fontSize: moderateScale(12),
+    fontSize: moderateScale(11),
     color: colors.textSecondary,
     marginBottom: 0,
   },
@@ -696,13 +698,13 @@ const styles = StyleSheet.create({
   },
   hello: {
     color: '#fff',
-    fontSize: moderateScale(28),
+    fontSize: moderateScale(26),
     fontFamily: "RussoOne",
 
   },
   subtext: {
     color: '#fff',
-    fontSize: moderateScale(16),
+    fontSize: moderateScale(15),
     marginBottom: verticalScale(12),
   },
   rewardBox: {
@@ -736,28 +738,30 @@ const styles = StyleSheet.create({
     fontFamily: 'PoppinsBold',
   },
   loginButton: {
-  backgroundColor: '#E82A2F',
-  paddingVertical: 6,
-  paddingHorizontal: 12,
-  borderRadius: 15,
-  justifyContent: 'center',
-  alignItems: 'center',
-  marginTop: scale(15),
-},
-loginButtonText: {
-  color: 'white',
-  fontWeight: 'bold',
-  fontSize: moderateScale(14),
-},
+    backgroundColor: '#E82A2F',
+   width: scale(100),
+    borderRadius: moderateScale(12),
+    paddingHorizontal: scale(10),
+    paddingVertical: verticalScale(12),
+    alignSelf: 'flex-start',
+    marginTop: verticalScale(4),
+    marginBottom: verticalScale(8),
+    alignItems: 'center',
+  },
+  loginButtonText: {
+    color: 'white',
+    fontFamily: 'PoppinsBold',
+    fontSize: moderateScale(12),
+    textAlign: 'center',
+  },
   familyImg: {
     width: "100%",
-    height: verticalScale(250),
+    height: verticalScale(205),
     resizeMode: "contain",
   },
   sectionTitle: {
     color: "white",
     fontSize: moderateScale(32),
-    lineHeight: moderateScale(37),
     fontFamily: "Sigmar",
     marginLeft: scale(15),
     marginTop: verticalScale(30)
@@ -797,11 +801,10 @@ loginButtonText: {
   },
   adSlide: {
     width: screenWidth,
-    height: '100%',
   },
   adSlideImage: {
     width: '100%',
-    height: '100%',
+    height: verticalScale(140),
   },
   adIndicatorActive: {
     backgroundColor: 'white',

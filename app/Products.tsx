@@ -30,10 +30,10 @@ interface Product {
     description?: string;
     rating?: number;
     gallery_images?: Array<{
-        id:number;
+        id: number;
         image: string;
     }>;
-    gallery_image?:any[]; 
+    gallery_image?: any[];
     variants?: Array<{
         id?: number;
         stock?: number;
@@ -57,7 +57,7 @@ const Products = () => {
         const fallbackImages = [product.img, product.img1, product.img2].filter(Boolean);
         return [...galleryImages, ...fallbackImages].filter(Boolean);
     };
-    
+
     const images = getImageSources();
     const [selectedImg, setSelectedImg] = useState(images[0] || '');
     const [modalVisible, setModalVisible] = useState(false);
@@ -70,48 +70,57 @@ const Products = () => {
         image?: any;
         stock?: number;
     }
-    interface gallery_image{
+    interface gallery_image {
         id?: number;
         image?: any;
     }
 
-    const processVariants = (): Variant[] => {
-        const rawVariants = product.variant || product.variants || [];
-        if (!Array.isArray(rawVariants)) return [];
+const processVariants = (): Variant[] => {
+    const rawVariants = product.variant || product.variants || [];
+    if (!Array.isArray(rawVariants)) return [];
 
-        return rawVariants.flatMap((v: any) => {
-            if (v?.attributes) {
-                const attributes = Array.isArray(v.attributes) ? v.attributes : [v.attributes];
-                return attributes.flatMap((attr: any) => {
-                    const options = attr?.options || {};
-                    const size = options.Size || options.size || Object.values(options)[0];
-                    if (!size) return [];
+    const variantMap = new Map<string, Variant>();
 
-                    return {
+    rawVariants.forEach((v: any) => {
+        if (v?.attributes) {
+            const attributes = Array.isArray(v.attributes) ? v.attributes : [v.attributes];
+            attributes.forEach((attr: any) => {
+                const options = attr?.options || {};
+                const optionValues = Object.values(options).map(String).filter(Boolean);
+                const label = optionValues.join(' - ') || 'Default';
+                const variantKey = `${v.id}-${label}`;
+
+                if (!variantMap.has(variantKey)) {
+                    variantMap.set(variantKey, {
                         id: v.id,
-                        label: String(size),
+                        label: label,
                         price: Number(attr.regular_price || attr.price || v.price || 0),
                         ...(attr.sale_price ? { sale_price: Number(attr.sale_price) } : {}),
                         image: v.image || v.img || product.img,
                         stock: v.stock !== undefined ? Number(v.stock) : undefined
-                    };
+                    });
+                }
+            });
+        } else {
+            const label = v?.label || v?.name || v?.pack || String(v?.size || v?.title || '');
+            if (!label) return;
+
+            const variantKey = `${v.id}-${label}`;
+            if (!variantMap.has(variantKey)) {
+                variantMap.set(variantKey, {
+                    id: v.id,
+                    label,
+                    price: Number(v.regular_price || v.price || v.amount || 0),
+                    ...(v.sale_price ? { sale_price: Number(v.sale_price) } : {}),
+                    image: v.image || v.img || product.img,
+                    stock: v.stock !== undefined ? Number(v.stock) : undefined
                 });
             }
+        }
+    });
 
-            const label = v?.label || v?.name || v?.pack || String(v?.size || v?.title || '');
-            if (!label) return [];
-
-            return {
-                id: v.id,
-                label,
-                price: Number(v.regular_price || v.price || v.amount || 0),
-                ...(v.sale_price ? { sale_price: Number(v.sale_price) } : {}),
-                image: v.image || v.img || product.img,
-                stock: v.stock !== undefined ? Number(v.stock) : undefined
-            };
-        }).filter((v: any): v is Variant => v && v.label && !isNaN(v.price));
-    };
-
+    return Array.from(variantMap.values());
+};
     const variants = processVariants();
 
     let priceRange: { min: number; max: number } | null = null;
@@ -264,57 +273,98 @@ const Products = () => {
     };
 
     const insets = useSafeAreaInsets();
-
+    const cartItemCount = useCartStore(state =>
+        state.cartItems
+            .filter((item: any) => String(item.user) === String(phone))
+            .reduce((sum: number, item: any) => sum + item.quantity, 0)
+    );
     return (
         <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
             <ImageBackground source={bgKey ? backgroundImages[bgKey] : require('../assets/images/ss1.png')} style={{ flex: 1 }} resizeMode="cover">
                 <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
-                    <View style={styles.header}>
+                    <View style={[styles.header, { justifyContent: 'space-between', paddingHorizontal: 16 }]}>
                         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
                             <Ionicons name="arrow-back" size={28} color={mainColor} />
                         </TouchableOpacity>
-                        <TouchableOpacity
-                            onPress={async () => {
-                                if (!isAuthenticated) {
-                                    setWishlistMessage('Please log in to use wishlist.');
-                                    setTimeout(() => setWishlistMessage(null), 1000);
-                                    const currentRoute = `/Products?id=${id}&data=${encodeURIComponent(data as string)}&category=${category}&backgroundImage=${backgroundImage}`;
-                                    setTimeout(() => router.replace(`/Login?returnTo=${encodeURIComponent(currentRoute)}`), 1000);
-                                    return;
-                                }
 
-                                const inWishlist = wishlistItems.some((w: { id: string }) => w.id === product.id);
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <TouchableOpacity
+                                onPress={() => {
+                                    if (!isAuthenticated) {
+                                        setCartMessage('Please log in to view your cart.');
+                                        const currentRoute = `/Products?id=${id}&data=${encodeURIComponent(data as string)}&category=${category}&backgroundImage=${backgroundImage}`;
+                                        setTimeout(() => router.replace(`/Login?returnTo=${encodeURIComponent(currentRoute)}`), 1000);
+                                        return;
+                                    }
+                                    router.push('/(tabs)/Cart');
+                                }}
+                            >
+                                <Ionicons name="cart-outline" size={24} color={mainColor} />
+                                {cartItemCount > 0 && (
+                                    <View style={{
+                                        position: 'absolute',
+                                        right: -6,
+                                        top: -6,
+                                        backgroundColor: 'red',
+                                        borderRadius: 10,
+                                        width: 18,
+                                        height: 18,
+                                        justifyContent: 'center',
+                                        alignItems: 'center',
+                                    }}>
+                                        <Text style={{ color: 'white', fontSize: 10, fontWeight: 'bold' }}>
+                                            {cartItemCount > 9 ? '9+' : cartItemCount}
+                                        </Text>
+                                    </View>
+                                )}
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                               style={{marginLeft:scale(10)}}
+                                onPress={async () => {
+                                    if (!isAuthenticated) {
+                                        setWishlistMessage('Please log in to use wishlist.');
+                                        setTimeout(() => setWishlistMessage(null), 1000);
+                                        const currentRoute = `/Products?id=${id}&data=${encodeURIComponent(data as string)}&category=${category}&backgroundImage=${backgroundImage}`;
+                                        setTimeout(() => router.replace(`/Login?returnTo=${encodeURIComponent(currentRoute)}`), 1000);
+                                        return;
+                                    }
 
-                                if (inWishlist) {
-                                    await useWishlistStore.getState().removeFromWishlist(product.id);
-                                    setWishlistMessage('Removed from wishlist');
-                                } else {
-                                    const selectedVariant = variants.find(v => v.label === selectedSize) || variants[0];
-                                    const selectedVariantLabel = (selectedVariant?.label || (selectedVariant as any)?.name || (selectedVariant as any)?.pack || selectedSize || variants[0]?.label || '').toString();
+                                    const inWishlist = wishlistItems.some((w: { id: string }) => w.id === product.id);
 
-                                    await useWishlistStore.getState().addToWishlist({
-                                        id: product.id,
-                                        name: product.name,
-                                        regular_price: selectedVariant?.price ?? product.regular_price,
-                                        sale_price: selectedVariant?.sale_price ?? product.sale_price,
-                                        image: product.img || product.image || selectedImg,
-                                        pack: selectedVariantLabel,
-                                        category: product.Category || (category as string),
-                                        variant: selectedVariant ? {
-                                            label: selectedVariantLabel,
-                                            price: selectedVariant.price,
-                                            sale_price: selectedVariant.sale_price
-                                        } : undefined
-                                    });
-                                    setWishlistMessage('Added to wishlist');
-                                }
-                                setTimeout(() => setWishlistMessage(null), 2000);
-                            }}
-                        >
-                            <Ionicons name={wishlistItems.some((w: { id: string }) => w.id === product.id) ? 'heart' : 'heart-outline'} size={24} color={mainColor} />
-                        </TouchableOpacity>
+                                    if (inWishlist) {
+                                        await useWishlistStore.getState().removeFromWishlist(product.id);
+                                        setWishlistMessage('Removed from wishlist');
+                                    } else {
+                                        const selectedVariant = variants.find(v => v.label === selectedSize) || variants[0];
+                                        const selectedVariantLabel = (selectedVariant?.label || (selectedVariant as any)?.name || (selectedVariant as any)?.pack || selectedSize || variants[0]?.label || '').toString();
+
+                                        await useWishlistStore.getState().addToWishlist({
+                                            id: product.id,
+                                            name: product.name,
+                                            regular_price: selectedVariant?.price ?? product.regular_price,
+                                            sale_price: selectedVariant?.sale_price ?? product.sale_price,
+                                            image: product.img || product.image || selectedImg,
+                                            pack: selectedVariantLabel,
+                                            category: product.Category || (category as string),
+                                            variant: selectedVariant ? {
+                                                label: selectedVariantLabel,
+                                                price: selectedVariant.price,
+                                                sale_price: selectedVariant.sale_price
+                                            } : undefined
+                                        });
+                                        setWishlistMessage('Added to wishlist');
+                                    }
+                                    setTimeout(() => setWishlistMessage(null), 2000);
+                                }}
+                            >
+                                <Ionicons
+                                    name={wishlistItems.some((w: { id: string }) => w.id === product.id) ? 'heart' : 'heart-outline'}
+                                    size={24}
+                                    color={wishlistItems.some((w: { id: string }) => w.id === product.id) ? 'red' : mainColor}
+                                />
+                            </TouchableOpacity>
+                        </View>
                     </View>
-
                     <View style={styles.imageWrap}>
                         <Image source={typeof selectedImg === 'string' ? { uri: selectedImg } : selectedImg} style={styles.productImg} resizeMode="contain" />
                         <View style={styles.thumbnailRow}>
