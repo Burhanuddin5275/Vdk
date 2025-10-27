@@ -9,6 +9,7 @@ import { Alert, Image, ImageBackground, Modal, Pressable, SafeAreaView, ScrollVi
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { useCartStore } from '../../store/cartStore';
+import { Api_url } from '@/url/url';
 interface CartItem {
   id: string;
   name: string;
@@ -86,7 +87,7 @@ export default function CartScreen() {
 
     try {
       console.log('Sending request to validate promo code:', promoCode.trim());
-      const response = await fetch('http://192.168.1.108:8000/api/discounts/', {
+      const response = await fetch(`${Api_url}api/discounts/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -259,10 +260,10 @@ export default function CartScreen() {
           <Modal
             visible={deleteModalVisible}
             transparent
-            animationType="slide"
+            animationType="slide" 
             onRequestClose={() => setDeleteModalVisible(false)}
           >
-            <View style={modalStyles.overlay}>
+            <Pressable style={modalStyles.overlay} onPress={() => setDeleteModalVisible(false)}>
               <View style={modalStyles.container}>
                 <Text style={modalStyles.title}>Remove from Cart</Text>
                 <View style={modalStyles.divider} />
@@ -300,7 +301,7 @@ export default function CartScreen() {
                   </Button>
                 </View>
               </View>
-            </View>
+            </Pressable>
           </Modal>
           <Modal
             visible={checkoutModalVisible}
@@ -308,7 +309,7 @@ export default function CartScreen() {
             animationType="slide"
             onRequestClose={() => setCheckoutModalVisible(false)}
           >
-            <View style={checkoutModalStyles.overlay}>
+            <Pressable style={checkoutModalStyles.overlay} onPress={() => setCheckoutModalVisible(false)}>
               <View style={checkoutModalStyles.container}>
                 {/* Promo Code Row */}
                 <View style={checkoutModalStyles.promoRow}>
@@ -400,7 +401,7 @@ export default function CartScreen() {
                   <Text style={checkoutModalStyles.proceedButtonText}>Proceed to Checkout</Text>
                 </Pressable>
               </View>
-            </View>
+            </Pressable>
           </Modal>
 
           {/* Add to Cart Modal */}

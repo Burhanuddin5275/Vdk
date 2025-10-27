@@ -25,73 +25,73 @@ type SalePopupProps = {
 
 const screenWidth = Dimensions.get('window').width;
 
-const SalePopup = ({ visible, onClose }: SalePopupProps) => {
-  const [showGiftAnimation, setShowGiftAnimation] = useState(true);
-  const scaleAnim = useRef(new Animated.Value(0)).current;
+// const SalePopup = ({ visible, onClose }: SalePopupProps) => {
+//   const [showGiftAnimation, setShowGiftAnimation] = useState(true);
+//   const scaleAnim = useRef(new Animated.Value(0)).current;
 
-  useEffect(() => {
-    if (visible) {
-      setShowGiftAnimation(true);
+//   useEffect(() => {
+//     if (visible) {
+//       setShowGiftAnimation(true);
 
-      // Start zoom-in animation
-      Animated.timing(scaleAnim, {
-        toValue: 1,
-        duration: 500,
-        useNativeDriver: true,
-        easing: Easing.out(Easing.exp),
-      }).start();
+//       // Start zoom-in animation
+//       Animated.timing(scaleAnim, {
+//         toValue: 1,
+//         duration: 500,
+//         useNativeDriver: true,
+//         easing: Easing.out(Easing.exp),
+//       }).start();
 
-      const timer = setTimeout(() => {
-        setShowGiftAnimation(false);
-      }, 5000);
+//       const timer = setTimeout(() => {
+//         setShowGiftAnimation(false);
+//       }, 5000);
 
-      return () => clearTimeout(timer);
-    } else {
-      scaleAnim.setValue(0);
-    }
-  }, [visible]);
+//       return () => clearTimeout(timer);
+//     } else {
+//       scaleAnim.setValue(0);
+//     }
+//   }, [visible]);
 
-  return (
-    <Modal visible={visible} transparent animationType="fade">
-      <View style={popupStyles.overlay}>
-        {visible && showGiftAnimation && (
-          <Image
-            source={require('../../assets/animations/confetti.gif')}
-            style={popupStyles.giftBackground}
-            resizeMode="cover"
-          />
-        )}
-        <Animated.View
-          style={[
-            popupStyles.popupBox,
-            {
-              transform: [
-                {
-                  scale: scaleAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0.4, 1],
-                  }),
-                },
-              ],
-            },
-          ]}
-        >
-          <Text style={popupStyles.saleText}>Sale</Text>
-          <TouchableOpacity style={popupStyles.closeBtn} onPress={onClose}>
-            <Text style={popupStyles.closeText}>×</Text>
-          </TouchableOpacity>
+//   return (
+//     <Modal visible={visible} transparent animationType="fade">
+//       <View style={popupStyles.overlay}>
+//         {visible && showGiftAnimation && (
+//           <Image
+//             source={require('../../assets/animations/confetti.gif')}
+//             style={popupStyles.giftBackground}
+//             resizeMode="cover"
+//           />
+//         )}
+//         <Animated.View
+//           style={[
+//             popupStyles.popupBox,
+//             {
+//               transform: [
+//                 {
+//                   scale: scaleAnim.interpolate({
+//                     inputRange: [0, 1],
+//                     outputRange: [0.4, 1],
+//                   }),
+//                 },
+//               ],
+//             },
+//           ]}
+//         >
+//           <Text style={popupStyles.saleText}>Sale</Text>
+//           <TouchableOpacity style={popupStyles.closeBtn} onPress={onClose}>
+//             <Text style={popupStyles.closeText}>×</Text>
+//           </TouchableOpacity>
 
-          <Image
-            source={require('../../assets/images/Lubricants.png')}
-            style={popupStyles.productImg}
-            resizeMode="contain"
-          />
-          <Text style={popupStyles.discountText}>Get upto 50% Off</Text>
-        </Animated.View>
-      </View>
-    </Modal>
-  );
-};
+//           <Image
+//             source={require('../../assets/images/Lubricants.png')}
+//             style={popupStyles.productImg}
+//             resizeMode="contain"
+//           />
+//           <Text style={popupStyles.discountText}>Get upto 50% Off</Text>
+//         </Animated.View>
+//       </View>
+//     </Modal>
+//   );
+// };
 
 export default function HomeScreen() {
   const [showPopup, setShowPopup] = useState(false);
@@ -233,7 +233,7 @@ export default function HomeScreen() {
   return (
     <>
       <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
-        <SalePopup visible={showPopup} onClose={() => setShowPopup(false)} />
+        {/* <SalePopup visible={showPopup} onClose={() => setShowPopup(false)} /> */}
         <ImageBackground
           source={require('../../assets/images/home.jpg')}
           style={styles.background}
@@ -272,10 +272,10 @@ export default function HomeScreen() {
                       </Text>
                     </>
                   )}
-                 
-                    {isAuthenticated ? (
-                      <>
-                       <View style={styles.rewardBox}>
+
+                  {isAuthenticated ? (
+                    <>
+                      <View style={styles.rewardBox}>
                         <Text style={styles.rewardLabel}>Reward</Text>
                         <Text style={styles.rewardPoints}>
                           {typeof user === 'object' && user !== null && 'total_points' in user
@@ -284,22 +284,22 @@ export default function HomeScreen() {
                           }
                         </Text>
                         <Text style={styles.rewardPts}>PTS</Text>
-                              </View>
-                      </>
-                    ) : (
-                      <>
-                        <TouchableOpacity
-                          onPress={() => router.push('/Login')}
-                          style={styles.loginButton}
-                        >
-                          <Text style={styles.loginButtonText}>Login to see Points</Text>
-                        </TouchableOpacity>
-                      </>
-                    )}
+                      </View>
+                    </>
+                  ) : (
+                    <>
+                      <TouchableOpacity
+                        onPress={() => router.push('/Login')}
+                        style={styles.loginButton}
+                      >
+                        <Text style={styles.loginButtonText}>Login to see Points</Text>
+                      </TouchableOpacity>
+                    </>
+                  )}
                 </View>
                 <View style={{ flex: 1, alignItems: 'flex-end' }}>
                   <Image
-                    source={heroContent.length > 0 ? heroContent[0].image : require('../../assets/images/family2.png')}
+                    source={heroContent.length > 0 ? heroContent[0].image : null}
                     style={styles.familyImg}
                     resizeMode="contain"
                   />
@@ -369,7 +369,12 @@ export default function HomeScreen() {
             </View>
 
             {/* Brands Section */}
-            <Text style={styles.sectionTitle}>Our Brands</Text>
+            <Text style={{
+              color: "white",
+              fontSize: moderateScale(32),
+              fontFamily: "Sigmar",
+              marginLeft: scale(15),
+            }}>Our Brands</Text>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -394,9 +399,9 @@ export default function HomeScreen() {
             <Text style={styles.bestSellerSubtext}>Find the top most popular items in DKT best sellers.</Text>
             {/* Wishlist Snackbar */}
             {wishlistMessage && (
-              <View style={{ position: "absolute", top: verticalScale(80), left: 0, right: 0, alignItems: "center", zIndex: 20 }}>
-                <View style={{ backgroundColor: "#E53935", paddingHorizontal: scale(24), paddingVertical: verticalScale(12), borderRadius: moderateScale(24) }}>
-                  <Text style={{ color: "#fff", fontWeight: "bold", fontSize: moderateScale(16) }}>{wishlistMessage}</Text>
+              <View style={{ position: 'absolute', top: verticalScale(800), left: 0, right: 0, alignItems: 'center', zIndex: 20 }}>
+                <View style={{ backgroundColor: colors.primaryDark, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 24 }}>
+                  <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>{wishlistMessage}</Text>
                 </View>
               </View>
             )}
@@ -739,7 +744,7 @@ const styles = StyleSheet.create({
   },
   loginButton: {
     backgroundColor: '#E82A2F',
-   width: scale(100),
+    width: scale(100),
     borderRadius: moderateScale(12),
     paddingHorizontal: scale(10),
     paddingVertical: verticalScale(12),

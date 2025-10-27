@@ -105,7 +105,7 @@ const Wishlist: React.FC = () => {
     
     return (
       <View style={styles.card}>
-        <Image source={item.image} style={styles.productImg} resizeMode="cover" />
+        <Image source={item.image} style={styles.productImg} resizeMode="contain" />
         <View style={styles.infoWrap}>
           <Text style={styles.productName}>{item.name}</Text>
           {(() => {

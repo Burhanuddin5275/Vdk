@@ -22,8 +22,8 @@ const BestSeller = () => {
   const { brand } = useLocalSearchParams();
   const [wishlistMessage, setWishlistMessage] = useState<string | null>(null);
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
- const insets = useSafeAreaInsets();
-   const [ads, setAds] = useState<AdsItem[]>([]);
+  const insets = useSafeAreaInsets();
+  const [ads, setAds] = useState<AdsItem[]>([]);
 
 
   useEffect(() => {
@@ -75,165 +75,168 @@ const BestSeller = () => {
   }, [displayList, ads]);
 
   return (
-    <SafeAreaView style={{ flex: 1,paddingBottom: Math.max(insets.bottom, verticalScale(4))  }}>
+    <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
       <ImageBackground
-      source={brand === 'Vidafem' ? require('../assets/images/seller.png') : require('../assets/images/ss1.png')}
-      style={styles.container}
-      resizeMode="cover"
-    >
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: "20%" }}>
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.backBtn} onPress={router.back}>
-            <Ionicons name="arrow-back" size={28} color="white" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Best Seller</Text>
-        </View>
-
-        {/* Product Grid */}
-        <View style={styles.gridWrap}>
-          {mergedData.map((item, idx) => {
-            if (item.type === "product") {
-              const p = item.data;
-              const prod = p as Exclude<Product, { banner: string }>;
-              return (
-                <TouchableOpacity
-                  key={prod.id}
-                  style={{ width: CARD_WIDTH, marginBottom: 32 }}
-                  activeOpacity={0.8}
-                  onPress={() => router.push({ pathname: '/Products', params: { id: prod.id, data: JSON.stringify(prod) } })}
-                >
-                  <LinearGradient
-                    colors={prod.brand === 'Vidafem' ? ['#C3FFFA', '#C3FFFA'] : ['#FFD600', '#FF9800']}
-                    style={styles.productCard}
-                  >
-                    <TouchableOpacity
-                      style={[
-                        styles.heartWrap,
-                        prod.brand === 'Vidafem' && { backgroundColor: '#006400' }
-                      ]}
-                      onPress={async () => {
-                        if (!isAuthenticated) {
-                          setWishlistMessage('Please log in to use wishlist.');
-                          setTimeout(() => setWishlistMessage(null), 1000);
-                          const currentRoute = `/BestSeller${brand ? `?brand=${brand}` : ''}`;
-                          setTimeout(() => router.replace(`/Login?returnTo=${encodeURIComponent(currentRoute)}`), 1000);
-                          return;
-                        }
-                        if (wishlistItems.some((w) => w.id === prod.id)) {
-                          await useWishlistStore.getState().removeFromWishlist(prod.id);
-                          setWishlistMessage('Removed from wishlist');
-                        } else {
-                          const processVariants = (): any[] => {
-                            const rawVariants = prod.variants || [];
-                            if (!Array.isArray(rawVariants)) return [];
-
-                            return rawVariants.flatMap((v: any) => {
-                              // Handle variants with attributes/options
-                              if (v?.attributes) {
-                                const attributes = Array.isArray(v.attributes) ? v.attributes : [v.attributes];
-                                return attributes.flatMap((attr: any) => {
-                                  const options = attr?.options || {};
-                                  const size = options.Size || options.size || Object.values(options)[0];
-                                  if (!size) return [];
-
-                                  return {
-                                    label: String(size),
-                                    price: Number(attr.regular_price || attr.price || v.price || 0),
-                                    ...(attr.sale_price ? { sale_price: Number(attr.sale_price) } : {})
-                                  };
-                                });
-                              }
-                              // Handle simple variants
-                              return {
-                                label: v.label || v.name || '',
-                                price: Number(v.price || 0),
-                                ...(v.sale_price ? { sale_price: Number(v.sale_price) } : {})
-                              };
-                            });
-                          };
-
-                          const variants = processVariants();
-                          const firstVariant = variants[0];
-
-                          await useWishlistStore.getState().addToWishlist({
-                            id: prod.id,
-                            name: prod.name,
-                            regular_price: firstVariant?.price ?? prod.regular_price,
-                            sale_price: firstVariant?.sale_price ?? prod.sale_price,
-                            image: prod.img,
-                            pack: firstVariant?.label || '',
-                            category: prod.Category,
-                            variant: firstVariant ? {
-                              label: firstVariant.label,
-                              price: firstVariant.price,
-                              sale_price: firstVariant.sale_price
-                            } : undefined
-                          });
-                          setWishlistMessage('Added to wishlist');
-                        }
-                        setTimeout(() => setWishlistMessage(null), 2000);
-                      }}
-                    >
-                      <Ionicons name={wishlistItems.some((w) => w.id === prod.id) ? 'heart' : 'heart-outline'} size={20} color="#fff" />
-                    </TouchableOpacity>
-                    <Image source={prod.img} style={{ width: '100%', height: 150, marginBottom: 8, borderRadius: 10, resizeMode: 'contain' }} />
-                  </LinearGradient>
-                  <View style={[
-                    styles.cardFooter,
-                    prod.brand === 'Josh' && { backgroundColor: '#FBF4E4' },
-                    prod.brand === 'OK' && { backgroundColor: colors.secondary },
-                    prod.brand === 'Vidafem' && { backgroundColor: '#C3FFFA' }
-                  ]}>
-                    <View style={styles.footerLeft}>
-                      <Text style={[
-                        styles.cardTitle,
-                        prod.brand === 'Vidafem' && { color: '#006400' }
-                      ]} numberOfLines={3}>{prod.name}</Text>
-                      <Text style={styles.cardRating}>Ratings <Text style={{ color: '#FFD600' }}>{'★'.repeat(prod.rating)}</Text></Text>
-                    </View>
-                    <View>
-                      <ImageBackground
-                        source={prod.brand === 'Vidafem'
-                          ? require('../assets/images/VectorGreen.png')
-                          : require('../assets/images/VectorRed.png')}
-                        style={[styles.ptsBadge, { justifyContent: 'center', alignItems: 'center' }]}
-                        imageStyle={{ borderRadius: moderateScale(6) }}
-                      >
-                        <Text style={[styles.ptsText, { color: 'white' }]}>
-                          {prod.pts}{'\n'}PTS
-                        </Text>
-                      </ImageBackground>
-                    </View>
-                  </View>
-                </TouchableOpacity>
-              );
-            }
-
-            if (item.type === "ad") {
-              const ad = item.data;
-              return (
-                <View key={`ad-${idx}`} style={styles.adBanner}>
-                  <Image source={ad.image} style={styles.adBannerImage} resizeMode="contain" />
-                </View>
-              );
-            }
-
-            return null;
-          })}
-        </View>
-      </ScrollView>
-    
-
-      {wishlistMessage && (
-        <View style={{ position: 'absolute', top: 80, left: 0, right: 0, alignItems: 'center', zIndex: 20 }}>
-          <View style={{ backgroundColor: '#E53935', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 24 }}>
-            <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>{wishlistMessage}</Text>
+        source={brand === 'Vidafem' ? require('../assets/images/seller.png') : require('../assets/images/ss1.png')}
+        style={styles.container}
+        resizeMode="cover"
+      >
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: "20%" }}>
+          <View style={styles.header}>
+            <TouchableOpacity style={styles.backBtn} onPress={router.back}>
+              <Ionicons name="arrow-back" size={28} color="white" />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Best Seller</Text>
+            <TouchableOpacity style={styles.cartBtn} onPress={() => router.push('/(tabs)/Cart')}>
+              <Ionicons name="cart-outline" size={24} color="white" />
+            </TouchableOpacity>
           </View>
-        </View>
-      )}
+
+          {/* Product Grid */}
+          <View style={styles.gridWrap}>
+            {mergedData.map((item, idx) => {
+              if (item.type === "product") {
+                const p = item.data;
+                const prod = p as Exclude<Product, { banner: string }>;
+                return (
+                  <TouchableOpacity
+                    key={prod.id}
+                    style={{ width: CARD_WIDTH, marginBottom: 32 }}
+                    activeOpacity={0.8}
+                    onPress={() => router.push({ pathname: '/Products', params: { id: prod.id, data: JSON.stringify(prod) } })}
+                  >
+                    <LinearGradient
+                      colors={prod.brand === 'Vidafem' ? ['#C3FFFA', '#C3FFFA'] : ['#FFD600', '#FF9800']}
+                      style={styles.productCard}
+                    >
+                      <TouchableOpacity
+                        style={[
+                          styles.heartWrap,
+                          prod.brand === 'Vidafem' && { backgroundColor: '#006400' }
+                        ]}
+                        onPress={async () => {
+                          if (!isAuthenticated) {
+                            setWishlistMessage('Please log in to use wishlist.');
+                            setTimeout(() => setWishlistMessage(null), 1000);
+                            const currentRoute = `/BestSeller${brand ? `?brand=${brand}` : ''}`;
+                            setTimeout(() => router.replace(`/Login?returnTo=${encodeURIComponent(currentRoute)}`), 1000);
+                            return;
+                          }
+                          if (wishlistItems.some((w) => w.id === prod.id)) {
+                            await useWishlistStore.getState().removeFromWishlist(prod.id);
+                            setWishlistMessage('Removed from wishlist');
+                          } else {
+                            const processVariants = (): any[] => {
+                              const rawVariants = prod.variants || [];
+                              if (!Array.isArray(rawVariants)) return [];
+
+                              return rawVariants.flatMap((v: any) => {
+                                // Handle variants with attributes/options
+                                if (v?.attributes) {
+                                  const attributes = Array.isArray(v.attributes) ? v.attributes : [v.attributes];
+                                  return attributes.flatMap((attr: any) => {
+                                    const options = attr?.options || {};
+                                    const size = options.Size || options.size || Object.values(options)[0];
+                                    if (!size) return [];
+
+                                    return {
+                                      label: String(size),
+                                      price: Number(attr.regular_price || attr.price || v.price || 0),
+                                      ...(attr.sale_price ? { sale_price: Number(attr.sale_price) } : {})
+                                    };
+                                  });
+                                }
+                                // Handle simple variants
+                                return {
+                                  label: v.label || v.name || '',
+                                  price: Number(v.price || 0),
+                                  ...(v.sale_price ? { sale_price: Number(v.sale_price) } : {})
+                                };
+                              });
+                            };
+
+                            const variants = processVariants();
+                            const firstVariant = variants[0];
+
+                            await useWishlistStore.getState().addToWishlist({
+                              id: prod.id,
+                              name: prod.name,
+                              regular_price: firstVariant?.price ?? prod.regular_price,
+                              sale_price: firstVariant?.sale_price ?? prod.sale_price,
+                              image: prod.img,
+                              pack: firstVariant?.label || '',
+                              category: prod.Category,
+                              variant: firstVariant ? {
+                                label: firstVariant.label,
+                                price: firstVariant.price,
+                                sale_price: firstVariant.sale_price
+                              } : undefined
+                            });
+                            setWishlistMessage('Added to wishlist');
+                          }
+                          setTimeout(() => setWishlistMessage(null), 2000);
+                        }}
+                      >
+                        <Ionicons name={wishlistItems.some((w) => w.id === prod.id) ? 'heart' : 'heart-outline'} size={20} color="#fff" />
+                      </TouchableOpacity>
+                      <Image source={prod.img} style={{ width: '100%', height: 150, marginBottom: 8, borderRadius: 10, resizeMode: 'contain' }} />
+                    </LinearGradient>
+                    <View style={[
+                      styles.cardFooter,
+                      prod.brand === 'Josh' && { backgroundColor: '#FBF4E4' },
+                      prod.brand === 'OK' && { backgroundColor: colors.secondary },
+                      prod.brand === 'Vidafem' && { backgroundColor: '#C3FFFA' }
+                    ]}>
+                      <View style={styles.footerLeft}>
+                        <Text style={[
+                          styles.cardTitle,
+                          prod.brand === 'Vidafem' && { color: '#006400' }
+                        ]} numberOfLines={2}>{prod.name}</Text>
+                        <Text style={styles.cardRating}>Ratings <Text style={{ color: '#FFD600' }}>{'★'.repeat(prod.rating)}</Text></Text>
+                      </View>
+                      <View>
+                        <ImageBackground
+                          source={prod.brand === 'Vidafem'
+                            ? require('../assets/images/VectorGreen.png')
+                            : require('../assets/images/VectorRed.png')}
+                          style={[styles.ptsBadge, { justifyContent: 'center', alignItems: 'center' }]}
+                          imageStyle={{ borderRadius: moderateScale(6) }}
+                        >
+                          <Text style={[styles.ptsText, { color: 'white' }]}>
+                            {prod.pts}{'\n'}PTS
+                          </Text>
+                        </ImageBackground>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                );
+              }
+
+              if (item.type === "ad") {
+                const ad = item.data;
+                return (
+                  <View key={`ad-${idx}`} style={styles.adBanner}>
+                    <Image source={ad.image} style={styles.adBannerImage} resizeMode="contain" />
+                  </View>
+                );
+              }
+
+              return null;
+            })}
+          </View>
+        </ScrollView>
+
+
+        {wishlistMessage && (
+          <View style={{ position: 'absolute', top: 80, left: 0, right: 0, alignItems: 'center', zIndex: 20 }}>
+            <View style={{ backgroundColor: '#E53935', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 24 }}>
+              <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>{wishlistMessage}</Text>
+            </View>
+          </View>
+        )}
       </ImageBackground>
     </SafeAreaView>
-   
+
   );
 };
 
@@ -242,13 +245,20 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-       flexDirection: 'row',
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-start',
+    justifyContent: 'space-between',
     height: verticalScale(80),
     position: 'relative',
     paddingHorizontal: scale(18),
     marginTop: verticalScale(20),
+  },
+
+  cartBtn: {
+    width: scale(40),
+    height: scale(40),
+    justifyContent: 'center',
+    alignItems: 'flex-end',
   },
   backBtn: {
     width: scale(40),
@@ -257,18 +267,10 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   headerTitle: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0,
     textAlign: 'center',
-    textAlignVertical: 'center',
-    fontSize: moderateScale(28),
+    fontSize: moderateScale(25),
     color: '#fff',
     fontFamily: 'Sigmar',
-    letterSpacing: 1,
-    lineHeight: verticalScale(55),
   },
   gridWrap: {
     flexDirection: 'row',

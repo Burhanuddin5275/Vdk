@@ -155,65 +155,64 @@ const Categories = () => {
             <TouchableOpacity style={styles.backBtn} onPress={router.back}>
               <Ionicons name="arrow-back" size={28} color="white" />
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>{selectedCategory ? selectedCategory : 'Condom'}</Text>
+            <Text style={styles.headerTitle} numberOfLines={1}>{selectedCategory ? selectedCategory : null}</Text>
+            <TouchableOpacity style={styles.cartBtn} onPress={() => router.push('/(tabs)/Cart')}>
+              <Ionicons name="cart-outline" size={24} color="white" />
+            </TouchableOpacity>
           </View>
 
-        <View style={styles.adSliderContainer}>
-  {/* Update the banner filtering logic in the return statement */}
-  <ScrollView
-    horizontal
-    showsHorizontalScrollIndicator={false}
-    pagingEnabled
-    onMomentumScrollEnd={(event) => {
-      const index = Math.round(event.nativeEvent.contentOffset.x / screenWidth);
-      setCurrentAdIndex(index);
-    }}
-    ref={scrollViewRef}
-  >
-    {banner
-      .filter(ad => {
-        if (!selectedCategory) return true; // Show all banners if no category is selected
-        
-        const adCategory = ad.category?.toLowerCase();
-        const currentCategory = String(selectedCategory).toLowerCase();
-        
-        // Match exact category or handle plural/singular forms
-        return adCategory === currentCategory || 
-               adCategory === currentCategory + 's' || 
-               adCategory + 's' === currentCategory;
-      })
-      .map((ad, index) => (
-        <View key={index} style={styles.adSlide}>
-          <Image
-            source={ad.image}
-            style={styles.adSlideImage}
-            resizeMode="contain"
-          />
-        </View>
-      ))}
-  </ScrollView>
+          <View style={styles.adSliderContainer}>
+            {/* Update the banner filtering logic in the return statement */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              pagingEnabled
+              onMomentumScrollEnd={(event) => {
+                const index = Math.round(event.nativeEvent.contentOffset.x / screenWidth);
+                setCurrentAdIndex(index);
+              }}
+              ref={scrollViewRef}
+            >
+              {banner
+                .filter(ad => {
+                  if (!selectedCategory) return true; // Show all banners if no category is selected
 
-  <View style={styles.adIndicators}>
-    {banner
-      .filter(ad => {
-        if (!selectedCategory) return true;
-        const adCategory = ad.category?.toLowerCase();
-        const currentCategory = String(selectedCategory).toLowerCase();
-        return adCategory === currentCategory || 
-               adCategory === currentCategory + 's' || 
-               adCategory + 's' === currentCategory;
-      })
-      .map((_, index) => (
-        <View
-          key={index}
-          style={[
-            styles.adIndicator,
-            index === currentAdIndex && styles.adIndicatorActive
-          ]}
-        />
-      ))}
-  </View>
-</View>
+                  const adCategory = ad.category?.toLowerCase();
+                  const currentCategory = String(selectedCategory).toLowerCase();
+
+                  // Match exact category or handle plural/singular forms
+                  return adCategory === currentCategory ||
+                    adCategory === currentCategory + 's' ||
+                    adCategory + 's' === currentCategory;
+                })
+                .map((ad, index) => (
+                  <View key={index} style={styles.adSlide}>
+                    <Image
+                      source={ad.image}
+                      style={styles.adSlideImage}
+                      resizeMode="contain"
+                    />
+                  </View>
+                ))}
+            </ScrollView>
+
+            <View>
+              {banner
+                .filter(ad => {
+                  if (!selectedCategory) return true;
+                  const adCategory = ad.category?.toLowerCase();
+                  const currentCategory = String(selectedCategory).toLowerCase();
+                  return adCategory === currentCategory ||
+                    adCategory === currentCategory + 's' ||
+                    adCategory + 's' === currentCategory;
+                })
+                .map((_, index) => (
+                  <View
+                    key={index}
+                  />
+                ))}
+            </View>
+          </View>
 
           {!selectedCategory ? (
             <>
@@ -476,11 +475,18 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-start',
+    justifyContent: 'space-between',
     height: verticalScale(80),
     position: 'relative',
     paddingHorizontal: scale(18),
     marginTop: verticalScale(20),
+  },
+
+  cartBtn: {
+    width: scale(40),
+    height: scale(40),
+    justifyContent: 'center',
+    alignItems: 'flex-end',
   },
   backBtn: {
     width: scale(40),
@@ -489,18 +495,10 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   headerTitle: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0,
     textAlign: 'center',
-    textAlignVertical: 'center',
-    fontSize: moderateScale(28),
+    fontSize: moderateScale(25),
     color: '#fff',
     fontFamily: 'Sigmar',
-    letterSpacing: 1,
-    lineHeight: verticalScale(55),
   },
   tabsWrap: {
     alignItems: 'center',
@@ -637,26 +635,6 @@ const styles = StyleSheet.create({
   adSlideImage: {
     width: '100%',
     height: verticalScale(137)
-  },
-  adIndicators: {
-    flexDirection: 'row',
-    position: 'absolute',
-    bottom: verticalScale(20),
-    alignSelf: 'center',
-  },
-  adIndicator: {
-    width: moderateScale(10),
-    height: moderateScale(10),
-    borderRadius: moderateScale(15),
-    backgroundColor: 'rgba(255, 255, 255, 0.5)',
-    marginHorizontal: moderateScale(4),
-  },
-  adIndicatorActive: {
-    backgroundColor: 'white',
-    width: moderateScale(10),
-    height: moderateScale(10),
-    borderRadius: moderateScale(15),
-    marginHorizontal: moderateScale(4),
   },
 });
 

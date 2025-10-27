@@ -28,21 +28,21 @@ const Brands = () => {
   const scrollViewRef = useRef<ScrollView>(null);
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const wishlistItems = useWishlistStore((state) => state.items);
- const [banner, setBanner] = useState<BannerItem[]>([]);
-   const [ads, setAds] = useState<AdsItem[]>([]); 
+  const [banner, setBanner] = useState<BannerItem[]>([]);
+  const [ads, setAds] = useState<AdsItem[]>([]);
   const [allProducts, setAllProducts] = useState<Product[]>([]);
-    useEffect(() => {
-      (async () => {
-        const banners = await fetchBanners();
-        setBanner(banners);
-      })(); 
-    }, []); 
-        useEffect(() => {
-      (async () => {
-        const Ads = await fetchAds();
-        setAds(Ads);
-      })(); 
-    }, []); 
+  useEffect(() => {
+    (async () => {
+      const banners = await fetchBanners();
+      setBanner(banners);
+    })();
+  }, []);
+  useEffect(() => {
+    (async () => {
+      const Ads = await fetchAds();
+      setAds(Ads);
+    })();
+  }, []);
   useEffect(() => {
     (async () => {
       const data = await fetchProducts();
@@ -66,7 +66,7 @@ const Brands = () => {
   }
 
   const displayList = filtered.filter((p) => {
-    const hasRequiredFields = 
+    const hasRequiredFields =
       'brand' in p &&
       'id' in p &&
       'name' in p &&
@@ -75,10 +75,10 @@ const Brands = () => {
       'rating' in p &&
       'pts' in p &&
       (!selectedBrand || p.brand === selectedBrand);
-    
+
     if (!hasRequiredFields) {
       console.log('Product missing required fields:', {
-        id: 'id' in p ,
+        id: 'id' in p,
         name: 'name' in p,
         brand: 'brand' in p,
         regular_price: 'regular_price' in p,
@@ -88,7 +88,7 @@ const Brands = () => {
         matchesBrand: selectedBrand ? ('brand' in p ? p.brand === selectedBrand : 'NO BRAND') : 'N/A'
       });
     }
-    
+
     return hasRequiredFields;
   }) as (Product & { id: string; name: string; brand: string; regular_price: number; img: any; rating: number; pts: number })[];
 
@@ -141,213 +141,212 @@ const Brands = () => {
   const insets = useSafeAreaInsets();
 
   return (
-    <SafeAreaView style={{flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4))}}>
+    <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
       <ImageBackground
         source={brand === 'Vidafem' ? require('../assets/images/ss2.png') : require('../assets/images/ss1.png')}
         style={styles.container}
         resizeMode="cover"
       >
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: "20%" }}>
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.backBtn} onPress={router.back}>
-            <Ionicons name="arrow-back" size={28} color="white" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>{brand || 'Brands'}</Text>
-        </View>
-        <View style={styles.adSliderContainer}>
-          <ScrollView
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            onMomentumScrollEnd={e => {
-              const index = Math.round(e.nativeEvent.contentOffset.x / screenWidth);
-              setCurrentAdIndex(index);
-            }}
-            ref={scrollViewRef}
-          >
-            {banner
-              .filter(ad => displayList.some(p => p.brand === ad.brand))
-              .map((ad, index) => (
-                <View key={index} style={styles.adSlide}>
-                  <Image source={ad.image} style={styles.adSlideImage} resizeMode="contain" />
-                </View>
-              ))}
-          </ScrollView>
-
-          <View style={styles.adIndicators}>
-            {banner
-              .filter(ad => displayList.some(p => p.brand === ad.brand))
-              .map((_, index) => (
-                <View
-                  key={index}
-                  style={[
-                    styles.adIndicator,
-                    index === currentAdIndex && styles.adIndicatorActive
-                  ]}
-                />
-              ))}
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: "20%" }}>
+          <View style={styles.header}>
+            <TouchableOpacity style={styles.backBtn} onPress={router.back}>
+              <Ionicons name="arrow-back" size={28} color="white" />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle} numberOfLines={1}>{brand || 'Brands'}</Text>
+            <TouchableOpacity style={styles.cartBtn} onPress={() => router.push('/(tabs)/Cart')}>
+              <Ionicons name="cart-outline" size={24} color="white" />
+            </TouchableOpacity>
           </View>
-        </View>
-        
-        <View style={styles.gridWrap}>
-          {mergedData.map((item, idx) => {
-            if (item.type === "product") {
-              const prod = item.data;
-              return (
-                <TouchableOpacity
-                  key={prod.id}
-                  style={{
-                    width: CARD_WIDTH,
-                    marginBottom: verticalScale(32),
-                  }}
-                  activeOpacity={0.8}
-                  onPress={() => {
-                    const productData = {
-                      ...prod,
-                      regular_price: prod.regular_price || 0, 
-                    };
-                    router.push({ 
-                      pathname: '/Products', 
-                      params: { 
-                        id: prod.id, 
-                        data: JSON.stringify(productData),
-                        category: prod.Category || '',
-                        backgroundImage: prod.brand === 'Vidafem' ? 'ss2' : 'ss1'
-                      } 
-                    });
-                  }}
-                >
-                  <LinearGradient
-                    colors={prod.brand === 'Vidafem' ? ['#C3FFFA', '#C3FFFA'] : ['#FFD600', '#FF9800']}
-                    style={styles.productCard}
-                  >
-                    <TouchableOpacity
-                      style={[styles.heartWrap, prod.brand === 'Vidafem' && { backgroundColor: '#006400' }]}
-                      onPress={async () => {
-                        if (!isAuthenticated) {
-                          setWishlistMessage('Please log in to use wishlist.');
-                          setTimeout(() => {
-                            setWishlistMessage(null);
-                            const params = new URLSearchParams();
-                            if (brand) params.append('brand', brand as string);
-                            if (category) params.append('category', category as string);
-                            const currentRoute = `/Brands${params.toString() ? `?${params.toString()}` : ''}`;
-                            router.replace(`/Login?returnTo=${encodeURIComponent(currentRoute)}`);
-                          }, 1000);
-                          return;
-                        }
-
-                        if (wishlistItems.some(w => w.id === prod.id)) {
-                          await useWishlistStore.getState().removeFromWishlist(prod.id);
-                          setWishlistMessage('Removed from wishlist');
-                        } else {
-                          const processVariants = (): any[] => {
-                            const rawVariants = prod.variants || [];
-                            if (!Array.isArray(rawVariants)) return [];
-
-                            return rawVariants.flatMap((v: any) => {
-                              // Handle variants with attributes/options
-                              if (v?.attributes) {
-                                const attributes = Array.isArray(v.attributes) ? v.attributes : [v.attributes];
-                                return attributes.flatMap((attr: any) => {
-                                  const options = attr?.options || {};
-                                  const size = options.Size || options.size || Object.values(options)[0];
-                                  if (!size) return [];
-
-                                  return {
-                                    label: String(size),
-                                    price: Number(attr.regular_price || attr.price || v.price || 0),
-                                    ...(attr.sale_price ? { sale_price: Number(attr.sale_price) } : {})
-                                  };
-                                });
-                              }
-                              // Handle simple variants
-                              return {
-                                label: v.label || v.name || '',
-                                price: Number(v.price || 0),
-                                ...(v.sale_price ? { sale_price: Number(v.sale_price) } : {})
-                              };
-                            });
-                          };
-
-                          const variants = processVariants();
-                          const firstVariant = variants[0];
-
-                          await useWishlistStore.getState().addToWishlist({
-                            id: prod.id,
-                            name: prod.name,
-                            regular_price: firstVariant?.price ?? prod.regular_price,
-                            sale_price: firstVariant?.sale_price ?? prod.sale_price,
-                            image: prod.img,
-                            pack: firstVariant?.label || '',
-                            category: prod.Category,
-                            variant: firstVariant ? {
-                              label: firstVariant.label,
-                              price: firstVariant.price,
-                              sale_price: firstVariant.sale_price
-                            } : undefined
-                          });
-                          setWishlistMessage('Added to wishlist');
-                        }
-                        setTimeout(() => setWishlistMessage(null), 2000);
-                      }}
-                    >
-                      <Ionicons name={wishlistItems.some(w => w.id === prod.id) ? 'heart' : 'heart-outline'} size={20} color="#fff" />
-                    </TouchableOpacity>
-                    <Image source={prod.img} style={{ width: '100%', height: verticalScale(150), borderRadius: 10, resizeMode: 'contain' }} />
-                  </LinearGradient>
-                  <View style={[
-                    styles.cardFooter,
-                    prod.brand === 'Josh' && { backgroundColor: '#FBF4E4' },
-                    prod.brand === 'OK' && { backgroundColor: colors.secondary },
-                    prod.brand === 'Vidafem' && { backgroundColor: '#C3FFFA' }
-                  ]}>
-                    <View style={styles.footerLeft}>
-                      <Text style={[styles.cardTitle, prod.brand === 'Vidafem' && { color: '#006400' }]} numberOfLines={2}>
-                        {prod.name}
-                      </Text>
-                      <Text style={styles.cardRating}>Ratings <Text style={{ color: '#FFD600' }}>{'★'.repeat(prod.rating)}</Text></Text>
-                    </View>
-                    <ImageBackground
-                      source={
-                        prod.brand === 'Vidafem'
-                          ? require('../assets/images/VectorGreen.png')
-                          : require('../assets/images/VectorRed.png')
-                      }
-                      style={[styles.ptsBadge, { justifyContent: 'center', alignItems: 'center' }]}
-                    >
-                      <Text style={styles.ptsText}>
-                        {prod.pts}{'\n'}PTS
-                      </Text>
-                    </ImageBackground>
+          <View style={styles.adSliderContainer}>
+            <ScrollView
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              onMomentumScrollEnd={e => {
+                const index = Math.round(e.nativeEvent.contentOffset.x / screenWidth);
+                setCurrentAdIndex(index);
+              }}
+              ref={scrollViewRef}
+            >
+              {banner
+                .filter(ad => displayList.some(p => p.brand === ad.brand))
+                .map((ad, index) => (
+                  <View key={index} style={styles.adSlide}>
+                    <Image source={ad.image} style={styles.adSlideImage} resizeMode="contain" />
                   </View>
-                </TouchableOpacity>
-              );
-            }
+                ))}
+            </ScrollView>
 
-            // 🔽 Inline Ad Banner
-            if (item.type === "ad") {
-              return (
-                <View key={`ad-${idx}`} style={styles.adBanner}>
-                  <Image source={item.data.image} style={styles.adBannerImage} resizeMode="contain" />
-                </View>
-              );
-            }
-
-            return null;
-          })}
-        </View>
-      </ScrollView>
-
-      {/* 🔔 Wishlist Toast */}
-      {wishlistMessage && (
-        <View style={{ position: 'absolute', top: 80, left: 0, right: 0, alignItems: 'center', zIndex: 20 }}>
-          <View style={{ backgroundColor: '#E53935', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 24 }}>
-            <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>{wishlistMessage}</Text>
+            <View>
+              {banner
+                .filter(ad => displayList.some(p => p.brand === ad.brand))
+                .map((_, index) => (
+                  <View
+                    key={index}
+                  />
+                ))}
+            </View>
           </View>
-        </View>
-      )}
-    </ImageBackground>
+
+          <View style={styles.gridWrap}>
+            {mergedData.map((item, idx) => {
+              if (item.type === "product") {
+                const prod = item.data;
+                return (
+                  <TouchableOpacity
+                    key={prod.id}
+                    style={{
+                      width: CARD_WIDTH,
+                      marginBottom: verticalScale(32),
+                    }}
+                    activeOpacity={0.8}
+                    onPress={() => {
+                      const productData = {
+                        ...prod,
+                        regular_price: prod.regular_price || 0,
+                      };
+                      router.push({
+                        pathname: '/Products',
+                        params: {
+                          id: prod.id,
+                          data: JSON.stringify(productData),
+                          category: prod.Category || '',
+                          backgroundImage: prod.brand === 'Vidafem' ? 'ss2' : 'ss1'
+                        }
+                      });
+                    }}
+                  >
+                    <LinearGradient
+                      colors={prod.brand === 'Vidafem' ? ['#C3FFFA', '#C3FFFA'] : ['#FFD600', '#FF9800']}
+                      style={styles.productCard}
+                    >
+                      <TouchableOpacity
+                        style={[styles.heartWrap, prod.brand === 'Vidafem' && { backgroundColor: '#006400' }]}
+                        onPress={async () => {
+                          if (!isAuthenticated) {
+                            setWishlistMessage('Please log in to use wishlist.');
+                            setTimeout(() => {
+                              setWishlistMessage(null);
+                              const params = new URLSearchParams();
+                              if (brand) params.append('brand', brand as string);
+                              if (category) params.append('category', category as string);
+                              const currentRoute = `/Brands${params.toString() ? `?${params.toString()}` : ''}`;
+                              router.replace(`/Login?returnTo=${encodeURIComponent(currentRoute)}`);
+                            }, 1000);
+                            return;
+                          }
+
+                          if (wishlistItems.some(w => w.id === prod.id)) {
+                            await useWishlistStore.getState().removeFromWishlist(prod.id);
+                            setWishlistMessage('Removed from wishlist');
+                          } else {
+                            const processVariants = (): any[] => {
+                              const rawVariants = prod.variants || [];
+                              if (!Array.isArray(rawVariants)) return [];
+
+                              return rawVariants.flatMap((v: any) => {
+                                // Handle variants with attributes/options
+                                if (v?.attributes) {
+                                  const attributes = Array.isArray(v.attributes) ? v.attributes : [v.attributes];
+                                  return attributes.flatMap((attr: any) => {
+                                    const options = attr?.options || {};
+                                    const size = options.Size || options.size || Object.values(options)[0];
+                                    if (!size) return [];
+
+                                    return {
+                                      label: String(size),
+                                      price: Number(attr.regular_price || attr.price || v.price || 0),
+                                      ...(attr.sale_price ? { sale_price: Number(attr.sale_price) } : {})
+                                    };
+                                  });
+                                }
+                                // Handle simple variants
+                                return {
+                                  label: v.label || v.name || '',
+                                  price: Number(v.price || 0),
+                                  ...(v.sale_price ? { sale_price: Number(v.sale_price) } : {})
+                                };
+                              });
+                            };
+
+                            const variants = processVariants();
+                            const firstVariant = variants[0];
+
+                            await useWishlistStore.getState().addToWishlist({
+                              id: prod.id,
+                              name: prod.name,
+                              regular_price: firstVariant?.price ?? prod.regular_price,
+                              sale_price: firstVariant?.sale_price ?? prod.sale_price,
+                              image: prod.img,
+                              pack: firstVariant?.label || '',
+                              category: prod.Category,
+                              variant: firstVariant ? {
+                                label: firstVariant.label,
+                                price: firstVariant.price,
+                                sale_price: firstVariant.sale_price
+                              } : undefined
+                            });
+                            setWishlistMessage('Added to wishlist');
+                          }
+                          setTimeout(() => setWishlistMessage(null), 2000);
+                        }}
+                      >
+                        <Ionicons name={wishlistItems.some(w => w.id === prod.id) ? 'heart' : 'heart-outline'} size={20} color="#fff" />
+                      </TouchableOpacity>
+                      <Image source={prod.img} style={{ width: '100%', height: verticalScale(150), borderRadius: 10, resizeMode: 'contain' }} />
+                    </LinearGradient>
+                    <View style={[
+                      styles.cardFooter,
+                      prod.brand === 'Josh' && { backgroundColor: '#FBF4E4' },
+                      prod.brand === 'OK' && { backgroundColor: colors.secondary },
+                      prod.brand === 'Vidafem' && { backgroundColor: '#C3FFFA' }
+                    ]}>
+                      <View style={styles.footerLeft}>
+                        <Text style={[styles.cardTitle, prod.brand === 'Vidafem' && { color: '#006400' }]} numberOfLines={2}>
+                          {prod.name}
+                        </Text>
+                        <Text style={styles.cardRating}>Ratings <Text style={{ color: '#FFD600' }}>{'★'.repeat(prod.rating)}</Text></Text>
+                      </View>
+                      <ImageBackground
+                        source={
+                          prod.brand === 'Vidafem'
+                            ? require('../assets/images/VectorGreen.png')
+                            : require('../assets/images/VectorRed.png')
+                        }
+                        style={[styles.ptsBadge, { justifyContent: 'center', alignItems: 'center' }]}
+                      >
+                        <Text style={styles.ptsText}>
+                          {prod.pts}{'\n'}PTS
+                        </Text>
+                      </ImageBackground>
+                    </View>
+                  </TouchableOpacity>
+                );
+              }
+
+              // 🔽 Inline Ad Banner
+              if (item.type === "ad") {
+                return (
+                  <View key={`ad-${idx}`} style={styles.adBanner}>
+                    <Image source={item.data.image} style={styles.adBannerImage} resizeMode="contain" />
+                  </View>
+                );
+              }
+
+              return null;
+            })}
+          </View>
+        </ScrollView>
+
+        {/* 🔔 Wishlist Toast */}
+        {wishlistMessage && (
+          <View style={{ position: 'absolute', top: 80, left: 0, right: 0, alignItems: 'center', zIndex: 20 }}>
+            <View style={{ backgroundColor: '#E53935', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 24 }}>
+              <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>{wishlistMessage}</Text>
+            </View>
+          </View>
+        )}
+      </ImageBackground>
     </SafeAreaView>
   );
 };
@@ -359,11 +358,18 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-start',
+    justifyContent: 'space-between',
     height: verticalScale(80),
     position: 'relative',
     paddingHorizontal: scale(18),
     marginTop: verticalScale(20),
+  },
+
+  cartBtn: {
+    width: scale(40),
+    height: scale(40),
+    justifyContent: 'center',
+    alignItems: 'flex-end',
   },
   backBtn: {
     width: scale(40),
@@ -372,18 +378,10 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   headerTitle: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0,
     textAlign: 'center',
-    textAlignVertical: 'center',
-    fontSize: moderateScale(28),
+    fontSize: moderateScale(25),
     color: '#fff',
     fontFamily: 'Sigmar',
-    letterSpacing: 1,
-    lineHeight: verticalScale(55),
   },
   banner: {
     width: '100%',
@@ -481,7 +479,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   productCard: {
-   borderRadius: moderateScale(18),
+    borderRadius: moderateScale(18),
     width: '100%',
     paddingTop: verticalScale(18),
     paddingBottom: 0,
@@ -515,24 +513,9 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  adIndicators: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: verticalScale(10),
-  },
-  adIndicator: {
-    width: scale(8),
-    height: scale(8),
-    borderRadius: moderateScale(4),
-    backgroundColor: 'rgba(255, 255, 255, 0.5)',
-    marginHorizontal: scale(4),
-  },
-  adIndicatorActive: {
-    backgroundColor: 'white',
-  },
   adBanner: {
     width: '100%',
-    height: screenWidth * 0.3, 
+    height: screenWidth * 0.3,
     borderRadius: moderateScale(16),
     marginBottom: verticalScale(28),
     overflow: 'hidden',

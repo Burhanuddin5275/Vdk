@@ -19,7 +19,8 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/logo.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#ffffff",
+         "resizeMode": "contain"
       },
       "edgeToEdgeEnabled": true,
       "package": "com.burhanuddin4747.dkt",
