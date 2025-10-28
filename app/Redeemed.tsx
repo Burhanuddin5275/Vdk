@@ -150,9 +150,10 @@ const Redeemed = () => {
           {/* Content based on active tab */}
           <ScrollView contentContainerStyle={styles.contentContainer}>
             {loading ? (
-              <View style={styles.loadingContainer}>
-                <Text style={styles.loadingText}>Loading orders...</Text>
-              </View>
+            <View style={styles.emptyContainer}>
+                <Ionicons name="receipt-outline" size={48} color={colors.white} />
+                <Text style={styles.emptyText}>No {activeTab === 'process' ? 'active' : 'completed'} orders found</Text>
+              </View> 
             ) : error ? (
               <View style={styles.errorContainer}>
                 <Text style={styles.errorText}>{error}</Text>

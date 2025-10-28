@@ -1,14 +1,14 @@
+import { useAuth } from '@/hooks/useAuth';
 import { fetchHeroes, type HeroItem } from '@/services/heroes';
+import { fetchUsers, UserItem } from '@/services/user';
 import { selectIsAuthenticated } from '@/store/authSlice';
 import { useAppSelector } from '@/store/hooks';
-import { RootState } from '@/store/store';
-import { useAuth } from '@/hooks/useAuth';
 import { colors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Dimensions, Easing, Image, ImageBackground, Modal, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Dimensions, Image, ImageBackground, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { useWishlistStore } from '../../app/Wishlist';
@@ -16,7 +16,6 @@ import { fetchAds, type AdsItem } from '../../services/ads';
 import { fetchBrands, type BrandItem } from '../../services/brands';
 import { fetchCategories, type CategoryItem } from '../../services/categories';
 import { fetchProducts } from '../../services/products';
-import { fetchUsers, UserItem } from '@/services/user';
 
 type SalePopupProps = {
   visible: boolean;
@@ -106,6 +105,8 @@ export default function HomeScreen() {
   const { phone, token } = useAuth();
   const loadWishlist = useWishlistStore(state => state.loadWishlist);
   const [user, setUser] = useState<UserItem | string | null | undefined>(undefined);
+  const { logout } = useAuth();
+
   useEffect(() => {
     const loadUsers = async () => {
       try {
@@ -117,19 +118,34 @@ export default function HomeScreen() {
           console.log('Matched user:', matchedUser);
         } else {
           console.log('No user found with phone:', phone);
+          // If no matching user found, log them out
+          if (phone) {
+            console.log('Logging out user due to phone number mismatch');
+            logout();
+            // Optionally redirect to login screen
+            router.replace('/(tabs)/Home');
+          }
           setUser(token);
         }
       } catch (error) {
         console.error('Error loading users:', error);
+        // On error, we'll keep the user logged in but log the error
         setUser(token);
       }
     };
+
     if (phone) {
       loadUsers();
     } else {
+      // If no phone number is available, log out the user
+      if (token) {
+        console.log('No phone number available, logging out user');
+        logout();
+        router.replace('/(tabs)/Home');
+      }
       setUser(token);
     }
-  },);
+  }, [phone, token, logout]);
 
   useEffect(() => {
     const initWishlistAndUser = async () => {
@@ -247,7 +263,10 @@ export default function HomeScreen() {
                 <View style={{ width: scale(140), paddingLeft: scale(16) }}>
                   {heroContent.length > 0 ? (
                     <>
-                      <Text style={styles.hello}>
+                      <Text style={styles.hello}
+                        numberOfLines={2}
+                        ellipsizeMode="tail"
+                      >
                         {heroContent[0].title}
                       </Text>
                       <Text
@@ -259,18 +278,7 @@ export default function HomeScreen() {
                       </Text>
                     </>
                   ) : (
-                    <>
-                      <Text style={styles.hello}>
-                        Hello!{"\n"}Hussain
-                      </Text>
-                      <Text
-                        style={styles.subtext}
-                        numberOfLines={5}
-                        ellipsizeMode="tail"
-                      >
-                        What would you like to buy?
-                      </Text>
-                    </>
+                    null
                   )}
 
                   {isAuthenticated ? (
@@ -691,7 +699,6 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: moderateScale(32),
     borderBottomRightRadius: moderateScale(32),
     paddingVertical: verticalScale(10),
-    paddingTop: verticalScale(10),
     height: "auto"
   },
   headerRow: {

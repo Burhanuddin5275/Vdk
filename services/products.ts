@@ -29,7 +29,7 @@ function toProduct(item: ApiProduct): Product {
   const brand = item.brand ?? item.vendor ?? item.manufacturer ?? "Unknown";
   const Category = item.category ?? item.Category ?? item.type ?? "General";
   const imageUrl = item.image?.url ?? item.image ?? item.thumbnail ?? item.img ?? null;
-  const img = imageUrl ? { uri: String(imageUrl) } : require("../assets/images/card.png");
+  const img = imageUrl ? { uri: String(imageUrl) } : null;
   const rating = Number(item.rating ?? item.stars ?? 5);
   const quantity = Number(item.quantity ?? null);
   const stock = Number(item.stock ?? item.quantity ?? 0);

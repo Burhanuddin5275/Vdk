@@ -1,26 +1,27 @@
-import React, { useState, useEffect } from 'react';
+import SuccessModal from '@/components/SuccessModal';
+import { useAuth } from '@/hooks/useAuth';
+import { fetchUsers, UserItem } from '@/services/user';
+import { Address, useAddressStore } from '@/store/addressStore';
+import { colors } from '@/theme/colors';
+import { Api_url } from '@/url/url';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  SafeAreaView,
   ActivityIndicator,
   Alert,
   ImageBackground,
-  TouchableWithoutFeedback,
   Keyboard,
   Modal,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { useAuth } from '@/hooks/useAuth';
-import { fetchUsers, UserItem } from '@/services/user';
-import { colors } from '@/theme/colors';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
-import SuccessModal from '@/components/SuccessModal';
-import { Address, useAddressStore } from '@/store/addressStore';
 
 const ShippingAddress = () => {
   const [user, setUser] = useState<UserItem | null>(null);
@@ -30,6 +31,9 @@ const ShippingAddress = () => {
   const [expandedAddress, setExpandedAddress] = useState<string | null>(null);
   const { isAuthenticated, phone } = useAuth();
   const { selectedAddress, setSelectedAddress } = useAddressStore();
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [addressToDelete, setAddressToDelete] = useState<string | null>(null);
+  const [addressToDeleteIndex, setAddressToDeleteIndex] = useState<number>(-1);
   const router = useRouter();
   const [userAddresses, setUserAddresses] = useState<Address[]>([]);
 
@@ -60,74 +64,20 @@ const ShippingAddress = () => {
   const addresses = user?.addresses || [];
 
   const deleteAddress = async (addressId: string) => {
-    Alert.alert(
-      'Delete Address',
-      'Are you sure you want to delete this address?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            setIsLoading(true);
-            try {
-              const API_URL = `http://192.168.1.108:8000/api/delete-user-address/${addressId}/`;
+    const API_URL = `${Api_url}/api/delete-user-address/${addressId}/`;
 
-              // First try to delete the address
-              try {
-                await fetch(API_URL, {
-                  method: 'DELETE',
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
-                });
-                // Don't throw error here even if request fails
-                // We'll check if the address was actually deleted below
-              } catch (e) {
-                console.log('Delete request may have failed, but will verify...');
-              }
+    const response = await fetch(API_URL, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    
+      setShowDeleteModal(false);
+      setShowSuccessModal(true);
 
-              // Always try to refresh the addresses
-              const users = await fetchUsers();
-              if (users?.length > 0) {
-
-                const currentUser = users.find(u => u.number === phone) || users[0];
-                const wasDeleted = !currentUser.addresses?.some(addr => addr.id === addressId);
-
-                if (wasDeleted) {
-                  // Address was successfully deleted
-                  setUser(currentUser);
-                  setShowSuccessModal(true);
-                  setTimeout(() => {
-                    setShowSuccessModal(false);
-                    setSelected(-1);
-                    setExpandedAddress(null);
-                  }, 2000);
-                  return;
-                }
-              }
-
-              // If we get here, the address wasn't deleted
-              throw new Error('Failed to delete address. Please try again.');
-
-            } catch (error: any) {
-              console.error('Delete error:', error);
-              // Only show alert if it's not a network error
-              if (error.message !== 'Network request failed') {
-                Alert.alert('Error', error.message);
-              }
-            } finally {
-              setIsLoading(false);
-            }
-          },
-        },
-      ],
-      { cancelable: true }
-    );
   };
+
   const handleSelectAddress = (index: number) => {
     setSelected(index);
     // Optionally close the expanded address after selection
@@ -299,9 +249,13 @@ const ShippingAddress = () => {
 
                           <TouchableOpacity
                             style={styles.deleteButton}
-                            onPress={() => deleteAddress(address.id)}
+                            onPress={() => {
+                              setAddressToDelete(address.id);
+                              setAddressToDeleteIndex(index);
+                              setShowDeleteModal(true);
+                            }}
                           >
-                            <Ionicons name="trash-outline" size={20} color="#ff3b30" />
+                            <Ionicons name="trash-outline" size={20} color="white" />
 
                           </TouchableOpacity>
                         </View>
@@ -340,14 +294,95 @@ const ShippingAddress = () => {
           autoCloseDelay={2000}
           onClose={handleSuccessModalClose}
         />
+        {/* Delete Confirmation Modal */}
+<Modal
+  visible={showDeleteModal}
+  transparent={true}
+  animationType="fade"
+  onRequestClose={() => setShowDeleteModal(false)}
+>
+  <View style={styles.modalOverlay}>
+    <View style={styles.modalContent}>
+      <Text style={styles.modalTitle}>Delete Address</Text>
+      <Text style={styles.modalText}>Are you sure you want to delete this address?</Text>
+      <View style={styles.modalButtons}>
+        <TouchableOpacity
+          style={styles.cancelButton}
+          onPress={() => setShowDeleteModal(false)}
+          disabled={isLoading}
+        >
+          <Text style={styles.cancelButtonText}>Cancel</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.deleteButton}
+          onPress={() => addressToDelete && deleteAddress(addressToDelete)}
+          disabled={isLoading}
+        >
+          <Text style={styles.deleteButtonText}>
+            {isLoading ? 'Deleting...' : 'Delete'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  </View>
+</Modal>
       </SafeAreaView>
     </TouchableWithoutFeedback>
   );
 };
 
 
-
 const styles = StyleSheet.create({
+  modalOverlay: {
+  flex: 1,
+  backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  justifyContent: 'center',
+  alignItems: 'center',
+  padding: 20,
+},
+modalContent: {
+  backgroundColor: 'white',
+  borderRadius: 10,
+  padding: 20,
+  width: '100%',
+  maxWidth: 400,
+},
+modalTitle: {
+  fontSize: 18,
+  fontWeight: 'bold',
+  marginBottom: 10,
+},
+modalText: {
+  fontSize: 16,
+  marginBottom: 20,
+  color: '#333',
+},
+modalButtons: {
+  flexDirection: 'row',
+  justifyContent: 'flex-end',
+  marginTop: 20,
+},
+cancelButton: {
+  padding: 10,
+  marginRight: 10,
+  borderRadius: 5,
+},
+cancelButtonText: {
+  color: '#007AFF',
+  fontSize: 16,
+},
+deleteButton: {
+  backgroundColor: '#FF3B30',
+  padding: 10,
+  borderRadius: 5,
+  minWidth: 80,
+  alignItems: 'center',
+},
+deleteButtonText: {
+  color: 'white',
+  fontWeight: '600',
+  fontSize: 16,
+},
   safeArea: {
     flex: 1,
   },
@@ -444,43 +479,7 @@ const styles = StyleSheet.create({
     width: '55%',
     textAlign: 'right',
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  modalContent: {
-    backgroundColor: colors.primaryDark,
-    borderRadius: 16,
-    padding: 24,
-    width: '90%',
-    maxWidth: 400,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  modalIcon: {
-    marginBottom: 16,
-  },
-  modalTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: colors.white,
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  modalText: {
-    fontSize: 16,
-    color: colors.white,
-    textAlign: 'center',
-    lineHeight: 22,
-    opacity: 0.8,
-  },
+ 
   signInButton: {
     backgroundColor: colors.primary,
     paddingHorizontal: 24,
@@ -559,14 +558,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
   },
   selectedButton: {
-    backgroundColor: colors.white,
-  },
-
-  deleteButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 8,
-    borderRadius: 4,
     backgroundColor: colors.white,
   },
 

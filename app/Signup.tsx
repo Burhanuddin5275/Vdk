@@ -108,107 +108,109 @@ const Signup = () => {
   return (
     <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
       <ImageBackground source={require('../assets/images/ss1.png')} style={styles.bg} resizeMode="cover">
-        <View style={styles.container}>
-          {/* Logo */}
-          <Image source={require('../assets/images/dkt.png')} style={styles.logo} resizeMode="contain" />
-          <Text style={styles.welcome}>Welcome! Create your account</Text>
+        <ScrollView
+          style={{ width: '100%' }}
+          contentContainerStyle={{ paddingBottom: 185 }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false} 
+        >
+          <View style={styles.container}>
+            {/* Logo */}
+            <Image source={require('../assets/images/dkt.png')} style={styles.logo} resizeMode="contain" />
+            <Text style={styles.welcome}>Welcome! Create your account</Text>
 
-        
-          <View style={styles.inputWrap}>
-            <View style={styles.flagWrap}>
-              <Image source={require('../assets/images/flag.png')} style={styles.flag} resizeMode="contain" />
-              <Text style={styles.countryCode}>+92</Text>
+
+            <View style={styles.inputWrap}>
+              <View style={styles.flagWrap}>
+                <Image source={require('../assets/images/flag.png')} style={styles.flag} resizeMode="contain" />
+                <Text style={styles.countryCode}>+92</Text>
+              </View>
+              <TextInput
+                style={styles.input}
+                value={phone}
+                onChangeText={setPhone}
+                keyboardType="number-pad"
+                placeholder="Phone Number"
+                placeholderTextColor={"#1A1A1A"}
+                maxLength={10}
+                editable={!phoneParam}
+              />
             </View>
-            <TextInput
-              style={styles.input}
-              value={phone}
-              onChangeText={setPhone}
-              keyboardType="number-pad" 
-              placeholder="Phone Number"
-              placeholderTextColor={"#1A1A1A"}
-              maxLength={10}
-              editable={!phoneParam} 
-            />
-          </View>
-<ScrollView 
-  style={{ width:'100%'}}
-  contentContainerStyle={{ paddingBottom:150 }}
-  keyboardShouldPersistTaps="handled"
-  showsVerticalScrollIndicator={false}
->
-          {isFromVerification && (
-            <View style={{ marginTop: 16 }}>
-              <View style={[styles.inputWrap, { marginBottom: 15 }]}>
-                <TextInput
-                  style={[styles.input, { paddingRight: 40 }]}
-                  value={email}
-                  onChangeText={setEmail}
-                  placeholder="Create Email"
-                  placeholderTextColor={"#1A1A1A"}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
-              </View>
-              <View style={[styles.inputWrap, { marginBottom: 4 }]}>
-                <TextInput
-                  style={[styles.input, { paddingRight: 40 }]}
-                  value={password}
-                  onChangeText={setPassword}
-                  placeholder="Create Password"
-                  placeholderTextColor={"#1A1A1A"}
-                  secureTextEntry={!showPassword}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
-                <TouchableOpacity
-                  style={styles.passwordToggle}
-                  onPress={() => setShowPassword(!showPassword)}
-                >
-                  <Ionicons
-                    name={showPassword ? 'eye-off' : 'eye'}
-                    size={20}
-                    color="#666"
+
+            {isFromVerification && (
+              <View style={{ marginTop: 16 }}>
+                <View style={[styles.inputWrap, { marginBottom: 15 }]}>
+                  <TextInput
+                    style={[styles.input, { paddingRight: 40 }]}
+                    value={email}
+                    onChangeText={setEmail}
+                    placeholder="Create Email"
+                    placeholderTextColor={"#1A1A1A"}
+                    autoCapitalize="none"
+                    autoCorrect={false}
                   />
-                </TouchableOpacity>
+                </View>
+                <View style={[styles.inputWrap, { marginBottom: 4 }]}>
+                  <TextInput
+                    style={[styles.input, { paddingRight: 40 }]}
+                    value={password}
+                    onChangeText={setPassword}
+                    placeholder="Create Password"
+                    placeholderTextColor={"#1A1A1A"}
+                    secureTextEntry={!showPassword}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+                  <TouchableOpacity
+                    style={styles.passwordToggle}
+                    onPress={() => setShowPassword(!showPassword)}
+                  >
+                    <Ionicons
+                      name={showPassword ? 'eye-off' : 'eye'}
+                      size={20}
+                      color="#666"
+                    />
+                  </TouchableOpacity>
+                </View>
+                {password.length > 0 && password.length < 8 && (
+                  <Text style={styles.errorText}>
+                    Password must be at least 8 characters long
+                  </Text>
+                )}
               </View>
-              {password.length > 0 && password.length < 8 && (
-                <Text style={styles.errorText}>
-                  Password must be at least 8 characters long
+            )}
+
+            {/* Continue Button */}
+            <TouchableOpacity
+              style={[styles.continueBtn, (isSubmitting || (isFromVerification && !password && !email)) && { opacity: 0.7 }]}
+              onPress={handleSendOtp}
+              disabled={isSubmitting || (isFromVerification && !password && !email)}
+            >
+              {isSubmitting ? (
+                <ActivityIndicator color={colors.textPrimary} />
+              ) : (
+                <Text style={styles.continueBtnText}>
+                  {isFromVerification ? 'Create Account' : 'Continue'}
                 </Text>
               )}
-            </View>
-          )}
-
-          {/* Continue Button */}
-          <TouchableOpacity
-            style={[styles.continueBtn, (isSubmitting || (isFromVerification && !password && !email)) && { opacity: 0.7 }]}
-            onPress={handleSendOtp}
-            disabled={isSubmitting || (isFromVerification && !password && !email)}
-          >
-            {isSubmitting ? (
-              <ActivityIndicator color={colors.textPrimary} />
-            ) : (
-              <Text style={styles.continueBtnText}>
-                {isFromVerification ? 'Create Account' : 'Continue'}
-              </Text>
-            )}
-          </TouchableOpacity>
-
-          <View style={styles.loginContainer}>
-            <Text style={styles.loginText}>Already have an account? </Text>
-            <TouchableOpacity onPress={() => router.replace('/Login')}>
-              <Text style={styles.loginLink}>Login</Text>
             </TouchableOpacity>
-          </View>
 
-          {/* Terms */}
-          <Text style={styles.terms}>
-            By continuing, you agree to{''}
-            <Text style={styles.link}> Terms & conditions </Text> and
-            <Text style={styles.link}> Privacy policy</Text>.
-          </Text>
-          </ScrollView>
-        </View>
+            <View style={styles.loginContainer}>
+              <Text style={styles.loginText}>Already have an account? </Text>
+              <TouchableOpacity onPress={() => router.replace('/Login')}>
+                <Text style={styles.loginLink}>Login</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Terms */}
+            <Text style={styles.terms}>
+              By continuing, you agree to{''}
+              <Text style={styles.link}> Terms & conditions </Text> and
+              <Text style={styles.link}> Privacy policy</Text>.
+            </Text>
+
+          </View>
+        </ScrollView>
       </ImageBackground>
       <SuccessModal
         visible={showSuccessModal}
@@ -270,7 +272,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   errorText: {
-    color: '#FF3B30',
+    color: 'white',
     fontSize: 12,
     marginLeft: 12,
     marginTop: 4,

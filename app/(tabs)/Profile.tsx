@@ -106,6 +106,7 @@ export default function Profile() {
     ].includes(item.label));
   const handleSuccessModalClose = () => {
     setShowSuccessModal(false);
+    logout();
     router.replace('/(tabs)/Home');
   };
   return (
@@ -131,8 +132,7 @@ export default function Profile() {
                     setShowDeleteModal(false);
                     await deleteAccount();
                     setShowSuccessModal(true);
-                    logout();
-                    router.replace('/(tabs)/Home');
+                   
                   } catch (error) {
                     console.error('Error during account deletion process:', error);
                     alert('Failed to delete account. Please try again later.');

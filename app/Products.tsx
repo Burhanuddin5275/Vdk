@@ -840,16 +840,16 @@ const styles = StyleSheet.create({
     },
     title: {
         color: '#fff',
-        fontSize: moderateScale(38),
-        lineHeight: verticalScale(34),
+        fontSize: moderateScale(36),
+        lineHeight: verticalScale(30),
         fontFamily: 'Sigmar',
         marginTop: 8,
     },
     pcs: {
         color: '#fff',
-        fontSize: moderateScale(38),
+        fontSize: moderateScale(28),
         fontFamily: 'Sigmar',
-        lineHeight: verticalScale(36),
+        lineHeight: verticalScale(30),
     },
     sectionTitle: {
         color: '#fff',

@@ -13,7 +13,7 @@ function toCategory(item: ApiCategory): CategoryItem {
   const label = String(item.name ?? item.label ?? "Category");
   const imageUrl = item.image?.url ?? item.image ?? null;
   const image = imageUrl ? { uri: String(imageUrl) } : undefined;
-  return { label, image: image ?? require("../assets/images/Devices.png") };
+  return { label, image: image };
 }
 
 export async function fetchCategories(): Promise<CategoryItem[]> {

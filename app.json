@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "dkt",
+    "name": "DKT",
     "slug": "dkt",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -10,7 +10,7 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "scheme": "dkt",
+    "scheme": "DKT",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -20,12 +20,12 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/logo.png",
         "backgroundColor": "#ffffff",
-         "resizeMode": "contain"
+        "resizeMode": "contain"
       },
       "edgeToEdgeEnabled": true,
       "package": "com.burhanuddin4747.dkt",
       "usesCleartextTraffic": true
-    },  
+    },
     "web": {
       "bundler": "metro",
       "output": "static",
@@ -46,12 +46,12 @@
     "experiments": {
       "typedRoutes": true
     },
+    "owner": "burhanuddin4747",
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "4b85827c-558f-4dce-b443-c90a7635364f"
+        "projectId": "e24047ed-6cac-4579-b458-06cebc59c9c3"
       }
-    },
-    "owner": "hamza5275"
+    }
   }
 }

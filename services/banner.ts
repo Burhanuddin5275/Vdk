@@ -14,7 +14,7 @@ function toBanner(item: ApiBanner): BannerItem {
   const category = String(item.category ?? "Banner");
   const imageUrl = item.image?.url ?? item.image ?? item.icon ?? item.thumbnail ?? null;
   const image = imageUrl ? { uri: String(imageUrl) } : undefined;
-  return { category, brand, image: image ?? require("../assets/images/Devices.png") };
+  return { category, brand, image: image };
 }
 
 export async function fetchBanners(): Promise<BannerItem[]> {

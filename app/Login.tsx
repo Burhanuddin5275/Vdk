@@ -3,7 +3,7 @@ import { colors } from '@/theme/colors';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 
-import { Image, ImageBackground, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Image, ImageBackground, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { Api_url } from '../url/url';
@@ -107,7 +107,13 @@ const Login = () => {
   return (
     <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
       <ImageBackground source={require('../assets/images/ss1.png')} style={styles.bg} resizeMode="cover">
-        <View style={styles.container}>
+       <ScrollView
+        style={{ width: '100%' }}
+          contentContainerStyle={{ paddingBottom: 185 }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false} 
+       >
+         <View style={styles.container}>
           {/* Logo */}
           <Image source={require('../assets/images/dkt.png')} style={styles.logo} resizeMode="contain" />
           <Text style={styles.welcome}>Welcome! Login to your account!</Text>
@@ -173,6 +179,7 @@ const Login = () => {
             <Text style={styles.link}>Terms & conditions</Text> and <Text style={styles.link}>Privacy policy</Text>.
           </Text>
         </View>
+       </ScrollView>
       </ImageBackground>
     </SafeAreaView>
   );
@@ -192,7 +199,6 @@ const styles = StyleSheet.create({
   },
   logo: {
     width: "100%",
-    height: "30%",
   },
   welcome: {
     color: colors.white,
