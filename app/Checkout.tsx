@@ -16,6 +16,7 @@ type CheckoutParams = {
     name?: string;
     price?: string;
     image?: string;
+    cost_price?: string;
     quantity?: string;
     variant?: string;
     points?: string;

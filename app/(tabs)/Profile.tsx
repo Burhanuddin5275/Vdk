@@ -1,14 +1,14 @@
+import SuccessModal from '@/components/SuccessModal';
 import { useAuth } from '@/hooks/useAuth';
+import { fetchUsers, UserItem } from '@/services/user';
 import { colors } from '@/theme/colors';
+import { img_url } from '@/url/url';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Dimensions, Image, ImageBackground, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { fetchUsers, UserItem } from '@/services/user';
-import { Api_url, img_url } from '@/url/url';
-import SuccessModal from '@/components/SuccessModal';
+import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 const { width } = Dimensions.get('window');
 
 export default function Profile() {
@@ -28,8 +28,6 @@ export default function Profile() {
         if (matchedUser) {
           setUser(matchedUser);
           setUserId(matchedUser.id);
-          console.log('Matched user:', matchedUser);
-          console.log('Matched user ID:', matchedUser.id);
         } else {
           console.log('No user found with phone:', phone);
           setUser(token);
@@ -52,34 +50,50 @@ export default function Profile() {
     router.push('/(tabs)/Home');
     router.replace('/(tabs)/Home');
   };
-  const deleteAccount = async (): Promise<void> => {
-    const url = `${Api_url}api/account-delete/${userId}/`;
-    console.log('Attempting to delete account with URL:', url);
-    console.log('userId value:', userId);
+const deleteAccount = async (): Promise<void> => {
+  if (!userId && userId !== 0) {
+    alert('Unable to deactivate account: missing user id.');
+    return;
+  }
+  
+  const url = `http://192.168.1.101:8000/api/deactivate/${userId}/`;
+  console.log('Attempting to deactivate account with URL:', url);
+  console.log('userId value:', userId);
 
-    // Add timeout to prevent hanging requests
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-    try {
-      const response = await fetch(url, {
-        method: 'DELETE',
-        signal: controller.signal,
-      });
+  try {
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+  
+      },
+      body: JSON.stringify({
+        is_active: false
+      })
+    });
 
-      clearTimeout(timeoutId);
-      console.log('Response status:', response.status);
-      console.log('Response ok:', response.ok);
+    clearTimeout(timeoutId);
+    console.log('Response status:', response.status);
+    console.log('Response ok:', response.ok);
 
-      if (!response.ok) {
-        throw new Error(`Failed to delete account: ${response.status} ${response.statusText}`);
-      }
-      setShowSuccessModal(true); 
-      console.log('Account deletion successful');
-    } catch (error) {
-      clearTimeout(timeoutId);
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.detail || `Failed to deactivate account: ${response.status} ${response.statusText}`);
     }
-  };
+
+    // Only proceed with success actions if we get a successful response
+    console.log('Account deactivation successful');
+    setShowSuccessModal(true);
+    logout(); // Only logout if deactivation was successful
+    router.replace('/(tabs)/Home');
+  } catch (error) {
+    clearTimeout(timeoutId);
+    console.error('Deactivate account error:', error);
+  }
+};
   const allMenuItems = [
     { label: 'My orders', icon: 'cart', onPress: () => { router.push('/Orders') } },
     { label: 'Chat', icon: 'chatbubble-ellipses', onPress: () => { router.push('/Chat') } },
@@ -132,7 +146,7 @@ export default function Profile() {
                     setShowDeleteModal(false);
                     await deleteAccount();
                     setShowSuccessModal(true);
-                   
+
                   } catch (error) {
                     console.error('Error during account deletion process:', error);
                     alert('Failed to delete account. Please try again later.');

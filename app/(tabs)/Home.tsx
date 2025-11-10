@@ -115,7 +115,7 @@ export default function HomeScreen() {
 
         if (matchedUser) {
           setUser(matchedUser);
-          console.log('Matched user:', matchedUser);
+
         } else {
           console.log('No user found with phone:', phone);
           // If no matching user found, log them out
@@ -776,33 +776,33 @@ const styles = StyleSheet.create({
     fontSize: moderateScale(32),
     fontFamily: "Sigmar",
     marginLeft: scale(15),
-    marginTop: verticalScale(30)
+    marginTop: verticalScale(25)
   },
   categoriesSlider: {
-    paddingHorizontal: scale(8),
-    paddingVertical: verticalScale(10),
     gap: scale(8),
-    height: verticalScale(240),
+    paddingHorizontal: scale(8),
+    paddingVertical: verticalScale(18),
+    height: verticalScale(150),
   },
   categoryCard: {
-    marginTop: verticalScale(5),
-    borderRadius: moderateScale(18),
-    width: scale(225),
-    height: verticalScale(220),
+    borderRadius: moderateScale(16),
+    width: scale(140),
+    height: verticalScale(120),
     alignItems: 'center',
     justifyContent: 'center',
     marginHorizontal: scale(4),
-    elevation: 4
+    marginTop: verticalScale(5),
+
   },
   categoryImg: {
     width: "100%",
-    height: verticalScale(160),
+    height: verticalScale(100),
   },
   categoryLabel: {
     color: 'white',
-    fontSize: moderateScale(20),
+    fontSize: moderateScale(12),
     fontFamily: "Sigmar",
-    lineHeight: moderateScale(36),
+    lineHeight: moderateScale(10),
     textAlign: 'center',
   },
   adSliderContainer: {

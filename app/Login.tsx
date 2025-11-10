@@ -68,7 +68,13 @@ const Login = () => {
       });
 
       if (!response.ok) {
-        throw new Error( 'Invalid phone number or password');
+        throw new Error('Invalid phone number or password');
+      }
+
+      // Check if user is active
+      if (data.is_active === false) {
+     setError('Your account is not active. Please contact support.');
+      return;
       }
 
       // Get the token from the api_token field
