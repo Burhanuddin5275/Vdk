@@ -87,8 +87,7 @@ const deleteAccount = async (): Promise<void> => {
     // Only proceed with success actions if we get a successful response
     console.log('Account deactivation successful');
     setShowSuccessModal(true);
-    logout(); // Only logout if deactivation was successful
-    router.replace('/(tabs)/Home');
+
   } catch (error) {
     clearTimeout(timeoutId);
     console.error('Deactivate account error:', error);
@@ -102,7 +101,7 @@ const deleteAccount = async (): Promise<void> => {
     { label: 'Manage profile', icon: 'person-circle', onPress: () => { router.push('/ManageProfile') } },
     { label: 'Contact us', icon: 'paper-plane', onPress: () => { } },
     { label: 'About us', icon: 'information-circle', onPress: () => { } },
-    { label: 'Terms & conditions', icon: 'document-text', onPress: () => { } },
+    { label: 'Terms & conditions', icon: 'document-text', onPress: () => {router.push('/Terms') } },
     { label: 'Redeemed', icon: 'gift', onPress: () => { router.push('/Redeemed') } },
     { label: 'Privacy policy', icon: 'shield-checkmark', onPress: () => { } },
     { label: 'Logout', icon: 'log-out', onPress: handleLogout },

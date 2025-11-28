@@ -112,9 +112,9 @@ export default function OrdersScreen() {
             
             const total = order.items?.reduce((sum: number, item: any) => {
               const price = parseFloat(item.price || '0');
-              const quantity = item.quantity || 1;
-              return sum + (price * quantity);
-            }, 0) || 0;
+              // const quantity = item.quantity || 1;
+              return price ; 
+            }, 0) || 0; 
             
             // Map the API order to DisplayOrder type
             const displayOrder: DisplayOrder = {

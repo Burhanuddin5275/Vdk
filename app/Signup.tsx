@@ -14,6 +14,7 @@ const Signup = () => {
   const [phone, setPhone] = useState(phoneParam?.replace(/^\+92/, '') || '');
   const [password, setPassword] = useState('');
   const [email, setEmail] = useState('');
+  const [name, setName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const isFromVerification = !!phoneParam;
@@ -46,8 +47,9 @@ const Signup = () => {
         setIsSubmitting(true);
         const requestBody = {
           number: e164Phone,
+          name: name,
           email: email,
-          password: password,
+          password: password, 
         };
 
         console.log('Sending request to register user:', {
@@ -92,7 +94,7 @@ const Signup = () => {
         // Directly navigate to VerifyNumber with the phone number
         router.push({
           pathname: '/VerifyNumber',
-          params: { phone: e164Phone }
+          params: { phone: e164Phone, source: 'signup' }
         });
       } catch (error: any) {
         Alert.alert('Network/Error', error?.message || 'Something went wrong. Please try again.');
@@ -139,6 +141,17 @@ const Signup = () => {
 
             {isFromVerification && (
               <View style={{ marginTop: 16 }}>
+                      <View style={[styles.inputWrap, { marginBottom: 15 }]}>
+                  <TextInput
+                    style={[styles.input, { paddingRight: 40 }]}
+                    value={name}
+                    onChangeText={setName}
+                    placeholder="Username"
+                    placeholderTextColor={"#1A1A1A"}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+                </View>
                 <View style={[styles.inputWrap, { marginBottom: 15 }]}>
                   <TextInput
                     style={[styles.input, { paddingRight: 40 }]}

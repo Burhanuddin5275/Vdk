@@ -260,21 +260,21 @@ export default function HomeScreen() {
 
             <View style={styles.headerBg}>
               <View style={styles.headerRow}>
-                <View style={{ width: scale(140), paddingLeft: scale(16) }}>
+                <View style={{ width: scale(150), paddingLeft: scale(16) }}>
                   {heroContent.length > 0 ? (
                     <>
                       <Text style={styles.hello}
-                        numberOfLines={2}
                         ellipsizeMode="tail"
-                      >
-                        {heroContent[0].title}
+                      > Welcome 
                       </Text>
                       <Text
                         style={styles.subtext}
                         numberOfLines={3}
                         ellipsizeMode="tail"
                       >
-                        {heroContent[0].subtext}
+                     {typeof user === 'object' && user !== null && 'name' in user
+                          ? (user as UserItem).name
+                          : 'Guest'}
                       </Text>
                     </>
                   ) : (
@@ -709,14 +709,16 @@ const styles = StyleSheet.create({
     justifyContent: "space-between"
   },
   hello: {
-    color: '#fff',
-    fontSize: moderateScale(26),
+    color: colors.primary,
+    fontSize: moderateScale(22),
     fontFamily: "RussoOne",
 
   },
   subtext: {
     color: '#fff',
-    fontSize: moderateScale(15),
+    fontFamily: "RussoOne",
+    fontSize: moderateScale(22), 
+    marginLeft: scale(8),  
     marginBottom: verticalScale(12),
   },
   rewardBox: {
@@ -727,8 +729,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(10),
     paddingVertical: verticalScale(12),
     alignSelf: 'flex-start',
-    marginTop: verticalScale(4),
-    marginBottom: verticalScale(8),
+    marginTop: verticalScale(14),
     alignItems: 'center',
   },
   rewardLabel: {
@@ -756,8 +757,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(10),
     paddingVertical: verticalScale(12),
     alignSelf: 'flex-start',
-    marginTop: verticalScale(4),
-    marginBottom: verticalScale(8),
+    marginTop: verticalScale(45),
     alignItems: 'center',
   },
   loginButtonText: {
@@ -792,17 +792,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginHorizontal: scale(4),
     marginTop: verticalScale(5),
-
+    elevation: 4,
   },
   categoryImg: {
     width: "100%",
-    height: verticalScale(100),
+    height: verticalScale(80),
   },
   categoryLabel: {
     color: 'white',
     fontSize: moderateScale(12),
     fontFamily: "Sigmar",
-    lineHeight: moderateScale(10),
+    lineHeight: moderateScale(12),
     textAlign: 'center',
   },
   adSliderContainer: {

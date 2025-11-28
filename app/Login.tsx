@@ -180,6 +180,13 @@ const Login = () => {
               <Text style={[styles.link, { fontFamily: 'MontserratSemi' }]}>Sign up</Text>
             </TouchableOpacity>
           </View>
+          
+          {/* Forgot Password Link */}
+          <View style={styles.forgotPasswordContainer}>
+            <TouchableOpacity onPress={() => router.push('/ForgetPassword')}>
+              <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+            </TouchableOpacity>
+          </View>
           <Text style={styles.terms}>
             By continuing, you agree to{''}
             <Text style={styles.link}>Terms & conditions</Text> and <Text style={styles.link}>Privacy policy</Text>.
@@ -296,11 +303,21 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   terms: {
-    color: '#fff',
-    fontSize: moderateScale(14),
+    fontSize: 12,
+    color: colors.white,
     textAlign: 'center',
+    marginTop: 16,
+    fontFamily: 'Montserrat',
+  },
+  forgotPasswordContainer: {
+    alignSelf: 'center',
     marginTop: 8,
-    fontFamily: 'InterRegular',
+  },
+  forgotPasswordText: {
+    color: colors.white,
+    fontSize: 14,
+    fontFamily: 'MontserratSemi',
+    textDecorationLine: 'underline',
   },
   link: {
     color: '#fff',
