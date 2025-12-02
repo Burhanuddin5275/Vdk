@@ -4,8 +4,8 @@ import React from 'react';
 import { Dimensions, FlatList, Image, ImageBackground, KeyboardAvoidingView, Modal, Platform, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
-import TabLayout from './(tabs)/_layout';
 import { Api_url } from '../url/url';
+import TabLayout from './(tabs)/_layout';
 const bgImage = require('../assets/images/ss1.png');
 
 interface OrderItem {
@@ -66,10 +66,23 @@ const getStatusSteps = (status: string, createdAt: string) => {
 const OrderReview = () => {
   const { order: orderString } = useLocalSearchParams();
   const order: OrderData | null = orderString ? JSON.parse(orderString as string) : null;
-  const [modalVisible, setModalVisible] = React.useState(true);
+  const [modalVisible, setModalVisible] = React.useState(false);
   const [reviewText, setReviewText] = React.useState('');
   const [rating, setRating] = React.useState(0);
+  const [currentProduct, setCurrentProduct] = React.useState<OrderItem | null>(null);
   const insets = useSafeAreaInsets();
+
+  const handleRateProduct = (product: OrderItem) => {
+    setCurrentProduct(product);
+    setModalVisible(true);
+  };
+
+    // Handle review submission here
+    console.log('Submitting review for product:', currentProduct);
+    console.log('Rating:', rating);
+    console.log('Review:', reviewText);
+    
+
 
   // Get status steps based on order status
   const statusSteps = order ? getStatusSteps(order.status, order.created_at) : [];
@@ -152,6 +165,9 @@ const OrderReview = () => {
                   </View>
                   <View style={styles.priceContainer}>
                     <Text style={styles.productPrice}>Rs. {parseFloat(item.price || '0').toFixed(2)}</Text>
+                    <TouchableOpacity onPress={() => handleRateProduct(item)}>
+                      <Text style={styles.rateLink}>Rate Product</Text>
+                    </TouchableOpacity>
                   </View>
                 </View>
               </View>
@@ -191,11 +207,38 @@ const OrderReview = () => {
           >
             <View style={styles.reviewModal}>
               <View style={styles.modalHeader}>
-                <Text style={styles.reviewTitle}>Order Review</Text>
-                <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeBtn}>
+                <Text style={styles.reviewTitle}>Rate Product</Text>
+                <TouchableOpacity onPress={() => {
+                  setModalVisible(false);
+                  setCurrentProduct(null);
+                }} style={styles.closeBtn}>
                   <AntDesign name="closecircle" size={moderateScale(28)} color="#E53935" />
                 </TouchableOpacity>
               </View>
+              {currentProduct && (
+                <View style={styles.productInfoContainer}>
+                  <View style={styles.modalProductRow}>
+                    {currentProduct.image ? (
+                      <Image 
+                        source={{ 
+                          uri: currentProduct.image.startsWith('http') 
+                            ? currentProduct.image 
+                            : `${Api_url}${currentProduct.image.startsWith('/') ? '' : '/'}${currentProduct.image}`
+                        }} 
+                        style={styles.modalProductImage}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <View style={[styles.modalProductImage, styles.placeholderImage]}>
+                        <Ionicons name="image-outline" size={24} color="#999" />
+                      </View>
+                    )}
+                    <Text style={styles.modalProductName} numberOfLines={2}>
+                      {currentProduct.name}
+                    </Text>
+                  </View>
+                </View>
+              )}
               <View style={styles.ratingRow}>
                 {[1, 2, 3, 4, 5].map((star) => (
                   <TouchableOpacity key={star} onPress={() => setRating(star)}>
@@ -392,9 +435,15 @@ const styles = StyleSheet.create({
     fontSize: moderateScale(14),
     fontFamily: 'PoppinsMedium',
   },
+  rateLink: {
+    color: '#3ed543ff',
+    fontSize: moderateScale(12),
+    fontFamily: 'PoppinsMedium',
+  },
   productPrice: {
     color: '#fff',
     fontSize: moderateScale(16),
+    marginBottom: 4,
     fontFamily: 'PoppinsSemiBold',
   },
   priceContainer: {
@@ -472,6 +521,29 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'flex-end',
     backgroundColor: 'rgba(0,0,0,0.2)',
+  },
+  productInfoContainer: {
+    marginBottom: 16,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  modalProductRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  modalProductImage: {
+    width: 50,
+    height: 50,
+    borderRadius: 8,
+    backgroundColor: '#f5f5f5',
+  },
+  modalProductName: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#333',
   },
   reviewModal: {
     backgroundColor: '#fff',
