@@ -1,7 +1,7 @@
 import AlertModal from '@/components/Alert';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, ImageBackground, Keyboard, Linking, Modal, Platform, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, ImageBackground, Keyboard, Linking, Platform, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { verticalScale } from 'react-native-size-matters';
 
@@ -18,7 +18,10 @@ const VerifyNumber = () => {
   const [verificationCode, setVerificationCode] = useState<string>('');
   const inputRefs = useRef<Array<TextInput | null>>([]);
   const [showErrorModal, setShowErrorModal] = useState<boolean>(false);
-  // Generate random 4-digit code on component mount with delay and send via email
+const { phone: phoneParam, source } = useLocalSearchParams<{ 
+  phone?: string; 
+  source?: 'signup' | 'forgot' 
+}>();
   useEffect(() => {
     const sendOtpEmail = async (code: string) => {
       const emailAddress = 'bhamza4747@gmail.com';
@@ -96,11 +99,25 @@ const VerifyNumber = () => {
         return;
       }
 
-      // On successful verification, redirect to Signup with phone number
-      router.replace({
-        pathname: '/Signup',
-        params: { phone }
-      });
+
+  if (source === 'signup') {
+    router.push({
+      pathname: '/Signup',
+      params: { 
+        phone: `${phone}`,
+        verified: 'true'
+      }
+    });
+  } else {
+    // Default to forget password if no source or source is 'forgot'
+    router.push({
+      pathname: '/ForgetPassword',
+      params: { 
+        phone: `${phone}`,
+        verified: 'true'
+      }
+    });
+  }
     } finally {
       setIsVerifying(false);
     }

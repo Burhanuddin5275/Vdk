@@ -46,12 +46,12 @@
     "experiments": {
       "typedRoutes": true
     },
-    "owner": "burhanuddin4747",
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "e24047ed-6cac-4579-b458-06cebc59c9c3"
+        "projectId": "cbc9d906-1c67-4ec3-9fbe-4284287f6dcb"
       }
-    }
+    },
+    "owner": "hamza5275-2-2"
   }
 }

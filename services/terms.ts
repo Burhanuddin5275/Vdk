@@ -9,7 +9,7 @@ t_title:string;
 t_text:string;
 };
 
-const API_URL = `http://192.168.100.121:8000/api/privacy/`;
+const API_URL = `${Api_url}/api/privacy/`;
 
 function toTerms(item: ApiTerms): TermsItem {
   const id = String(item.id ?? null);
