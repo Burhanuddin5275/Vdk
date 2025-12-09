@@ -3,72 +3,90 @@ import { colors } from '@/theme/colors'
 import { Ionicons } from '@expo/vector-icons'
 import { router } from 'expo-router'
 import React, { useEffect, useState } from 'react'
-import { ActivityIndicator, Alert, ImageBackground, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
+import {
+    ActivityIndicator,
+    Alert,
+    ImageBackground, Linking, SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
+} from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters'
 
 const ContactUS = () => {
     const insets = useSafeAreaInsets();
-const [contactData, setContactData] = useState<ContactData | null>(null);
+    const [contactData, setContactData] = useState<ContactData | null>(null);
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [isLoading, setIsLoading] = useState(false);
+
+    // Form fields
     const [first, setFirst] = useState<string>('');
     const [last, setLast] = useState<string>('');
     const [email, setEmail] = useState<string>('');
     const [phone, setPhone] = useState<string>('');
     const [message, setMessage] = useState<string>('');
-useEffect(() => {
-  const loadContactData = async () => {
-    const data = await fetchContact();
-    if (data && data.length > 0) {
-      setContactData(data[0]); 
-    }
-  };
-  loadContactData();
-}, []);
+
+    // Fetch contact info
+    useEffect(() => {
+        const loadContactData = async () => {
+            const data = await fetchContact();
+            if (data && data.length > 0) {
+                setContactData(data[0]);
+            }
+        };
+        loadContactData();
+    }, []);
+
+    // Form Submit
     const handleSubmit = async () => {
-        // Basic validation
         const newErrors: Record<string, string> = {};
+
         if (!first.trim()) newErrors.first = 'First name is required';
         if (!last.trim()) newErrors.last = 'Last name is required';
+
         if (!email) {
             newErrors.email = 'Email is required';
         } else if (!/\S+@\S+\.\S+/.test(email)) {
             newErrors.email = 'Please enter a valid email';
         }
+
         if (!phone) {
             newErrors.phone = 'Phone number is required';
         } else if (!/^[0-9+\-\s]+$/.test(phone)) {
             newErrors.phone = 'Please enter a valid phone number';
         }
+
         if (!message.trim()) newErrors.message = 'Message is required';
 
         setErrors(newErrors);
-        if (Object.keys(newErrors).length > 0) {
-            return;
-        }
+        if (Object.keys(newErrors).length > 0) return;
 
         setIsLoading(true);
 
         try {
             const response = await fetch('http://192.168.0.138:8000/api/create-form/', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     first_name: first,
                     last_name: last,
-                    email: email,
-                    phone: phone,
-                    message: message
+                    email,
+                    phone,
+                    message
                 }),
             });
 
             if (response.ok) {
                 Alert.alert('Success', 'Your message has been sent successfully!');
-                console.log(response)
-
+                setFirst('');
+                setLast('');
+                setEmail('');
+                setPhone('');
+                setMessage('');
             } else {
                 throw new Error('Failed to send message');
             }
@@ -80,17 +98,19 @@ useEffect(() => {
     };
 
     return (
-        <SafeAreaView style={{ flex: 1}}>
+        <SafeAreaView style={{ flex: 1 }}>
             <ImageBackground
                 source={require('../assets/images/ss1.png')}
                 resizeMode="cover"
                 style={{ flex: 1 }}
             >
+                <View style={styles.gradientOverlay} />
+
                 <View style={styles.header}>
                     <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
                         <Ionicons name="arrow-back" size={26} color="#fff" />
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>Contact US</Text>
+                    <Text style={styles.headerTitle}>Contact Us</Text>
                 </View>
 
                 <ScrollView
@@ -98,30 +118,31 @@ useEffect(() => {
                     contentContainerStyle={styles.contentContainer}
                     keyboardShouldPersistTaps="handled"
                 >
+                    {/* FORM */}
                     <View style={styles.formContainer}>
                         <View style={styles.nameContainer}>
                             <View style={[styles.inputContainer, { flex: 1, marginRight: 8 }]}>
                                 <Text style={styles.label}>First Name *</Text>
                                 <TextInput
-                                    style={[styles.input, errors.first_name && styles.inputError]}
+                                    style={[styles.input, errors.first && styles.inputError]}
                                     value={first}
                                     onChangeText={setFirst}
                                     placeholder="John"
                                     placeholderTextColor={'gray'}
                                 />
-                                {errors.first_name && <Text style={styles.errorText}>{errors.first_name}</Text>}
+                                {errors.first && <Text style={styles.errorText}>{errors.first}</Text>}
                             </View>
 
                             <View style={[styles.inputContainer, { flex: 1, marginLeft: 8 }]}>
                                 <Text style={styles.label}>Last Name *</Text>
                                 <TextInput
-                                    style={[styles.input, errors.last_name && styles.inputError]}
+                                    style={[styles.input, errors.last && styles.inputError]}
                                     value={last}
                                     onChangeText={setLast}
                                     placeholder="Doe"
-                                 placeholderTextColor={'gray'}
+                                    placeholderTextColor={'gray'}
                                 />
-                                {errors.last_name && <Text style={styles.errorText}>{errors.last_name}</Text>}
+                                {errors.last && <Text style={styles.errorText}>{errors.last}</Text>}
                             </View>
                         </View>
 
@@ -164,7 +185,7 @@ useEffect(() => {
                                 value={message}
                                 onChangeText={setMessage}
                                 placeholder="Type your message here..."
-                                  placeholderTextColor={'gray'}
+                                placeholderTextColor={'gray'}
                                 multiline
                                 numberOfLines={5}
                                 textAlignVertical="top"
@@ -184,45 +205,51 @@ useEffect(() => {
                             )}
                         </TouchableOpacity>
                     </View>
-                    
-                        {/* Contact Information Section */}
-                        <View style={styles.contactInfoContainer}>
-                            <Text style={styles.sectionTitle}>{contactData?.title}</Text>
 
-                            <View style={styles.contactItem}>
-                                <Ionicons name="location-outline" size={24} color={colors.primary} style={styles.contactIcon} />
-                                <View>
-                                    <Text style={styles.contactLabel}>Mailing Address (Head Office)</Text>
-                                    <Text style={styles.contactText}>{contactData?.mailing_address}</Text>
-                                </View>
-                            </View>
+                    {/* CONTACT INFORMATION */}
+                    <View style={styles.contactInfoContainer}>
+                        <Text style={styles.sectionTitle}>{contactData?.title}</Text>
 
-                            <View style={styles.contactItem}>
-                                <Ionicons name="call-outline" size={24} color={colors.primary} style={styles.contactIcon} />
-                                <View>
-                                    <Text style={styles.contactLabel}>DKT Helpline Toll Free Number</Text>
-                                    <Text style={[styles.contactText, styles.contactLink]}>{contactData?.helpline_number}</Text>
-                                </View>
-                            </View>
-
-                            <View style={styles.contactItem}>
-                                <Ionicons name="phone-portrait-outline" size={24} color={colors.primary} style={styles.contactIcon} />
-                                <View>
-                                    <Text style={styles.contactLabel}>Corporate Contact Information</Text>
-                                    <Text style={[styles.contactText, styles.contactLink]}>{contactData?.corporate_contact}</Text>
-                                </View>
-                            </View>
-
-                            <View style={styles.contactItem}>
-                                <Ionicons name="mail-outline" size={24} color={colors.primary} style={styles.contactIcon} />
-                                <View>
-                                    <Text style={styles.contactLabel}>E-mail</Text>
-                                    <Text style={[styles.contactText, styles.contactLink]}>{contactData?.email_generic}</Text>
-                                    <Text style={[styles.contactText, styles.contactLink]}>{contactData?.email_hr}</Text>
-                                    <Text style={[styles.contactText, styles.contactLink]}>{contactData?.email_collaboration}</Text>
-                                </View>
+                        <View style={styles.contactItem}>
+                            <Ionicons name="location-outline" size={24} color={colors.primary} style={styles.contactIcon} />
+                            <View>
+                                <Text style={styles.contactLabel}>Mailing Address (Head Office)</Text>
+                                <Text style={styles.contactText}>{contactData?.mailing_address}</Text>
                             </View>
                         </View>
+
+                        <View style={styles.contactItem}>
+                            <Ionicons name="call-outline" size={24} color={colors.primary} style={styles.contactIcon} />
+                            <View>
+                                <Text style={styles.contactLabel}>DKT Helpline Toll Free Number</Text>
+                                <Text style={[styles.contactText, styles.contactLink]}>{contactData?.helpline_number}</Text>
+                            </View>
+                        </View>
+
+                        <View style={styles.contactItem}>
+                            <Ionicons name="phone-portrait-outline" size={24} color={colors.primary} style={styles.contactIcon} />
+                            <View>
+                                <Text style={styles.contactLabel}>Corporate Contact Information</Text>
+                                <Text style={[styles.contactText, styles.contactLink]}>{contactData?.corporate_contact}</Text>
+                            </View>
+                        </View>
+
+                        <View style={styles.contactItem}>
+                            <Ionicons name="mail-outline" size={24} color={colors.primary} style={styles.contactIcon} />
+                            <View>
+                                <Text style={styles.contactLabel}>E-mail</Text>
+                                <TouchableOpacity onPress={() => Linking.openURL(`mailto:${contactData?.email_generic}`)}>
+                                    <Text style={[styles.contactText, styles.contactLink]}>{contactData?.email_generic}</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity onPress={() => Linking.openURL(`mailto:${contactData?.email_hr}`)}>
+                                    <Text style={[styles.contactText, styles.contactLink]}>{contactData?.email_hr}</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity onPress={() => Linking.openURL(`mailto:${contactData?.email_collaboration}`)}>
+                                    <Text style={[styles.contactText, styles.contactLink]}>{contactData?.email_collaboration}</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </View>
                 </ScrollView>
             </ImageBackground>
         </SafeAreaView>
@@ -231,138 +258,171 @@ useEffect(() => {
 
 export default ContactUS
 
+
 const styles = StyleSheet.create({
+    gradientOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(0,0,0,0.35)',
+    },
+
     container: {
         flex: 1,
-        backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    },
+    }, 
+
     contentContainer: {
-        padding: scale(16),
-        paddingBottom: verticalScale(32),
+        padding: scale(18),
+        paddingBottom: verticalScale(60),
     },
+
     formContainer: {
-        backgroundColor: '#fff',
-        borderRadius: 10,
-        padding: scale(16),
+        backgroundColor: 'rgba(255,255,255,0.97)',
+        borderRadius: 16,
+        padding: scale(18),
+        marginTop: verticalScale(15),
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-        elevation: 3,
+        shadowOpacity: 0.12,
+        shadowRadius: 10,
+        shadowOffset: { width: 0, height: 3 },
+        elevation: 5,
     },
+
     nameContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginBottom: verticalScale(12),
+        marginBottom: verticalScale(14),
     },
+
     inputContainer: {
-        marginBottom: verticalScale(16),
+        marginBottom: verticalScale(18),
     },
+
     label: {
-        fontSize: moderateScale(14),
-        color: '#333',
+        fontSize: moderateScale(14.5),
+        fontWeight: '600',
+        color: '#222',
         marginBottom: verticalScale(6),
-        fontWeight: '500',
     },
+
     input: {
         borderWidth: 1,
         borderColor: '#ddd',
-        borderRadius: 8,
-        padding: scale(12),
+        borderRadius: 12,
+        paddingVertical: verticalScale(12),
+        paddingHorizontal: scale(12),
+        backgroundColor: '#fafafa',
         fontSize: moderateScale(14),
-        backgroundColor: '#f9f9f9',
+        shadowColor: '#000',
+        shadowOpacity: 0.05,
+        shadowRadius: 3,
+        shadowOffset: { width: 0, height: 1 },
     },
+
     inputError: {
-        borderColor: 'red',
+        borderColor: colors.primary,
+        backgroundColor: '#ffeaea',
     },
+
     textArea: {
-        height: verticalScale(120),
-        textAlignVertical: 'top',
+        height: verticalScale(130),
     },
+
     errorText: {
-        color: 'red',
+        color: colors.primary,
+        marginTop: 5,
         fontSize: moderateScale(12),
-        marginTop: verticalScale(4),
     },
+
     submitButton: {
         backgroundColor: colors.primary,
-        borderRadius: 8,
-        padding: verticalScale(14),
+        paddingVertical: verticalScale(14),
+        borderRadius: 12,
         alignItems: 'center',
-        justifyContent: 'center',
-        marginTop: verticalScale(8),
+        marginTop: verticalScale(10),
+        shadowColor: colors.primary,
+        shadowOpacity: 0.35,
+        shadowRadius: 10,
+        shadowOffset: { width: 0, height: 4 },
+        elevation: 6,
     },
+
     submitButtonText: {
         color: '#fff',
+        fontWeight: '700',
         fontSize: moderateScale(16),
-        fontWeight: '600',
     },
-    text: {
-        fontSize: moderateScale(14),
-        lineHeight: verticalScale(20),
-        color: '#555',
-        marginBottom: verticalScale(10),
-    },
+
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        padding: scale(16),
-        backgroundColor: colors.primary,
-        borderBottomLeftRadius: 20,
-        borderBottomRightRadius: 20,
-        paddingTop: verticalScale(40),
-        paddingBottom: verticalScale(20)
+        paddingHorizontal: scale(18),
+        paddingTop: verticalScale(45),
+        paddingBottom: verticalScale(20),
+        backgroundColor: colors.primary, 
+        shadowColor: '#000',
+        shadowOpacity: 0.25,
+        shadowRadius: 12,
+        elevation: 6,
     },
+
     backBtn: {
         padding: scale(8),
         marginRight: scale(10),
-        zIndex: 1
     },
+
     headerTitle: {
-        fontSize: moderateScale(20),
-        fontWeight: 'bold',
+        fontSize: moderateScale(22),
+        fontWeight: '800',
         color: '#fff',
-        textAlign: 'center',
         flex: 1,
-        marginRight: scale(40)
+        textAlign: 'center',
+        marginRight: scale(40),
     },
+
+    // CONTACT CARD
     contactInfoContainer: {
-        marginTop: verticalScale(24),
-        backgroundColor: '#fff',
-        borderRadius: 10,
-        padding: scale(16),
+        marginTop: verticalScale(25),
+        backgroundColor: 'rgba(255,255,255,0.97)',
+        borderRadius: 16,
+        padding: scale(18),
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
-        shadowRadius: 8,
-        elevation: 3,
+        shadowRadius: 10,
+        shadowOffset: { width: 0, height: 4 },
+        elevation: 4,
     },
+
     sectionTitle: {
         fontSize: moderateScale(18),
-        fontWeight: '600',
+        fontWeight: '700',
         color: colors.primary,
         marginBottom: verticalScale(16),
     },
+
     contactItem: {
         flexDirection: 'row',
-        marginBottom: verticalScale(20),
+        marginBottom: verticalScale(18),
     },
+
     contactIcon: {
-        marginRight: scale(12),
-        marginTop: scale(4),
+        marginRight: scale(14),
+        marginTop: verticalScale(4),
     },
+
     contactLabel: {
         fontSize: moderateScale(14),
-        fontWeight: '600',
+        fontWeight: '700',
         color: '#333',
-        marginBottom: verticalScale(4),
+        marginBottom: 2,
     },
+
     contactText: {
-        fontSize: moderateScale(13),
+        fontSize: moderateScale(13.5),
         color: '#555',
         lineHeight: verticalScale(20),
     },
+
     contactLink: {
         color: colors.primary,
+        textDecorationLine: 'underline',
     },
-})
+});

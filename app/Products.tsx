@@ -4,11 +4,12 @@ import { colors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Image, ImageBackground, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, ImageBackground, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { useCartStore } from '../store/cartStore';
 import { useWishlistStore } from './Wishlist';
+import RenderHtml from '@/components/RenderHtml';
 
 const backgroundImages = {
     ss1: require('../assets/images/ss1.png'),
@@ -25,6 +26,7 @@ interface Product {
     pts?: number;
     stock_status?: string;
     regular_price?: number;
+    cost_price?: number;
     quantity?: number;
     sale_price?: number;
     description?: string;
@@ -75,52 +77,52 @@ const Products = () => {
         image?: any;
     }
 
-const processVariants = (): Variant[] => {
-    const rawVariants = product.variant || product.variants || [];
-    if (!Array.isArray(rawVariants)) return [];
+    const processVariants = (): Variant[] => {
+        const rawVariants = product.variant || product.variants || [];
+        if (!Array.isArray(rawVariants)) return [];
 
-    const variantMap = new Map<string, Variant>();
+        const variantMap = new Map<string, Variant>();
 
-    rawVariants.forEach((v: any) => {
-        if (v?.attributes) {
-            const attributes = Array.isArray(v.attributes) ? v.attributes : [v.attributes];
-            attributes.forEach((attr: any) => {
-                const options = attr?.options || {};
-                const optionValues = Object.values(options).map(String).filter(Boolean);
-                const label = optionValues.join(' - ') || 'Default';
+        rawVariants.forEach((v: any) => {
+            if (v?.attributes) {
+                const attributes = Array.isArray(v.attributes) ? v.attributes : [v.attributes];
+                attributes.forEach((attr: any) => {
+                    const options = attr?.options || {};
+                    const optionValues = Object.values(options).map(String).filter(Boolean);
+                    const label = optionValues.join(' - ') || 'Default';
+                    const variantKey = `${v.id}-${label}`;
+
+                    if (!variantMap.has(variantKey)) {
+                        variantMap.set(variantKey, {
+                            id: v.id,
+                            label: label,
+                            price: Number(attr.regular_price || attr.price || v.price || 0),
+                            ...(attr.sale_price ? { sale_price: Number(attr.sale_price) } : {}),
+                            image: v.image || v.img || product.img,
+                            stock: v.stock !== undefined ? Number(v.stock) : undefined
+                        });
+                    }
+                });
+            } else {
+                const label = v?.label || v?.name || v?.pack || String(v?.size || v?.title || '');
+                if (!label) return;
+
                 const variantKey = `${v.id}-${label}`;
-
                 if (!variantMap.has(variantKey)) {
                     variantMap.set(variantKey, {
                         id: v.id,
-                        label: label,
-                        price: Number(attr.regular_price || attr.price || v.price || 0),
-                        ...(attr.sale_price ? { sale_price: Number(attr.sale_price) } : {}),
+                        label,
+                        price: Number(v.regular_price || v.price || v.amount || 0),
+                        ...(v.sale_price ? { sale_price: Number(v.sale_price) } : {}),
                         image: v.image || v.img || product.img,
                         stock: v.stock !== undefined ? Number(v.stock) : undefined
                     });
                 }
-            });
-        } else {
-            const label = v?.label || v?.name || v?.pack || String(v?.size || v?.title || '');
-            if (!label) return;
-
-            const variantKey = `${v.id}-${label}`;
-            if (!variantMap.has(variantKey)) {
-                variantMap.set(variantKey, {
-                    id: v.id,
-                    label,
-                    price: Number(v.regular_price || v.price || v.amount || 0),
-                    ...(v.sale_price ? { sale_price: Number(v.sale_price) } : {}),
-                    image: v.image || v.img || product.img,
-                    stock: v.stock !== undefined ? Number(v.stock) : undefined
-                });
             }
-        }
-    });
+        });
 
-    return Array.from(variantMap.values());
-};
+        return Array.from(variantMap.values());
+    };
     const variants = processVariants();
 
     let priceRange: { min: number; max: number } | null = null;
@@ -161,7 +163,12 @@ const processVariants = (): Variant[] => {
 
     const mainColor = bgKey === 'ss2' ? '#0B3D0B' : '#E53935';
 
-    // Check if product is in cart when cart items change
+    const { width } = useWindowDimensions();
+    const cleanedHTML = product?.description
+        ?.replace(/!important/g, "")
+        .replace(/background-[^;]+;/g, "")
+        .replace(/font-variant-[^;]+;/g, "")
+        .replace(/font-family:[^;]+;/g, "") || "";
 
     useEffect(() => {
         // Only run if there are items in the cart
@@ -229,6 +236,7 @@ const processVariants = (): Variant[] => {
             id: product.id,
             name: product.name,
             pack: selectedSize,
+            cost_price: product.cost_price,
             price: variantSalePrice || variantPrice || product.sale_price || product.regular_price || 0,
             sale_price: variantSalePrice || product.sale_price || undefined,
             points: product.pts,
@@ -319,7 +327,7 @@ const processVariants = (): Variant[] => {
                                 )}
                             </TouchableOpacity>
                             <TouchableOpacity
-                               style={{marginLeft:scale(10)}}
+                                style={{ marginLeft: scale(10) }}
                                 onPress={async () => {
                                     if (!isAuthenticated) {
                                         setWishlistMessage('Please log in to use wishlist.');
@@ -389,7 +397,7 @@ const processVariants = (): Variant[] => {
                         <Text style={styles.title}>{product.name}</Text>
                         <Text style={styles.pcs}>{product.stock} pcs</Text>
                         <Text style={styles.sectionTitle}>Product Details</Text>
-                        <Text style={styles.details}>{product.description}</Text>
+                        <RenderHtml html={cleanedHTML} style={styles.details}/>
                         <View style={styles.divider} />
                         <Text style={styles.sectionTitle}>Reviews</Text>
                         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>

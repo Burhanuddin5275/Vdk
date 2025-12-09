@@ -1,7 +1,9 @@
+import { useAuth } from '@/hooks/useAuth';
 import { AntDesign, Ionicons } from '@expo/vector-icons';
+import axios from 'axios';
 import { router, useLocalSearchParams } from 'expo-router';
-import React from 'react';
-import { Dimensions, FlatList, Image, ImageBackground, KeyboardAvoidingView, Modal, Platform, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import React, { useEffect } from 'react';
+import { Alert, Dimensions, FlatList, Image, ImageBackground, KeyboardAvoidingView, Modal, Platform, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { Api_url } from '../url/url';
@@ -39,7 +41,6 @@ const formatDate = (dateString: string) => {
     hour12: true
   });
 };
-// Determine status steps based on order status
 const getStatusSteps = (status: string, createdAt: string) => {
   const baseDate = new Date(createdAt);
   const steps = [
@@ -70,19 +71,136 @@ const OrderReview = () => {
   const [reviewText, setReviewText] = React.useState('');
   const [rating, setRating] = React.useState(0);
   const [currentProduct, setCurrentProduct] = React.useState<OrderItem | null>(null);
+  const [reviewedProductIds, setReviewedProductIds] = React.useState<Set<string>>(new Set());
+  const { phone } = useAuth();
   const insets = useSafeAreaInsets();
+  const [userId, setUserId] = React.useState<string | null>(null);
+useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const response = await axios.get(`${Api_url}api/app-user/list/`);
+        const users = response.data;
+        const matchedUser = users.find((u: any) => u.number === phone);
 
+        if (matchedUser) {
+          setUserId(matchedUser.id);
+          console.log('Matched user ID:', matchedUser.id);
+        } else {
+          console.log('No user found with phone:', phone);
+          
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+
+      }
+    };
+
+    if (phone) {
+      fetchUserData();
+    }
+  }, [phone]);
   const handleRateProduct = (product: OrderItem) => {
+    console.log('Rating product with ID:', product.id); 
     setCurrentProduct(product);
     setModalVisible(true);
   };
+const submitReview = async (productId: string, rating: number, review: string) => {
+  if (!phone) {
+    Alert.alert('Error', 'Please log in to submit a review');
+    return;
+  }
 
-    // Handle review submission here
-    console.log('Submitting review for product:', currentProduct);
-    console.log('Rating:', rating);
-    console.log('Review:', reviewText);
+  if (!userId) {
+    Alert.alert('Error', 'User information not available. Please try again.');
+    return;
+  }
+
+  // Validate the review data
+  if (!review.trim()) {
+    Alert.alert('Error', 'Please enter a review comment');
+    return;
+  }
+
+  if (rating < 1 || rating > 5) {
+    Alert.alert('Error', 'Please select a rating between 1 and 5');
+    return;
+  }
+
+  try {
+    const reviewData = {
+      item: parseInt(productId),
+      user: parseInt(userId, 10),
+      rating: Number(rating),
+      comment: review.trim()   
+    };
+
+    console.log('Submitting review with data:', JSON.stringify(reviewData, null, 2));
+
+    const response = await fetch(`${Api_url}create-review/`, {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(reviewData),
+    });
+
+    let responseData;
+    try {
+      responseData = await response.json();
+    } catch (e) {
+      console.error('Failed to parse JSON response:', e);
+      throw new Error('Invalid response from server');
+    }
+
+    if (!response.ok) {
+      console.error('Review submission failed:', {
+        status: response.status,
+        statusText: response.statusText,
+        responseData
+      });
+      
+      // More detailed error message
+      const errorMessage = 
+        responseData?.errors?.product?.[0] || 
+        responseData?.errors?.non_field_errors?.[0] ||
+        responseData?.message || 
+        `Failed to submit review: ${response.status} ${response.statusText}`;
+      
+      throw new Error(errorMessage);
+    }
+
+    // If we get here, the review was successful
+    console.log('Review submitted successfully:', responseData);
+    // Add the product ID to the reviewed set
+    setReviewedProductIds(prev => new Set([...prev, productId]));
+    Alert.alert('Success', 'Thank you for your review!');
+    setModalVisible(false);
+    setReviewText('');
+    setRating(0);
+    return responseData;
+  } catch (error) {
+    console.error('Error in submitReview:', {
+      error,
+      productId,
+      userId,
+      rating,
+      review
+    });
     
-
+    let errorMessage = 'Failed to submit review. Please try again.';
+    if (error instanceof Error) {
+      if (error.message.includes('Network')) {
+        errorMessage = 'Network error. Please check your internet connection.';
+      } else {
+        errorMessage = error.message;
+      }
+    }
+    
+    Alert.alert('Error', errorMessage);
+  }
+};
+ 
 
   // Get status steps based on order status
   const statusSteps = order ? getStatusSteps(order.status, order.created_at) : [];
@@ -165,9 +283,11 @@ const OrderReview = () => {
                   </View>
                   <View style={styles.priceContainer}>
                     <Text style={styles.productPrice}>Rs. {parseFloat(item.price || '0').toFixed(2)}</Text>
-                    <TouchableOpacity onPress={() => handleRateProduct(item)}>
-                      <Text style={styles.rateLink}>Rate Product</Text>
-                    </TouchableOpacity>
+                    {!reviewedProductIds.has(item.id) && (
+                      <TouchableOpacity onPress={() => handleRateProduct(item)}>
+                        <Text style={styles.rateLink}>Rate Product</Text>
+                      </TouchableOpacity>
+                    )}
                   </View>
                 </View>
               </View>
@@ -261,13 +381,13 @@ const OrderReview = () => {
                 value={reviewText}
                 onChangeText={setReviewText}
               />
-              <TouchableOpacity style={styles.submitBtn}>
+              <TouchableOpacity style={styles.submitBtn} onPress={() => submitReview(currentProduct?.id || '', rating, reviewText)}>
                 <Text style={styles.submitBtnText}>Submit</Text>
               </TouchableOpacity>
             </View>
           </KeyboardAvoidingView>
         </Modal>
-        <TabLayout />
+        <TabLayout /> 
       </ImageBackground>
     </SafeAreaView>
   );

@@ -1,13 +1,13 @@
+import { useAuth } from '@/hooks/useAuth';
+import { fetchRedeems, RedeemItem } from '@/services/redeem';
+import { fetchUsers, UserItem } from '@/services/user';
 import { colors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Dimensions, Image, ImageBackground, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { fetchRedeems, RedeemItem } from '@/services/redeem';
-import { useAuth } from '@/hooks/useAuth';
-import { fetchUsers, UserItem } from '@/services/user';
+import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 
 
 
@@ -107,7 +107,15 @@ export default function RewardsScreen() {
 
           {redeems.map((item, idx) => (
             <View style={styles.rewardItem} key={idx}>
-              <Image source={item.image} style={styles.rewardImage} resizeMode="cover" />
+              <View style={styles.imageContainer}>
+                {item.image ? (
+                  <Image source={item.image} style={styles.rewardImage} resizeMode="contain" />
+                ) : (
+                  <View style={styles.placeholderContainer}>
+                    <Ionicons name="image-outline" size={40} color="#999" />
+                  </View>
+                )}
+              </View>
               <View style={styles.rewardInfo}>
                 <Text style={styles.rewardName}>{item.title}</Text>
                 <View style={{ alignItems: 'flex-start' }}>
@@ -247,12 +255,27 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.04,
     shadowRadius: 2,
   },
+  imageContainer: {
+    width: scale(80),
+    height: scale(80),
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: scale(12),
+    backgroundColor: '#f5f5f5',
+   borderRadius: 8,   
+  },
+  placeholderContainer: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
+  },
   rewardImage: {
-    width: scale(70),
-    height: verticalScale(65),
-    borderRadius: 12,
-    marginRight: 16,
-    backgroundColor: '#fff',
+    width: '100%',
+    height: '100%',
+    borderRadius: 8,
   },
   rewardInfo: {
     flex: 1,

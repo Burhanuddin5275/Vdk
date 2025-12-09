@@ -1,15 +1,15 @@
 import { Button } from '@/components/Button';
+import SuccessModal from '@/components/SuccessModal';
 import { useAuth } from '@/hooks/useAuth';
 import { useCartStore } from '@/store/cartStore';
 import { colors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
+import axios from 'axios';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
-import axios from 'axios';
 import { ActivityIndicator, Alert, Dimensions, Image, ImageBackground, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { Api_url } from '../url/url';
-import SuccessModal from '@/components/SuccessModal';
 const { width, height } = Dimensions.get('window');
 
 const PAYMENT_METHODS =
@@ -41,9 +41,19 @@ const MORE_OPTIONS =
         },
     ];
 
+const RadioButton = ({ selected, onPress }: { selected: boolean; onPress: () => void }) => (
+    <TouchableOpacity
+        style={[styles.radioButton, selected && styles.radioButtonSelected]}
+        onPress={onPress}
+    >
+        {selected && <View style={styles.radioButtonInner} />}
+    </TouchableOpacity>
+);
+
 interface OrderItem {
     image: string;
     name: string;
+    cost_price?: number;
     pts: number;
     variants: string;
     price: string;
@@ -157,12 +167,14 @@ const Payment = () => {
                 address: addressObj,
                 shipping: methodObj,
                 status: 'pending',
+
                 product: parsedCartItems.map((item: any) => ({
                     image: item.image || null,
                     name: item.name || null,
                     pts: item.points || null,
                     quantity: item.quantity || null,
                     variants: item.variants || null,
+                    cost_price: item.cost_price || null,
                     price: item.price ? (parseFloat(item.price) * (item.quantity || 1)).toFixed(2) : '0.00',
                 })),
                 payment: [
@@ -238,6 +250,35 @@ const Payment = () => {
         setSelected(methodId);
     };
 
+    const renderPaymentOption = (item: any) => {
+        const isSelected = selected === item.id;
+        return (
+            <TouchableOpacity
+                key={item.id}
+                style={[
+                    styles.paymentOption,
+                    isSelected && styles.selectedPaymentOption,
+                ]}
+                onPress={() => handlePaymentMethodSelect(item.id)}
+            >
+                <View style={styles.paymentOptionContent}>
+                    <View style={styles.paymentOptionLeft}>
+                        {typeof item.icon === 'number' ? (
+                            <Image source={item.icon} style={styles.paymentIcon} />
+                        ) : (
+                            item.icon
+                        )}
+                        <Text style={styles.paymentLabel}>{item.label}</Text>
+                    </View>
+                    <RadioButton
+                        selected={isSelected}
+                        onPress={() => handlePaymentMethodSelect(item.id)}
+                    />
+                </View>
+            </TouchableOpacity>
+        );
+    };
+
     return (
         <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(verticalScale(4)) }}>
             <ImageBackground
@@ -269,21 +310,7 @@ const Payment = () => {
 
                         {/* More Payment Options */}
                         <Text style={styles.sectionTitle}>More Payment Options</Text>
-                        {MORE_OPTIONS.map((option) => (
-                            <TouchableOpacity
-                                key={option.id}
-                                style={[
-                                    styles.optionRow,
-                                    selected === option.id && styles.selectedRow,
-                                ]}
-                                activeOpacity={0.8}
-                                onPress={() => handlePaymentMethodSelect(option.id)}
-                            >
-                                <Image source={option.icon} style={styles.optionIcon} resizeMode="contain" />
-                                <Text style={styles.optionLabel}>{option.label}</Text>
-
-                            </TouchableOpacity>
-                        ))}
+                        {MORE_OPTIONS.map(renderPaymentOption)}
                     </ScrollView>
                     {/* Confirm Payment Button */}
                     <View style={styles.footer}>
@@ -319,6 +346,57 @@ const Payment = () => {
 };
 
 const styles = StyleSheet.create({
+    paymentOption: {
+        backgroundColor: colors.white,
+        borderRadius: moderateScale(8),
+        padding: moderateScale(15),
+        marginBottom: moderateScale(10),
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        borderWidth: 1,
+        borderColor: colors.white,
+    },
+    selectedPaymentOption: {
+        borderColor: colors.primary,
+    },
+    paymentOptionContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flex: 1,
+        justifyContent: 'space-between',
+    },
+    paymentOptionLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    paymentIcon: {
+        width: moderateScale(25),
+        height: moderateScale(25),
+        marginRight: moderateScale(15),
+    },
+    paymentLabel: {
+        fontSize: moderateScale(14),
+        fontFamily: 'PoppinsSemi',
+    },
+    radioButton: {
+        width: moderateScale(20),
+        height: moderateScale(20),
+        borderRadius: moderateScale(10),
+        borderWidth: 1,
+        borderColor: colors.primary,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    radioButtonSelected: {
+        borderColor: colors.primary,
+    },
+    radioButtonInner: {
+        width: moderateScale(12),
+        height: moderateScale(12),
+        borderRadius: moderateScale(6),
+        backgroundColor: colors.primary,
+    },
     background: {
         flex: 1,
         width: '100%',

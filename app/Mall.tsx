@@ -1,18 +1,17 @@
+import AlertModal from '@/components/Alert';
+import SuccessModal from '@/components/SuccessModal';
+import { useAuth } from '@/hooks/useAuth';
+import { useAddressStore } from '@/store/addressStore';
+import { useShippingStore } from '@/store/shippingStore';
 import { colors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
+import axios from 'axios';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Alert, Dimensions, ImageBackground, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { Api_url } from '../url/url';
-import axios from 'axios';
-import { useAuth } from '@/hooks/useAuth';
-import { useShippingStore } from '@/store/shippingStore';
-import { useAddressStore } from '@/store/addressStore';
-import SuccessModal from '@/components/SuccessModal';
-import AlertModal from '@/components/Alert';
-import Address from './Address';
 const { width } = Dimensions.get('window');
 
 // Define the expected params type
@@ -201,20 +200,26 @@ const handleShippingModalClose = () => {
       >
         {/* Product Image and Header */}
         <View style={styles.imageHeaderWrap}>
-          <ImageBackground
-            source={{ uri: image }}
-            style={styles.productImg}
-            resizeMode="cover"
-            imageStyle={{ borderBottomLeftRadius: 32, borderBottomRightRadius: 32 }}
-          >
-            <View style={styles.headerRow}>
+               <View style={styles.headerRow}>
               <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
                 <Ionicons name="arrow-back" size={28} color={colors.white} />
               </TouchableOpacity>
-              <TouchableOpacity style={styles.heartBtn}>
+              {/* <TouchableOpacity style={styles.heartBtn}>
                 <Ionicons name="heart-outline" size={28} color={colors.white} />
-              </TouchableOpacity>
+              </TouchableOpacity> */}
             </View>
+          <ImageBackground
+            source={{ uri: image }}
+            style={styles.productImg}
+            resizeMode={image ? 'contain' : 'cover'}
+            imageStyle={{ borderBottomLeftRadius: 32, borderBottomRightRadius: 32 }}
+          >
+            {!image && (
+              <View style={styles.placeholderContainer}>
+                <Ionicons name="image-outline" size={48} color="white" />
+                <Text style={styles.placeholderText}>No Image Available</Text>
+              </View>
+            )}
           </ImageBackground>
         </View>
         <ScrollView >
@@ -278,8 +283,8 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   productImg: {
-    width: "100%",
-    height: verticalScale(280),
+    width: scale(350),
+    height: verticalScale(180),
     borderBottomLeftRadius: 32,
     borderBottomRightRadius: 32,
   },
@@ -295,6 +300,17 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: scale(18),
     marginTop: verticalScale(20),
+  },
+  placeholderContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  placeholderText: {
+    marginTop: 8,
+    color: 'white',
+    fontSize: 16,
+    textAlign: 'center',
   },
   backBtn: {
     borderRadius: 20,

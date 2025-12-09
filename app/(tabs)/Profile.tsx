@@ -2,7 +2,7 @@ import SuccessModal from '@/components/SuccessModal';
 import { useAuth } from '@/hooks/useAuth';
 import { fetchUsers, UserItem } from '@/services/user';
 import { colors } from '@/theme/colors';
-import { img_url } from '@/url/url';
+import { Api_url, img_url } from '@/url/url';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -54,9 +54,9 @@ const deleteAccount = async (): Promise<void> => {
   if (!userId && userId !== 0) {
     alert('Unable to deactivate account: missing user id.');
     return;
-  }
+  } 
   
-  const url = `http://192.168.1.101:8000/api/deactivate/${userId}/`;
+  const url = `${Api_url}/api/deactivate/${userId}/`;
   console.log('Attempting to deactivate account with URL:', url);
   console.log('userId value:', userId);
 
@@ -99,11 +99,11 @@ const deleteAccount = async (): Promise<void> => {
     { label: 'Wishlist', icon: 'heart', onPress: () => { router.push('/Wishlist') } },
     { label: 'Manage addresses', icon: 'location', onPress: () => { router.push('/ShippingAddress') } },
     { label: 'Manage profile', icon: 'person-circle', onPress: () => { router.push('/ManageProfile') } },
-    { label: 'Contact us', icon: 'paper-plane', onPress: () => { } },
-    { label: 'About us', icon: 'information-circle', onPress: () => { } },
+    { label: 'Contact us', icon: 'paper-plane', onPress: () => {router.push('/ContactUS') } },
+    { label: 'About us', icon: 'information-circle', onPress: () => { router.push('/About') } },
     { label: 'Terms & conditions', icon: 'document-text', onPress: () => {router.push('/Terms') } },
     { label: 'Redeemed', icon: 'gift', onPress: () => { router.push('/Redeemed') } },
-    { label: 'Privacy policy', icon: 'shield-checkmark', onPress: () => { } },
+    { label: 'Privacy policy', icon: 'shield-checkmark', onPress: () => {router.push('/Policy') } },
     { label: 'Logout', icon: 'log-out', onPress: handleLogout },
   ];
 

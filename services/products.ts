@@ -12,6 +12,7 @@ export type Product =
     quantity: number;
     stock: number;
     sale_price: number;
+    cost_price?: number;
     description?: string;
     stock_status?: string;
     gallery_images?: any[];
@@ -35,8 +36,9 @@ function toProduct(item: ApiProduct): Product {
   const stock = Number(item.stock ?? item.quantity ?? 0);
   const pts = Number(item.pts ?? item.points ?? 29);
   const regular_price = Number(item.regular_price ?? item.amount ?? 0);
+  const cost_price = Number(item.cost_price ?? item.cost ?? 0);
   const sale_price = Number(item.sale_price ?? item.discounted_price ?? 0);
-  const description = item.short_description ?? item.desc ?? undefined;
+  const description = item.description ?? item.desc ?? undefined;
   const stock_status = item.stock_status ?? undefined;
   const gallery_images = item.gallery_images ?? [];
   const variants = item.variant ?? item.variants ?? [];
@@ -49,6 +51,7 @@ function toProduct(item: ApiProduct): Product {
     img,
     pts,
     stock,
+    cost_price,
     rating,
     quantity,
    regular_price,

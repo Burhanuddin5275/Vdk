@@ -8,19 +8,22 @@ import { moderateScale, scale, verticalScale } from 'react-native-size-matters'
 import { RenderHTML } from 'react-native-render-html';
 import { HTMLContentModel, HTMLElementModel } from 'react-native-render-html';
 import { colors } from '@/theme/colors'
-
-const Terms = () => {
+const Policy = () => {
   const [terms, setTerms] = useState<TermsItem | null>(null);
   const [loading, setLoading] = useState(true);
   const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
-
+ const { width } = useWindowDimensions(); 
+ const cleanedHTML = terms?.p_text
+  ?.replace(/!important/g, "")
+  .replace(/background-[^;]+;/g, "")
+  .replace(/font-variant-[^;]+;/g, "")
+  .replace(/font-family:[^;]+;/g, "") || "";
   useEffect(() => {
     const loadTerms = async () => {
       try {
         const data = await fetchTerms();
         if (data && data.length > 0) {
-          setTerms(data[0]);
+          setTerms(data[0]); 
         }
       } catch (error) {
         console.error('Failed to load terms:', error);
@@ -40,14 +43,6 @@ const Terms = () => {
     );
   }
 
-  // Keep all font-family and <font face=""> intact
-  const cleanedHTML = terms?.t_text
-    ?.replace(/!important/g, "")
-    .replace(/font-variant-[^;]+;/g, "")
-    .replace(/background-[^;]+;/g, "")
-    .replace(/color:[^;]+;/g, "")
-    || "";
-
   return (
     <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
       <ImageBackground
@@ -59,44 +54,39 @@ const Terms = () => {
           <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Terms and Conditions</Text>
+          <Text style={styles.headerTitle}>PRIVACY POLICY</Text>
         </View>
-
+        {/* In Terms.tsx, update the ScrollView section to: */}
         <ScrollView style={styles.contentContainer}>
           {terms ? (
             <View style={styles.termsContainer}>
-              <RenderHTML
-                contentWidth={width}
-                source={{ html: cleanedHTML }}
-                allowedStyles={[
-                  'color',
-                  'backgroundColor',
-                ]}
-                customHTMLElementModels={{
-                  font: HTMLElementModel.fromCustomModel({
-                    tagName: 'font',
-                    contentModel: HTMLContentModel.textual,
-                    mixedUAStyles: {
-                      fontFamily: 'inherit',
-                    }
-                  })
-                }}
-                tagsStyles={{
-                  b: {fontSize:16,fontWeight:'700'},
-                  p: { fontSize: 12 },
-                  font:{},
-                  ul:{},
-                  li:{}, 
-                  a:{},
-                  h1:{ fontSize: 28, fontWeight: "700" },
-                  h2:{ fontSize: 24, fontWeight: "600" },
-                  h3:{ fontSize: 20, fontWeight: "500" },
-                  h4:{ fontSize: 18, fontWeight: "500" },
-                  h5:{ fontSize: 16, fontWeight: "500" },
-                  h6:{ fontSize: 14, fontWeight: "200" }
-                }} 
-              />
-
+              {/* <Text style={styles.title}>{terms.t_title || 'Terms and Conditions'}</Text> */}
+             <RenderHTML
+               contentWidth={width}
+               source={{ html: cleanedHTML }}
+             
+               // Enable deprecated <font> tag support
+               customHTMLElementModels={{
+                 font: HTMLElementModel.fromCustomModel({
+                   tagName: 'font',
+                   contentModel: HTMLContentModel.textual, // <font> contains text
+                 })
+               }}
+             
+               tagsStyles={{
+                 font: {
+                   // default styles for <font> when attributes are missing
+                   color: 'black'
+                 },
+                 p: { fontSize: 16, lineHeight: 22},
+                 h1: { fontSize: 28, fontWeight: "700",},
+                 h2: { fontSize: 24, fontWeight: "600" },
+                 h3: { fontSize: 20, fontWeight: "500" },
+                 h4: { fontSize: 18, fontWeight: "500" },
+                 h5: { fontSize: 16, fontWeight: "500" },
+                 h6: { fontSize: 16, fontWeight: "500" },
+               }}
+             />
             </View>
           ) : (
             <Text style={styles.errorText}>Failed to load terms and conditions.</Text>
@@ -107,7 +97,7 @@ const Terms = () => {
   )
 }
 
-export default Terms
+export default Policy
 
 const styles = StyleSheet.create({
   loadingContainer: {
@@ -119,13 +109,26 @@ const styles = StyleSheet.create({
   contentContainer: {
     flex: 1,
     padding: scale(16),
-    backgroundColor: colors.white
+    backgroundColor:colors.white
   },
   termsContainer: {
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
     borderRadius: 10,
-    padding: scale(16),
+    padding: scale(5),
     marginBottom: verticalScale(20),
+  },
+  title: {
+    fontSize: moderateScale(20),
+    fontWeight: 'bold',
+    marginBottom: verticalScale(10),
+    color: '#333',
+    textAlign: 'center',
+  },
+  text: {
+    fontSize: moderateScale(14),
+    lineHeight: verticalScale(20),
+    color: '#555',
+    marginBottom: verticalScale(10),
   },
   errorText: {
     color: colors.white,
@@ -140,7 +143,7 @@ const styles = StyleSheet.create({
     height: verticalScale(80),
     position: 'relative',
     paddingHorizontal: scale(18),
-    backgroundColor: colors.primary,
+    backgroundColor:colors.primary,
   },
   backBtn: {
     width: scale(30),

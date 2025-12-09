@@ -59,6 +59,9 @@ export default function RootLayout() {
                <Stack.Screen name="VerifyNumber" options={{ headerShown: false }} />
                <Stack.Screen name="ForgetPassword" options={{ headerShown: false }} />
                <Stack.Screen name="Terms" options={{ headerShown: false }} />
+              <Stack.Screen name="Policy" options={{ headerShown: false }} />
+              <Stack.Screen name="About" options={{ headerShown: false }} />
+                <Stack.Screen name="ContactUS" options={{ headerShown: false }} />
             <Stack.Screen name="+not-found" />
           </Stack>
           <StatusBar style="auto" />
