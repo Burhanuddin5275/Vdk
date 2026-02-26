@@ -6,40 +6,39 @@ import { colors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { createOrderApi } from '../services/orders';
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Dimensions, Image, ImageBackground, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
+import {
+    ActivityIndicator,
+    Alert,
+    Dimensions,
+    Image,
+    ImageBackground,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
+} from 'react-native';
+import { moderateScale } from 'react-native-size-matters';
 import { Api_url } from '../url/url';
 const { width, height } = Dimensions.get('window');
 
-const PAYMENT_METHODS =
-    [
-        {
-            id: 'card',
-            label: 'Add Card',
-            icon: <Ionicons name="card-outline" size={moderateScale(25)} color={colors.primary} />,
-            type: 'card',
-        },
-    ];
+const PAYMENT_METHODS = [
+    {
+        id: 'card',
+        label: 'Add Card',
+        icon: <Ionicons name="card-outline" size={moderateScale(25)} color={colors.primary} />,
+        type: 'card',
+    },
+];
 
-const MORE_OPTIONS =
-    [
-        {
-            id: 'easypaisa',
-            label: 'Easypaisa',
-            icon: require('../assets/images/easypaisa.png'),
-        },
-        {
-            id: 'jazzcash',
-            label: 'Jazzcash',
-            icon: require('../assets/images/jazzcash.png'),
-        },
-        {
-            id: 'Cod',
-            label: 'Cash on Delivery',
-            icon: require('../assets/images/cash.png'),
-        },
-    ];
+const MORE_OPTIONS = [
+    { id: 'easypaisa', label: 'Easypaisa', icon: require('../assets/images/easypaisa.png') },
+    { id: 'jazzcash', label: 'Jazzcash', icon: require('../assets/images/jazzcash.png') },
+    { id: 'Cod', label: 'Cash on Delivery', icon: require('../assets/images/cash.png') },
+];
 
 const RadioButton = ({ selected, onPress }: { selected: boolean; onPress: () => void }) => (
     <TouchableOpacity
@@ -50,25 +49,10 @@ const RadioButton = ({ selected, onPress }: { selected: boolean; onPress: () => 
     </TouchableOpacity>
 );
 
-interface OrderItem {
-    image: string;
-    name: string;
-    cost_price?: number;
-    pts: number;
-    variants: string;
-    price: string;
-}
-
-interface OrderData {
-    address: any;
-    shipping: any;
-    status: string;
-    items: OrderItem[];
-}
-
 const Payment = () => {
     const router = useRouter();
     const params = useLocalSearchParams();
+
     const [selected, setSelected] = useState<string>('');
     const [isLoading, setIsLoading] = useState(false);
     const { clearCart } = useCartStore();
@@ -79,52 +63,43 @@ const Payment = () => {
     }>();
     const shippingAddress = shippingAddressStr ? JSON.parse(shippingAddressStr) : null;
     const shippingMethod = shippingMethodStr ? JSON.parse(shippingMethodStr) : null;
+
     const { isAuthenticated, phone, token, user } = useAuth();
     const [userId, setUserId] = useState<string | null>(null);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [orderSuccess, setOrderSuccess] = useState(false);
+
     const handleSuccessModalClose = () => {
         setShowSuccessModal(false);
-        // Move navigation here
         router.replace({
             pathname: '/(tabs)/Orders',
-            params: {
-                showSuccess: 'true',
-                orderSuccess: 'true'
-            }
+            params: { showSuccess: 'true', orderSuccess: 'true' }
         });
     };
+
     useEffect(() => {
         const fetchUserData = async () => {
             try {
                 const response = await axios.get(`${Api_url}api/app-user/list/`);
-                const users = response.data; // Assuming the API returns an array of users
+                const users = response.data;
 
-                // Find user by phone number
                 const matchedUser = users.find((u: any) => u.number === phone);
 
                 if (matchedUser) {
                     setUserId(matchedUser.id);
-                    console.log('Matched user ID:', matchedUser.id);
                 } else {
-                    console.log('No user found with phone:', phone);
-                    setUserId(token); // Fallback to token if no match found
+                    setUserId(token);
                 }
             } catch (error) {
-                console.error('Error fetching user data:', error);
-                setUserId(token); // Fallback to token on error
+                setUserId(token);
             }
         };
 
-        if (phone) {
-            fetchUserData();
-        } else {
-            setUserId(token); // Fallback to token if no phone
-        }
+        if (phone) fetchUserData();
+        else setUserId(token);
+
     }, [phone, token]);
 
-
-    // Parse the cart items if they're a string
     const parsedCartItems = useMemo(() => {
         try {
             return cartItems ? JSON.parse(cartItems) : [];
@@ -134,7 +109,13 @@ const Payment = () => {
         }
     }, [cartItems]);
 
-    const createOrder = async (paymentMethod: string) => {
+    // ------------------ CREATE ORDER ------------------
+    const createOrder = async () => {
+        if (!selected) {
+            Alert.alert("Error", "Please select a payment method");
+            return;
+        }
+
         if (!shippingAddress || !shippingMethod) {
             Alert.alert('Error', 'Missing shipping information');
             return;
@@ -148,26 +129,12 @@ const Payment = () => {
         setIsLoading(true);
 
         try {
-            // Parse shipping address if it's a string
-            const addressObj = typeof shippingAddress === 'string'
-                ? JSON.parse(shippingAddress)
-                : shippingAddress;
-
-            // Parse shipping method if it's a string
-            const methodObj = typeof shippingMethod === 'string'
-                ? JSON.parse(shippingMethod)
-                : shippingMethod;
-
-            console.log('Phone number:', phone, 'Type:', typeof phone);
             const orderData = {
                 user_id: userId,
-                user_detail: {
-                    number: phone
-                },
-                address: addressObj,
-                shipping: methodObj,
+                user_detail: { number: phone },
+                address: shippingAddress,
+                shipping: shippingMethod,
                 status: 'pending',
-
                 product: parsedCartItems.map((item: any) => ({
                     image: item.image || null,
                     name: item.name || null,
@@ -175,196 +142,122 @@ const Payment = () => {
                     quantity: item.quantity || null,
                     variants: item.variants || null,
                     cost_price: item.cost_price || null,
-                    price: item.price ? (parseFloat(item.price) * (item.quantity || 1)).toFixed(2) : '0.00',
+                    price: item.price
+                        ? (parseFloat(item.price) * (item.quantity || 1)).toFixed(2)
+                        : '0.00',
                 })),
-                payment: [
-                    {
-                        method: selected,
-                        status: 'Pending'
-                    }
-                ],
-                created_at: new Date().toISOString()
+                payment: [{ method: selected, status: "Pending" }],
+                created_at: new Date().toISOString(),
             };
 
-            console.log('Sending order data:', JSON.stringify(orderData, null, 2));
+            const response = await createOrderApi(orderData, token);
 
-            const API_URL = `${Api_url}api/create-order/`;
-            console.log('Sending request to:', API_URL);
+            await clearCart();
+            setOrderSuccess(true);
+            setShowSuccessModal(true);
 
-            try {
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`,
-                    },
-                    body: JSON.stringify(orderData)
-                });
-
-                const responseText = await response.text();
-                console.log('Raw response text:', responseText);
-
-                let responseData;
-                try {
-                    responseData = responseText ? JSON.parse(responseText) : {};
-                } catch (jsonError) {
-                    console.error('Failed to parse JSON response. Response text:', responseText);
-                    throw new Error(`Server returned non-JSON response: ${responseText.substring(0, 200)}`);
-                }
-
-                console.log('Parsed response data:', responseData);
-
-                // In your order creation success block:
-                if (response.ok) {
-                    try {
-                        await clearCart();
-                        console.log('Cart cleared after successful order');
-                    } catch (error) {
-                        console.error('Error clearing cart:', error);
-                        // Don't fail the order if cart clearing fails
-                    }
-                    // Just show the modal, navigation will happen when modal is closed
-                    setShowSuccessModal(true);
-                    setOrderSuccess(true);
-                } else {
-                    throw new Error(
-                        responseData.message ||
-                        `Server error: ${response.status} ${response.statusText}`
-                    );
-                }
-
-
-
-            } catch (error: any) {
-                console.error('Request failed:', error);
-                throw error;
-            }
         } catch (error: any) {
-            console.error('Order creation error:', error);
-            Alert.alert('Error', error.message || 'Failed to create order');
+            Alert.alert('Error', error.message || 'Order Failed');
+            console.error('Order error:', error);
+
+        } finally {
+            setIsLoading(false);
         }
     };
-
-    const handlePaymentMethodSelect = (methodId: string) => {
-        setSelected(methodId);
-    };
+    // -----------------------------------------------------
 
     const renderPaymentOption = (item: any) => {
         const isSelected = selected === item.id;
+
         return (
             <TouchableOpacity
                 key={item.id}
-                style={[
-                    styles.paymentOption,
-                    isSelected && styles.selectedPaymentOption,
-                ]}
-                onPress={() => handlePaymentMethodSelect(item.id)}
+                style={[styles.paymentOption, isSelected && styles.selectedPaymentOption]}
+                onPress={() => setSelected(item.id)}
             >
                 <View style={styles.paymentOptionContent}>
                     <View style={styles.paymentOptionLeft}>
-                        {typeof item.icon === 'number' ? (
-                            <Image source={item.icon} style={styles.paymentIcon} />
-                        ) : (
-                            item.icon
-                        )}
+                        <Image source={item.icon} style={styles.paymentIcon} />
                         <Text style={styles.paymentLabel}>{item.label}</Text>
                     </View>
-                    <RadioButton
-                        selected={isSelected}
-                        onPress={() => handlePaymentMethodSelect(item.id)}
-                    />
+                    <RadioButton selected={isSelected} onPress={() => setSelected(item.id)} />
                 </View>
             </TouchableOpacity>
         );
     };
 
     return (
-        <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(verticalScale(4)) }}>
-            <ImageBackground
-                source={require('../assets/images/ss1.png')}
-                style={styles.background}
-                resizeMode="cover"
-            >
+        <SafeAreaView style={{ flex: 1 }}>
+            <ImageBackground source={require('../assets/images/ss1.png')} style={styles.background}>
+
                 <View style={styles.container}>
-                    {/* Header */}
                     <View style={styles.header}>
                         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
                             <Ionicons name="arrow-back" size={moderateScale(28)} color={colors.white} />
                         </TouchableOpacity>
                         <Text style={styles.headerTitle}>Payment Method</Text>
                     </View>
-                    <ScrollView contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 16, justifyContent: 'flex-start', }} showsVerticalScrollIndicator={false}>
+
+                    <ScrollView contentContainerStyle={{ paddingHorizontal: 16 }}>
+
                         <Text style={styles.sectionTitle}>Credit & Debit Card</Text>
+
                         <TouchableOpacity
-                            style={[
-                                styles.cardRow,
-                                selected === 'card' && styles.selectedRow,
-                            ]}
-                            activeOpacity={0.8}
+                            style={[styles.cardRow, selected === "card" && styles.selectedRow]}
                             onPress={() => { setSelected('card'); router.push('/Card'); }}
                         >
                             <View style={styles.iconBox}>{PAYMENT_METHODS[0].icon}</View>
                             <Text style={styles.cardLabel}>{PAYMENT_METHODS[0].label}</Text>
                         </TouchableOpacity>
 
-                        {/* More Payment Options */}
                         <Text style={styles.sectionTitle}>More Payment Options</Text>
+
                         {MORE_OPTIONS.map(renderPaymentOption)}
+
                     </ScrollView>
-                    {/* Confirm Payment Button */}
+
                     <View style={styles.footer}>
                         <Button
                             variant="secondary"
-                            style={[
-                                styles.confirmBtn,
-                                isLoading && styles.disabledBtn
-                            ]}
-                            onPress={() => createOrder(selected)}
+                            style={[styles.confirmBtn, isLoading && styles.disabledBtn]}
+                            onPress={createOrder}
                             disabled={isLoading}
                         >
-                            {isLoading ? (
-                                <ActivityIndicator color="#fff" />
-                            ) : (
-                                'Confirm Payment'
-                            )}
+                            {isLoading ? <ActivityIndicator color="#fff" /> : "Confirm Payment"}
                         </Button>
                     </View>
                 </View>
             </ImageBackground>
+
             <SuccessModal
                 visible={showSuccessModal}
                 message={orderSuccess ? "Order Placed Successfully!" : "Order Failed"}
                 subtitle={orderSuccess
                     ? "Your order has been placed successfully"
-                    : "There was an error processing your order. Please try again."}
-                autoCloseDelay={orderSuccess ? 1000 : 2000}
+                    : "There was an error processing your order."}
+                autoCloseDelay={1000}
                 onClose={handleSuccessModalClose}
             />
+
         </SafeAreaView>
     );
 };
 
+// ------------------ STYLES ------------------
 const styles = StyleSheet.create({
     paymentOption: {
         backgroundColor: colors.white,
         borderRadius: moderateScale(8),
         padding: moderateScale(15),
         marginBottom: moderateScale(10),
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
         borderWidth: 1,
         borderColor: colors.white,
     },
-    selectedPaymentOption: {
-        borderColor: colors.primary,
-    },
+    selectedPaymentOption: { borderColor: colors.primary },
     paymentOptionContent: {
         flexDirection: 'row',
-        alignItems: 'center',
-        flex: 1,
         justifyContent: 'space-between',
+        alignItems: 'center'
     },
     paymentOptionLeft: {
         flexDirection: 'row',
@@ -373,7 +266,7 @@ const styles = StyleSheet.create({
     paymentIcon: {
         width: moderateScale(25),
         height: moderateScale(25),
-        marginRight: moderateScale(15),
+        marginRight: moderateScale(12),
     },
     paymentLabel: {
         fontSize: moderateScale(14),
@@ -382,64 +275,51 @@ const styles = StyleSheet.create({
     radioButton: {
         width: moderateScale(20),
         height: moderateScale(20),
-        borderRadius: moderateScale(10),
+        borderRadius: 10,
         borderWidth: 1,
         borderColor: colors.primary,
         justifyContent: 'center',
         alignItems: 'center',
     },
-    radioButtonSelected: {
-        borderColor: colors.primary,
-    },
+    radioButtonSelected: { 
+     borderColor: colors.primary,
+     },
     radioButtonInner: {
         width: moderateScale(12),
         height: moderateScale(12),
-        borderRadius: moderateScale(6),
+        borderRadius: 6,
         backgroundColor: colors.primary,
     },
-    background: {
-        flex: 1,
-        width: '100%',
-        height: '100%',
-    },
-    container: {
-        flex: 1,
-
-    },
+    background: { flex: 1 },
+    container: { flex: 1 },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'flex-start',
-        height: verticalScale(80),
+        paddingHorizontal: 18,
+        marginTop: 20,
+        height: 80,
         position: 'relative',
-        paddingHorizontal: scale(18),
-        marginTop: verticalScale(20),
     },
     backBtn: {
-        width: scale(40),
-        height: scale(40),
+        width: 40,
+        height: 40,
         justifyContent: 'center',
         zIndex: 1,
     },
     headerTitle: {
         position: 'absolute',
-        left: 0,
-        right: 0,
-        top: 0,
-        bottom: 0,
+        left: 0, right: 0,
         textAlign: 'center',
-        textAlignVertical: 'center',
-        fontSize: moderateScale(28),
+        fontSize: 28,
         color: '#fff',
         fontFamily: 'Sigmar',
         letterSpacing: 1,
-        lineHeight: verticalScale(55),
     },
     sectionTitle: {
         color: colors.white,
-        fontSize: moderateScale(18),
+        fontSize: 18,
         fontFamily: 'PoppinsSemi',
-        marginTop: 8,
+        marginTop: 10,
         marginBottom: 8,
     },
     cardRow: {
@@ -447,73 +327,36 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         backgroundColor: colors.white,
         borderRadius: 12,
-        paddingVertical: verticalScale(12),
-        paddingHorizontal: scale(14),
-        marginBottom: verticalScale(12),
-        shadowColor: colors.primaryDark,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 4,
+        padding: 14,
+        marginBottom: 12,
     },
-    selectedRow: {
-        borderWidth: 2,
-        borderColor: colors.primary,
-    },
+    selectedRow: { borderWidth: 2, borderColor: colors.primary },
     iconBox: {
-        width: scale(26),
-        height: verticalScale(26),
+        width: 26,
+        height: 26,
         justifyContent: 'center',
         marginRight: 12,
     },
     cardLabel: {
         color: colors.primary,
-        fontSize: moderateScale(14),
-        fontFamily: 'PoppinsSemi',
-    },
-    optionRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: colors.white,
-        borderRadius: 12,
-        paddingVertical: 14,
-        paddingHorizontal: 16,
-        marginBottom: 12,
-        shadowColor: colors.primaryDark,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 4,
-    },
-    optionIcon: {
-        width: scale(32),
-        height: verticalScale(32),
-        marginRight: 12,
-    },
-    optionLabel: {
-        color: colors.primary,
-        fontSize: moderateScale(14),
+        fontSize: 14,
         fontFamily: 'PoppinsSemi',
     },
     footer: {
         backgroundColor: colors.secondaryLight,
+        padding: 18,
         borderTopLeftRadius: 28,
         borderTopRightRadius: 28,
-        padding: 18,
-        alignItems: 'center',
+        height: 100,
         justifyContent: 'center',
-        paddingHorizontal: 20,
-        height: verticalScale(100),
     },
     confirmBtn: {
         width: '100%',
         borderRadius: 16,
         paddingVertical: 16,
         backgroundColor: colors.primary,
-        alignItems: 'center',
-        justifyContent: 'center',
     },
-    disabledBtn: {
-        backgroundColor: 'gray',
-    },
+    disabledBtn: { backgroundColor: 'gray' },
 });
 
 export default Payment;

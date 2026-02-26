@@ -15,7 +15,6 @@ import { fetchAds, type AdsItem } from '../services/ads';
 
 const screenWidth = Dimensions.get('window').width;
 const CARD_WIDTH = (screenWidth - scale(48)) / 2;
-// ...imports remain the same
 
 const BestSeller = () => {
   const router = useRouter();

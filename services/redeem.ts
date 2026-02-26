@@ -47,3 +47,58 @@ export async function fetchRedeems(): Promise<RedeemItem[]> {
 }
 
 
+export type RedeemOrderPayload = {
+  user_id: string | null;
+  user_detail: {
+    number: string | null;
+  };
+  address: any;
+  shipping: any;
+  status: string;
+  product: {
+    name?: string;
+    image?: string;
+    description?: string;
+    pts?: number; 
+  }[];
+  created_at: string;
+};
+
+export const createRedeemOrder = async (
+  token: string,
+  orderData: RedeemOrderPayload
+) => {   
+  const API_URL = `${Api_url}api/create-order/`;
+
+  try {
+    const response = await fetch(API_URL, {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(orderData),
+    });
+
+    const text = await response.text();
+    let data;
+
+    try {
+      data = text ? JSON.parse(text) : {};
+    } catch {
+      throw new Error(`Invalid server response: ${text.substring(0, 150)}`);
+    }
+
+    if (!response.ok) {
+      throw new Error(data?.message || "Order creation failed");
+    }
+
+    return data;
+  } catch (error: any) {
+    console.error("Redeem API Error:", error);
+    throw new Error(error.message || "Something went wrong");
+  }
+}; 
+
+

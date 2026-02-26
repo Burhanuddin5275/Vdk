@@ -1,12 +1,24 @@
 import SuccessModal from '@/components/SuccessModal';
 import { colors } from '@/theme/colors';
-import { Api_url } from '@/url/url';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Image, ImageBackground, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import React, { useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  ImageBackground,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, verticalScale } from 'react-native-size-matters';
+import { registerUser } from '@/services/user';
 
 const Signup = () => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -20,10 +32,6 @@ const Signup = () => {
   const isFromVerification = !!phoneParam;
   const insets = useSafeAreaInsets();
   const router = useRouter();
-
-  useEffect(() => {
-    return;
-  }, []);
 
   const handleSendOtp = async () => {
     if (isSubmitting) return;
@@ -41,72 +49,35 @@ const Signup = () => {
 
     const e164Phone = `+92${digitsOnly}`;
 
-    // If we're in verification mode (from verification screen) and password is provided
     if (isFromVerification && password) {
       try {
         setIsSubmitting(true);
-        const requestBody = {
+        const data = await registerUser({
           number: e164Phone,
-          name: name,
-          email: email,
-          password: password, 
-        };
-
-        console.log('Sending request to register user:', {
-          url: `${Api_url}/api/app-users/`,
-          method: 'POST',
-          body: requestBody
+          name,
+          email,
+          password,
         });
-
-        const response = await fetch(`${Api_url}/api/app-users/`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-          },
-          body: JSON.stringify(requestBody),
-        });
-
-        const responseData = await response.json().catch(() => ({}));
-        console.log('Registration response:', {
-          status: response.status,
-          statusText: response.statusText,
-          data: responseData
-        });
-
-        if (!response.ok) {
-          const errorMessage = responseData.detail ||
-            responseData.message ||
-            Object.values(responseData).flat().join('\n') ||
-            `HTTP ${response.status} - ${response.statusText}`;
-          throw new Error(errorMessage);
-        }
+        console.log('User registered:', data);
         setShowSuccessModal(true);
       } catch (error: any) {
-        Alert.alert('Error', error.message || 'Failed to create account. Please try again.');
+        Alert.alert('Error', error.message);
       } finally {
         setIsSubmitting(false);
       }
     } else {
-      // Original OTP flow
-      try {
-        setIsSubmitting(true);
-        // Directly navigate to VerifyNumber with the phone number
-        router.push({
-          pathname: '/VerifyNumber',
-          params: { phone: e164Phone, source: 'signup' }
-        });
-      } catch (error: any) {
-        Alert.alert('Network/Error', error?.message || 'Something went wrong. Please try again.');
-      } finally {
-        setIsSubmitting(false);
-      }
+      router.push({
+        pathname: '/VerifyNumber',
+        params: { phone: e164Phone, source: 'signup' }
+      });
     }
   };
+
   const handleSuccessModalClose = () => {
     setShowSuccessModal(false);
     router.replace('/Login');
   };
+
   return (
     <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
       <ImageBackground source={require('../assets/images/ss1.png')} style={styles.bg} resizeMode="cover">
@@ -114,13 +85,11 @@ const Signup = () => {
           style={{ width: '100%' }}
           contentContainerStyle={{ paddingBottom: 185 }}
           keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false} 
+          showsVerticalScrollIndicator={false}
         >
           <View style={styles.container}>
-            {/* Logo */}
             <Image source={require('../assets/images/dkt.png')} style={styles.logo} resizeMode="contain" />
             <Text style={styles.welcome}>Welcome! Create your account</Text>
-
 
             <View style={styles.inputWrap}>
               <View style={styles.flagWrap}>
@@ -133,7 +102,7 @@ const Signup = () => {
                 onChangeText={setPhone}
                 keyboardType="number-pad"
                 placeholder="Phone Number"
-                placeholderTextColor={"#1A1A1A"}
+                placeholderTextColor="#1A1A1A"
                 maxLength={10}
                 editable={!phoneParam}
               />
@@ -141,13 +110,13 @@ const Signup = () => {
 
             {isFromVerification && (
               <View style={{ marginTop: 16 }}>
-                      <View style={[styles.inputWrap, { marginBottom: 15 }]}>
+                <View style={[styles.inputWrap, { marginBottom: 15 }]}>
                   <TextInput
                     style={[styles.input, { paddingRight: 40 }]}
                     value={name}
                     onChangeText={setName}
                     placeholder="Username"
-                    placeholderTextColor={"#1A1A1A"}
+                    placeholderTextColor="#1A1A1A"
                     autoCapitalize="none"
                     autoCorrect={false}
                   />
@@ -158,7 +127,7 @@ const Signup = () => {
                     value={email}
                     onChangeText={setEmail}
                     placeholder="Create Email"
-                    placeholderTextColor={"#1A1A1A"}
+                    placeholderTextColor="#1A1A1A"
                     autoCapitalize="none"
                     autoCorrect={false}
                   />
@@ -169,7 +138,7 @@ const Signup = () => {
                     value={password}
                     onChangeText={setPassword}
                     placeholder="Create Password"
-                    placeholderTextColor={"#1A1A1A"}
+                    placeholderTextColor="#1A1A1A"
                     secureTextEntry={!showPassword}
                     autoCapitalize="none"
                     autoCorrect={false}
@@ -193,7 +162,6 @@ const Signup = () => {
               </View>
             )}
 
-            {/* Continue Button */}
             <TouchableOpacity
               style={[styles.continueBtn, (isSubmitting || (isFromVerification && !password && !email)) && { opacity: 0.7 }]}
               onPress={handleSendOtp}
@@ -215,16 +183,15 @@ const Signup = () => {
               </TouchableOpacity>
             </View>
 
-            {/* Terms */}
             <Text style={styles.terms}>
-              By continuing, you agree to{''}
+              By continuing, you agree to{' '}
               <Text style={styles.link}> Terms & conditions </Text> and
               <Text style={styles.link}> Privacy policy</Text>.
             </Text>
-
           </View>
         </ScrollView>
       </ImageBackground>
+
       <SuccessModal
         visible={showSuccessModal}
         message="Account created successfully"
@@ -237,132 +204,24 @@ const Signup = () => {
 };
 
 const styles = StyleSheet.create({
-  bg: {
-    flex: 1,
-    backgroundColor: colors.primaryDark,
-  },
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    paddingTop: 70,
-    paddingHorizontal: 24,
-  },
-  logo: {
-    width: "100%",
-  },
-  welcome: {
-    color: colors.white,
-    fontSize: 26,
-    fontFamily: 'Sigmar',
-    textAlign: 'center',
-    marginBottom: 32,
-  },
-  inputWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    marginBottom: 5,
-    width: '100%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
-    position: 'relative',
-  },
-  passwordToggle: {
-    position: 'absolute',
-    right: 16,
-    padding: 8,
-  },
-  passwordToggleText: {
-    color: colors.primary,
-    fontFamily: 'Inter-SemiBold',
-    fontSize: 12,
-  },
-  errorText: {
-    color: 'white',
-    fontSize: 12,
-    marginLeft: 12,
-    marginTop: 4,
-    fontFamily: 'Inter-Regular',
-  },
-  flagWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginRight: 8,
-  },
-  flag: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    marginRight: 4,
-  },
-  countryCode: {
-    fontSize: 16,
-    color: colors.black,
-    fontFamily: 'MontserratSemi',
-    marginRight: 4,
-  },
-  input: {
-    flex: 1,
-    fontSize: 20,
-    color: colors.textPrimary,
-    fontFamily: 'MontserratSemi',
-    letterSpacing: 1,
-    borderWidth: 0,
-    backgroundColor: 'transparent'
-  },
-  continueBtn: {
-    backgroundColor: '#FBF4E4',
-    borderRadius: 16,
-    width: '100%',
-    alignItems: 'center',
-    paddingVertical: 16,
-    marginBottom: 18,
-    marginTop: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  continueBtnText: {
-    color: colors.textPrimary,
-    fontSize: moderateScale(16),
-    fontFamily: 'MontserratSemi',
-  },
-  loginContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 24,
-  },
-  loginText: {
-    color: '#E0E0E0',
-    fontSize: 14,
-  },
-  loginLink: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
-    textDecorationLine: 'underline',
-  },
-  terms: {
-    color: '#fff',
-    fontSize: 14,
-    textAlign: 'center',
-    marginTop: 8,
-    fontFamily: 'InterRegular',
-  },
-  link: {
-    color: '#fff',
-    textDecorationLine: 'underline',
-    fontFamily: 'InterBold',
-  },
+  bg: { flex: 1, backgroundColor: colors.primaryDark },
+  container: { flex: 1, alignItems: 'center', justifyContent: 'flex-start', paddingTop: 70, paddingHorizontal: 24 },
+  logo: { width: '100%' },
+  welcome: { color: colors.white, fontSize: 26, fontFamily: 'Sigmar', textAlign: 'center', marginBottom: 32 },
+  inputWrap: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 16, paddingHorizontal: 12, paddingVertical: 5, marginBottom: 5, width: '100%', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 4, elevation: 2, position: 'relative' },
+  passwordToggle: { position: 'absolute', right: 16, padding: 8 },
+  errorText: { color: 'white', fontSize: 12, marginLeft: 12, marginTop: 4, fontFamily: 'Inter-Regular' },
+  flagWrap: { flexDirection: 'row', alignItems: 'center', marginRight: 8 },
+  flag: { width: 32, height: 32, borderRadius: 16, marginRight: 4 },
+  countryCode: { fontSize: 16, color: colors.black, fontFamily: 'MontserratSemi', marginRight: 4 },
+  input: { flex: 1, fontSize: 20, color: colors.textPrimary, fontFamily: 'MontserratSemi', letterSpacing: 1, borderWidth: 0, backgroundColor: 'transparent' },
+  continueBtn: { backgroundColor: '#FBF4E4', borderRadius: 16, width: '100%', alignItems: 'center', paddingVertical: 16, marginBottom: 18, marginTop: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 4, elevation: 2 },
+  continueBtnText: { color: colors.textPrimary, fontSize: moderateScale(16), fontFamily: 'MontserratSemi' },
+  loginContainer: { flexDirection: 'row', justifyContent: 'center', marginTop: 24 },
+  loginText: { color: '#E0E0E0', fontSize: 14 },
+  loginLink: { color: '#FFFFFF', fontSize: 14, fontWeight: '600', textDecorationLine: 'underline' },
+  terms: { color: '#fff', fontSize: 14, textAlign: 'center', marginTop: 8, fontFamily: 'InterRegular' },
+  link: { color: '#fff', textDecorationLine: 'underline', fontFamily: 'InterBold' },
 });
 
 export default Signup;

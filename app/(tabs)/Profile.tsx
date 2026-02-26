@@ -1,6 +1,6 @@
 import SuccessModal from '@/components/SuccessModal';
 import { useAuth } from '@/hooks/useAuth';
-import { fetchUsers, UserItem } from '@/services/user';
+import { deleteAccountApi, fetchUsers, UserItem } from '@/services/user';
 import { colors } from '@/theme/colors';
 import { Api_url, img_url } from '@/url/url';
 import { Ionicons } from '@expo/vector-icons';
@@ -50,49 +50,16 @@ export default function Profile() {
     router.push('/(tabs)/Home');
     router.replace('/(tabs)/Home');
   };
-const deleteAccount = async (): Promise<void> => {
-  if (!userId && userId !== 0) {
-    alert('Unable to deactivate account: missing user id.');
-    return;
-  } 
-  
-  const url = `${Api_url}/api/deactivate/${userId}/`;
-  console.log('Attempting to deactivate account with URL:', url);
-  console.log('userId value:', userId);
-
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 10000);
-
+const handleDeleteAccount = async () => {
   try {
-    const response = await fetch(url, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-  
-      },
-      body: JSON.stringify({
-        is_active: false
-      })
-    });
-
-    clearTimeout(timeoutId);
-    console.log('Response status:', response.status);
-    console.log('Response ok:', response.ok);
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || `Failed to deactivate account: ${response.status} ${response.statusText}`);
-    }
-
-    // Only proceed with success actions if we get a successful response
-    console.log('Account deactivation successful');
+    await deleteAccountApi(userId!);
     setShowSuccessModal(true);
-
   } catch (error) {
-    clearTimeout(timeoutId);
-    console.error('Deactivate account error:', error);
+    console.error("Delete account error:", error);
+    alert("Failed to delete account. Please try again later.");
   }
 };
+
   const allMenuItems = [
     { label: 'My orders', icon: 'cart', onPress: () => { router.push('/Orders') } },
     { label: 'Chat', icon: 'chatbubble-ellipses', onPress: () => { router.push('/Chat') } },
@@ -132,7 +99,7 @@ const deleteAccount = async (): Promise<void> => {
         {showDeleteModal && (
           <View style={styles.modalOverlay}>
             <View style={styles.modalContainer}>
-              <Text style={styles.modalTitle}>Delete this account</Text>
+               <Text style={styles.modalTitle}>Delete this account</Text>
               <Text style={styles.modalMessage}>
                 Are you sure you want to delete this customer account? By proceeding, all the data will be removed permanently.
               </Text>
@@ -143,7 +110,7 @@ const deleteAccount = async (): Promise<void> => {
                 onPress={async () => {
                   try {
                     setShowDeleteModal(false);
-                    await deleteAccount();
+                    await handleDeleteAccount();
                     setShowSuccessModal(true);
 
                   } catch (error) {

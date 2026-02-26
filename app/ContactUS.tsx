@@ -1,5 +1,6 @@
 import { ContactData, fetchContact } from '@/services/contactus'
 import { colors } from '@/theme/colors'
+import { Api_url } from '@/url/url'
 import { Ionicons } from '@expo/vector-icons'
 import { router } from 'expo-router'
 import React, { useEffect, useState } from 'react'
@@ -10,9 +11,7 @@ import {
     ScrollView,
     StyleSheet,
     Text,
-    TextInput,
-    TouchableOpacity,
-    View
+    TextInput, TouchableOpacity, View
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters'
@@ -68,7 +67,7 @@ const ContactUS = () => {
         setIsLoading(true);
 
         try {
-            const response = await fetch('http://192.168.0.138:8000/api/create-form/', {
+            const response = await fetch(`${Api_url}api/create-form/`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -145,7 +144,6 @@ const ContactUS = () => {
                                 {errors.last && <Text style={styles.errorText}>{errors.last}</Text>}
                             </View>
                         </View>
-
                         <View style={styles.inputContainer}>
                             <Text style={styles.label}>Email *</Text>
                             <TextInput
@@ -217,22 +215,28 @@ const ContactUS = () => {
                                 <Text style={styles.contactText}>{contactData?.mailing_address}</Text>
                             </View>
                         </View>
-
-                        <View style={styles.contactItem}>
+                        <TouchableOpacity
+                            style={styles.contactItem}
+                            onPress={() => contactData?.helpline_number && Linking.openURL(`tel:${contactData.helpline_number}`)}
+                            activeOpacity={0.7}
+                        >
                             <Ionicons name="call-outline" size={24} color={colors.primary} style={styles.contactIcon} />
                             <View>
                                 <Text style={styles.contactLabel}>DKT Helpline Toll Free Number</Text>
                                 <Text style={[styles.contactText, styles.contactLink]}>{contactData?.helpline_number}</Text>
                             </View>
-                        </View>
-
-                        <View style={styles.contactItem}>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.contactItem}
+                            onPress={() => contactData?.corporate_contact && Linking.openURL(`tel:${contactData.corporate_contact}`)}
+                            activeOpacity={0.7}
+                        >
                             <Ionicons name="phone-portrait-outline" size={24} color={colors.primary} style={styles.contactIcon} />
                             <View>
                                 <Text style={styles.contactLabel}>Corporate Contact Information</Text>
                                 <Text style={[styles.contactText, styles.contactLink]}>{contactData?.corporate_contact}</Text>
                             </View>
-                        </View>
+                        </TouchableOpacity>
 
                         <View style={styles.contactItem}>
                             <Ionicons name="mail-outline" size={24} color={colors.primary} style={styles.contactIcon} />
@@ -267,7 +271,7 @@ const styles = StyleSheet.create({
 
     container: {
         flex: 1,
-    }, 
+    },
 
     contentContainer: {
         padding: scale(18),
@@ -357,7 +361,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: scale(18),
         paddingTop: verticalScale(45),
         paddingBottom: verticalScale(20),
-        backgroundColor: colors.primary, 
+        backgroundColor: colors.primary,
         shadowColor: '#000',
         shadowOpacity: 0.25,
         shadowRadius: 12,
@@ -416,6 +420,7 @@ const styles = StyleSheet.create({
     },
 
     contactText: {
+        width: scale(250),
         fontSize: moderateScale(13.5),
         color: '#555',
         lineHeight: verticalScale(20),

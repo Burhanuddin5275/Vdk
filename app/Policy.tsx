@@ -8,6 +8,7 @@ import { moderateScale, scale, verticalScale } from 'react-native-size-matters'
 import { RenderHTML } from 'react-native-render-html';
 import { HTMLContentModel, HTMLElementModel } from 'react-native-render-html';
 import { colors } from '@/theme/colors'
+import MyHTMLRenderer from '@/components/RenderHtml'
 const Policy = () => {
   const [terms, setTerms] = useState<TermsItem | null>(null);
   const [loading, setLoading] = useState(true);
@@ -61,32 +62,7 @@ const Policy = () => {
           {terms ? (
             <View style={styles.termsContainer}>
               {/* <Text style={styles.title}>{terms.t_title || 'Terms and Conditions'}</Text> */}
-             <RenderHTML
-               contentWidth={width}
-               source={{ html: cleanedHTML }}
-             
-               // Enable deprecated <font> tag support
-               customHTMLElementModels={{
-                 font: HTMLElementModel.fromCustomModel({
-                   tagName: 'font',
-                   contentModel: HTMLContentModel.textual, // <font> contains text
-                 })
-               }}
-             
-               tagsStyles={{
-                 font: {
-                   // default styles for <font> when attributes are missing
-                   color: 'black'
-                 },
-                 p: { fontSize: 16, lineHeight: 22},
-                 h1: { fontSize: 28, fontWeight: "700",},
-                 h2: { fontSize: 24, fontWeight: "600" },
-                 h3: { fontSize: 20, fontWeight: "500" },
-                 h4: { fontSize: 18, fontWeight: "500" },
-                 h5: { fontSize: 16, fontWeight: "500" },
-                 h6: { fontSize: 16, fontWeight: "500" },
-               }}
-             />
+                <MyHTMLRenderer html={cleanedHTML}/>
             </View>
           ) : (
             <Text style={styles.errorText}>Failed to load terms and conditions.</Text>

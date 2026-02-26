@@ -1,6 +1,7 @@
 import AlertModal from '@/components/Alert';
 import SuccessModal from '@/components/SuccessModal';
 import { useAuth } from '@/hooks/useAuth';
+import { createRedeemOrder } from "@/services/redeem";
 import { useAddressStore } from '@/store/addressStore';
 import { useShippingStore } from '@/store/shippingStore';
 import { colors } from '@/theme/colors';
@@ -12,6 +13,7 @@ import { Alert, Dimensions, ImageBackground, SafeAreaView, ScrollView, StyleShee
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { Api_url } from '../url/url';
+
 const { width } = Dimensions.get('window');
 
 // Define the expected params type
@@ -87,95 +89,56 @@ const handleShippingModalClose = () => {
     }
   }, [phone, token]);
 
-  const CreateRedeem = async () => {
-    if (userpoint < points) {
-      Alert.alert('Insufficient Points', 'You do not have enough points to redeem this item.');
-      return;
+const CreateRedeem = async () => {
+  if (userpoint < points) {
+    Alert.alert("Insufficient Points", "You do not have enough points.");
+    return;
+  }
+
+  if (!selectedAddress) {
+    setAddressModal(true);
+    return;
+  }
+
+  if (!selectedShipping) {
+    setShippingModal(true);
+    return;
+  }
+
+
+  try {
+    if (!token) {
+      throw new Error("Authentication token is missing. Please log in again.");
     }
 
-    // Check if address is selected
-    if (!selectedAddress) {
-      setAddressModal(true)
-      return;
-    }
-    else if (!selectedShipping) {
-      setShippingModal(true)
-      return;
-    }
-
-    try {
-      console.log('Phone number:', phone, 'Type:', typeof phone);
-      const orderData = {
-        user_id: userId,
-        user_detail: {
-          number: phone
-        },
-        address: selectedAddress,
-        shipping: selectedShipping,
-        status: 'pending',
-        product: [{
-          name: name,
-          image: image || '',
-          description: description || '',
+    const orderData = {
+      user_id: userId,
+      user_detail: { number: phone },
+      address: selectedAddress,
+      shipping: selectedShipping,
+      status: "pending",
+      product: [
+        {
+          name,
+          image,
+          description,
           pts: points,
-        }],
-        created_at: new Date().toISOString()
-      };
+        },
+      ],
+      created_at: new Date().toISOString(),
+    };
 
-      console.log('Sending order data:', JSON.stringify(orderData, null, 2));
+   const result = await createRedeemOrder(token, orderData);
+    console.log("Redeem success:", result);
+    setShowSuccessModal(true);
+    setOrderSuccess(true);
 
-      const API_URL = `${Api_url}api/create-order/`;
-      console.log('Sending request to:', API_URL);
-
-
-      try {
-        const response = await fetch(API_URL, {
-          method: 'POST',
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-          body: JSON.stringify(orderData)
-        });
-
-        // Log response status and headers for debugging
-        console.log('Response status:', response.status, response.statusText);
-        console.log('Response headers:', Object.fromEntries(response.headers.entries()));
-
-        const responseText = await response.text();
-        console.log('Raw response text:', responseText);
-
-        let responseData;
-        try {
-          responseData = responseText ? JSON.parse(responseText) : {};
-        } catch (jsonError) {
-          console.error('Failed to parse JSON response. Response text:', responseText);
-          throw new Error(`Server returned non-JSON response: ${responseText.substring(0, 200)}`);
-        }
-
-        console.log('Parsed response data:', responseData);
-        if (response.ok) {
-          setShowSuccessModal(true);
-          setOrderSuccess(true);
-        } else {
-          throw new Error(
-            responseData.message ||
-            `Server error: ${response.status} ${response.statusText}`
-          );
-        }
-      } catch (error: any) {
-        console.error('Request failed:', error);
-        throw error;
-      }
-
-    } catch (error: any) {
-      console.error('Order creation error:', error);
-      Alert.alert('Error', error.message || 'Failed to create order');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  } catch (error: any) {
+    Alert.alert("Error", error.message);
+    setOrderSuccess(false);
+    setShowSuccessModal(true);
+  }
+};
 
   return (
     <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
@@ -422,6 +385,4 @@ const styles = StyleSheet.create({
 
 export default Mall;
 
-function setIsLoading(arg0: boolean) {
-  throw new Error('Function not implemented.');
-}
+

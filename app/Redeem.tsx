@@ -36,8 +36,7 @@ const Redeem = () => {
             />
           </View>
           {/* Success Text */}
-          <Text style={styles.successText}>{`Redeem Application
-Sent Successful!`}</Text>
+          <Text style={styles.successText}>{`Redeem Application Sent Successful!`}</Text>
         </View>
         {/* Footer */}
         <View style={styles.footer}>

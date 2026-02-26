@@ -106,7 +106,11 @@ export default function HomeScreen() {
   const loadWishlist = useWishlistStore(state => state.loadWishlist);
   const [user, setUser] = useState<UserItem | string | null | undefined>(undefined);
   const { logout } = useAuth();
-
+  const addToWishlist = useWishlistStore((state) => state.addToWishlist);
+  const removeFromWishlist = useWishlistStore((state) => state.removeFromWishlist);
+  const [wishlistMessage, setWishlistMessage] = useState<string | null>(null);
+  const isAuthenticated = useAppSelector(selectIsAuthenticated);
+  const insets = useSafeAreaInsets();
   useEffect(() => {
     const loadUsers = async () => {
       try {
@@ -187,11 +191,6 @@ export default function HomeScreen() {
       return item.variant?.label === variantLabel;
     });
   };
-  const addToWishlist = useWishlistStore((state) => state.addToWishlist);
-  const removeFromWishlist = useWishlistStore((state) => state.removeFromWishlist);
-  const [wishlistMessage, setWishlistMessage] = useState<string | null>(null);
-  const isAuthenticated = useAppSelector(selectIsAuthenticated);
-  const insets = useSafeAreaInsets();
   useEffect(() => {
     if (true) {
       const timer = setTimeout(() => setShowPopup(true), 1500);
@@ -256,12 +255,10 @@ export default function HomeScreen() {
           resizeMode="cover"
         >
           <ScrollView contentContainerStyle={{ paddingBottom: "20%" }}>
-
-
             <View style={styles.headerBg}>
               <View style={styles.headerRow}>
-                <View style={{ width: scale(150), paddingLeft: scale(16) }}>
-                  {heroContent.length > 0 ? (
+                <View style={{ width: scale(165), paddingLeft: scale(16) }}>
+                  {heroContent.length > 0 ? ( 
                     <>
                       <Text style={styles.hello}
                         ellipsizeMode="tail"

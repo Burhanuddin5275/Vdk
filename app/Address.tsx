@@ -1,9 +1,9 @@
 import { Button } from '@/components/Button';
 import SuccessModal from '@/components/SuccessModal';
 import { useAuth } from '@/hooks/useAuth';
+import { saveUserAddress } from '@/services/address';
 import { fetchUsers, UserItem } from '@/services/user';
 import { colors } from '@/theme/colors';
-import { Api_url } from '@/url/url';
 import { Ionicons } from '@expo/vector-icons';
 import { City, Country, State } from 'country-state-city';
 import { router } from 'expo-router';
@@ -23,9 +23,6 @@ type AddressType = {
   phone: string;
   isDefault: boolean;
 };
-
-const STORAGE_KEY = 'user_addresses';
-
 const Address = () => {
   const insets = useSafeAreaInsets();
   const [street, setStreet] = useState('');
@@ -100,63 +97,34 @@ const Address = () => {
     const countryName = 'Pakistan'; 
     const stateName = states.find(s => s.isoCode === selectedState)?.name || selectedState;
     
-    console.log('Form values before submit:', {
-      street,
-      city: selectedCity,
-      state: stateName,
-      postalCode,
-      country: countryName
-    });
-
     if (!street || !selectedCity || !selectedState || !postalCode || !selectedCountry) {
       Alert.alert('Error', 'Please fill in all required fields');
+      return;
+    }
+
+    if (!userId || !token) {
+      Alert.alert('Error', 'User not authenticated');
       return;
     }
 
     setIsLoading(true);
 
     try {
-      const url = `${Api_url}api/app-user-address/${userId}/`;
-
-      // FormData setup
-      const formData = new FormData();
-
-      // Construct the address object with full names instead of codes
-      const address = {
-        street: street,
+      const { success, error } = await saveUserAddress({
+        street,
         city: selectedCity,
-        state: stateName, // Send state name instead of code
-        postal_code: postalCode,
-        country: countryName, // Send full country name instead of code
-      };
-
-      // Append it as a JSON string to the addresses field
-      formData.append('addresses', JSON.stringify([address]));
-
-      console.log('Sending form data with addresses:', {
-        addresses: [address]
+        state: stateName,
+        postalCode,
+        country: countryName,
+        userId,
+        token
       });
 
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          Accept: 'application/json',
-          Authorization: `Token ${token}`,
-        },
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Server response error:', errorText);
-        throw new Error(`HTTP error! status: ${response.status}`);
+      if (success) {
+        setShowSuccessModal(true);
+      } else {
+        Alert.alert('Error', error || 'Failed to save address');
       }
-
-      const responseData = await response.json();
-      console.log('Response:', responseData);
-
-      setShowSuccessModal(true);
-
     } catch (error) {
       console.error('Error updating address:', error);
       Alert.alert('Error', 'Failed to update address. Please try again.');

@@ -8,6 +8,7 @@ import { moderateScale, scale, verticalScale } from 'react-native-size-matters'
 import { RenderHTML } from 'react-native-render-html';
 import { HTMLContentModel, HTMLElementModel } from 'react-native-render-html';
 import { colors } from '@/theme/colors'
+import MyHTMLRenderer from '@/components/RenderHtml'
 
 const Terms = () => {
   const [terms, setTerms] = useState<TermsItem | null>(null);
@@ -65,38 +66,7 @@ const Terms = () => {
         <ScrollView style={styles.contentContainer}>
           {terms ? (
             <View style={styles.termsContainer}>
-              <RenderHTML
-                contentWidth={width}
-                source={{ html: cleanedHTML }}
-                allowedStyles={[
-                  'color',
-                  'backgroundColor',
-                ]}
-                customHTMLElementModels={{
-                  font: HTMLElementModel.fromCustomModel({
-                    tagName: 'font',
-                    contentModel: HTMLContentModel.textual,
-                    mixedUAStyles: {
-                      fontFamily: 'inherit',
-                    }
-                  })
-                }}
-                tagsStyles={{
-                  b: {fontSize:16,fontWeight:'700'},
-                  p: { fontSize: 12 },
-                  font:{},
-                  ul:{},
-                  li:{}, 
-                  a:{},
-                  h1:{ fontSize: 28, fontWeight: "700" },
-                  h2:{ fontSize: 24, fontWeight: "600" },
-                  h3:{ fontSize: 20, fontWeight: "500" },
-                  h4:{ fontSize: 18, fontWeight: "500" },
-                  h5:{ fontSize: 16, fontWeight: "500" },
-                  h6:{ fontSize: 14, fontWeight: "200" }
-                }} 
-              />
-
+             <MyHTMLRenderer html={cleanedHTML}/>
             </View>
           ) : (
             <Text style={styles.errorText}>Failed to load terms and conditions.</Text>

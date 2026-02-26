@@ -1,5 +1,42 @@
-import {Api_url, img_url} from "../url/url";
+import { Api_url, img_url } from "../url/url";
 type ApiUser = any;
+export const registerUser = async ({
+  number,
+  name,
+  email,
+  password,
+}: {
+  number: string;
+  name?: string;
+  email?: string;
+  password?: string;
+}) => {
+  try {
+    const response = await fetch(`${Api_url}/api/app-users/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({ number, name, email, password }),
+    });
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      const errorMessage =
+        data.detail ||
+        data.message ||
+        Object.values(data).flat().join('\n') ||
+        `HTTP ${response.status} - ${response.statusText}`;
+      throw new Error(errorMessage);
+    }
+
+    return data;
+  } catch (error: any) {
+    throw new Error(error.message || 'Failed to create account.');
+  }
+};
 
 export type UserItem = {
   id: string | number;
@@ -7,7 +44,7 @@ export type UserItem = {
   number: string;
   image_url: any;
   image: any;
-  total_points:number;
+  total_points: number;
   addresses?: any[];
 };
 
@@ -18,8 +55,8 @@ function toUser(item: ApiUser): UserItem {
   const name = String(item.name ?? item.title ?? null);
   const number = String(item.number ?? null);
   const total_points = Number(item.total_points ?? null);
-  const image_url = { uri:`${img_url}${item.image}` };
-  const image = { uri:`${item.image}` };
+  const image_url = { uri: `${img_url}${item.image}` };
+  const image = { uri: `${item.image}` };
   const addresses = item.addresses?.map((addr: any) => ({
     id: String(addr.id ?? null),
     street: String(addr.street ?? null),
@@ -28,7 +65,7 @@ function toUser(item: ApiUser): UserItem {
     postal_code: String(addr.postal_code ?? null),
     country: String(addr.country ?? null),
   }));
-  return { 
+  return {
     id,
     name,
     number,
@@ -52,4 +89,65 @@ export async function fetchUsers(): Promise<UserItem[]> {
   }
 }
 
+export const deleteAccountApi = async (userId: string | number) => {
+  if (userId === null || userId === undefined) {
+    throw new Error("Missing user ID");
+  }
+  const url = `${Api_url}/api/deactivate/${userId}/`;
 
+  const response = await fetch(url, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ is_active: false }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.detail || "Failed to delete account");
+  }
+
+  return true;
+};
+// Update user profile or password
+export const updateUserProfile = async (
+  token: string,
+  userId: string,
+  data: { name?: string; image?: any; password?: string }
+) => {
+  if (data.password) {
+    // Update password using JSON
+    const response = await fetch(`${Api_url}api/update-user/${userId}/`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Token ${token}`,
+      },
+      body: JSON.stringify({ password: data.password }),
+    });
+    return response;
+  }
+
+  // Update profile (name + image) using FormData
+  const formData = new FormData();
+  if (data.name) formData.append('name', data.name);
+  if (data.image) {
+    formData.append('image', {
+      uri: data.image,
+      name: 'profile.jpg',
+      type: 'image/jpeg',
+    } as any);
+  }
+
+  const response = await fetch(`${Api_url}api/update-user/${userId}/`, {
+    method: 'PATCH',
+    headers: {
+      'Accept': 'application/json',
+      'Authorization': `Token ${token}`,
+    },
+    body: formData,
+  });
+
+  return response;
+};

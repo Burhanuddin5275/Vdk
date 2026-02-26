@@ -13,7 +13,6 @@ export type orders = {
   created_at?: string;
 }
   
-
 const API_URL = `${Api_url}api/orders/`;
 
 type ApiOrders = any;
@@ -62,7 +61,80 @@ export async function fetchOrders(phone?: string): Promise<orders[]> {
     return [];
   }
 }
+// api/createOrder.ts
+export const createOrderApi = async (orderData: any, token: string) => {
+    const API_URL = `${Api_url}api/create-order/`;
 
+    const response = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(orderData),
+    });
 
+    const responseText = await response.text();
+    console.log("Raw response text:", responseText);
 
+    let responseData;
 
+    try {
+        responseData = responseText ? JSON.parse(responseText) : {};
+    } catch (jsonError) {
+        throw new Error(
+            `Invalid response from server: ${responseText.substring(0, 200)}`
+        );
+    }
+
+    if (!response.ok) {
+        throw new Error(
+            responseData.message ||
+            `Server error: ${response.status} ${response.statusText}`
+        );
+    }
+
+    return responseData;
+};
+
+export interface CancelOrderResponse {
+  message?: string;
+  detail?: string;
+  status?: string;
+  [key: string]: any; 
+}
+
+export const cancelOrder = async (orderId: string): Promise<CancelOrderResponse> => {
+  const url = `${Api_url}api/update-order-status/${orderId}/`;
+
+  console.log("Cancelling order at:", url);
+
+  const response = await fetch(url, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ status: "cancelled" }),
+  });
+
+  const text = await response.text();
+  console.log("Cancel response:", text);
+
+  let data: CancelOrderResponse = {};
+  try {
+    data = text ? JSON.parse(text) : {};
+  } catch {
+    console.log("Response not JSON");
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      data.message ||
+      data.detail ||
+      `Failed with status code ${response.status}`
+    );
+  }
+
+  return data; // success
+};
