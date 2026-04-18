@@ -1,3 +1,4 @@
+import RenderHtml from '@/components/RenderHtml';
 import { selectIsAuthenticated, selectPhone } from '@/store/authSlice';
 import { useAppSelector } from '@/store/hooks';
 import { colors } from '@/theme/colors';
@@ -9,13 +10,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { useCartStore } from '../store/cartStore';
 import { useWishlistStore } from './Wishlist';
-import RenderHtml from '@/components/RenderHtml';
-
+import { useMemo } from 'react';
 const backgroundImages = {
     ss1: require('../assets/images/ss1.png'),
-    ss2: require('../assets/images/ss2.png'),
+    ss2: require('../assets/images/ss2.png'), 
 };
-
 interface Product {
     id: string;
     name: string;
@@ -30,6 +29,7 @@ interface Product {
     quantity?: number;
     sale_price?: number;
     description?: string;
+    is_active:boolean;
     rating?: number;
     gallery_images?: Array<{
         id: number;
@@ -52,10 +52,10 @@ interface Product {
 const Products = () => {
     const router = useRouter();
     const { id, data, category, backgroundImage } = useLocalSearchParams();
-    const [product, setProduct] = useState<Product>(data ? JSON.parse(data as string) : {});
+    const [product, setProduct] = useState(data ? JSON.parse(data as string) : {});
     // Get all possible image sources, prioritizing gallery_images if available
     const getImageSources = () => {
-        const galleryImages = product.gallery_images?.map(img => img.image) || [];
+        const galleryImages = product.gallery_images?.map((img: any) => img.image) || [];
         const fallbackImages = [product.img, product.img1, product.img2].filter(Boolean);
         return [...galleryImages, ...fallbackImages].filter(Boolean);
     };
@@ -63,7 +63,6 @@ const Products = () => {
     const images = getImageSources();
     const [selectedImg, setSelectedImg] = useState(images[0] || '');
     const [modalVisible, setModalVisible] = useState(false);
-
     interface Variant {
         id?: number;
         label: string;
@@ -76,28 +75,31 @@ const Products = () => {
         id?: number;
         image?: any;
     }
-
-    const processVariants = (): Variant[] => {
+    const processVariants = () => {
         const rawVariants = product.variant || product.variants || [];
         if (!Array.isArray(rawVariants)) return [];
 
-        const variantMap = new Map<string, Variant>();
+        const variantMap = new Map();
+        let uniqueIdCounter = 1;
 
-        rawVariants.forEach((v: any) => {
+        rawVariants.forEach((v: any, index: number) => {
             if (v?.attributes) {
                 const attributes = Array.isArray(v.attributes) ? v.attributes : [v.attributes];
                 attributes.forEach((attr: any) => {
                     const options = attr?.options || {};
                     const optionValues = Object.values(options).map(String).filter(Boolean);
                     const label = optionValues.join(' - ') || 'Default';
-                    const variantKey = `${v.id}-${label}`;
+                    const variantId = v.id || `variant-${uniqueIdCounter++}`;
+                    const variantKey = `${variantId}-${label}`;
 
                     if (!variantMap.has(variantKey)) {
                         variantMap.set(variantKey, {
-                            id: v.id,
+                            id: variantId,
                             label: label,
                             price: Number(attr.regular_price || attr.price || v.price || 0),
                             ...(attr.sale_price ? { sale_price: Number(attr.sale_price) } : {}),
+                            description: attr.description || '',
+                            points: attr.points || 0,
                             image: v.image || v.img || product.img,
                             stock: v.stock !== undefined ? Number(v.stock) : undefined
                         });
@@ -107,13 +109,16 @@ const Products = () => {
                 const label = v?.label || v?.name || v?.pack || String(v?.size || v?.title || '');
                 if (!label) return;
 
-                const variantKey = `${v.id}-${label}`;
+                const variantId = v.id || `variant-${uniqueIdCounter++}`;
+                const variantKey = `${variantId}-${label}`;
                 if (!variantMap.has(variantKey)) {
                     variantMap.set(variantKey, {
-                        id: v.id,
+                        id: variantId,
                         label,
                         price: Number(v.regular_price || v.price || v.amount || 0),
                         ...(v.sale_price ? { sale_price: Number(v.sale_price) } : {}),
+                        description: v.description || '',
+                        points: v.points || 0,
                         image: v.image || v.img || product.img,
                         stock: v.stock !== undefined ? Number(v.stock) : undefined
                     });
@@ -125,7 +130,7 @@ const Products = () => {
     };
     const variants = processVariants();
 
-    let priceRange: { min: number; max: number } | null = null;
+    let priceRange = null;
     if (variants.length > 1 && (!product.regular_price || product.regular_price === 0)) {
         const prices = variants.map(v => v.sale_price ?? v.price);
         const minPrice = Math.min(...prices);
@@ -135,7 +140,8 @@ const Products = () => {
         }
     }
 
-    const [selectedSize, setSelectedSize] = useState(variants[0]?.label || '');
+    const [selectedVariantId, setSelectedVariantId] = useState(variants[0]?.id?.toString() || '');
+        const [selectedSize, setSelectedSize] = useState(variants[0]?.label || '');
     const [qty, setQty] = useState(1);
     const addToCart = useCartStore((state: any) => state.addToCart);
     const selectedVariant = variants.find((v: any) => v.label === selectedSize);
@@ -148,13 +154,14 @@ const Products = () => {
     const cartItems = useCartStore(state => state.cartItems);
     const [stockLimit, setStockLimit] = useState<number | null>(null);
 
+
     // Calculate if product is out of stock
     const isOutOfStock = selectedVariant?.stock === 0 ||
         product.quantity === 0 ||
         product?.stock_status === 'outofstock' ||
         (stockLimit !== null && stockLimit < 1);
 
-    let bgKey: 'ss1' | 'ss2' | undefined;
+    let bgKey;
     if (Array.isArray(backgroundImage)) {
         if (backgroundImage[0] === 'ss1' || backgroundImage[0] === 'ss2') bgKey = backgroundImage[0];
     } else if (backgroundImage === 'ss1' || backgroundImage === 'ss2') {
@@ -206,7 +213,7 @@ const Products = () => {
     const handleAddToCart = async () => {
         if (!isAuthenticated || !phone) {
             setCartMessage('Please log in to add items to your cart.');
-            const currentRoute = `/Products?id=${id}&data=${encodeURIComponent(data as string)}&category=${category}&backgroundImage=${backgroundImage}`;
+            const currentRoute = `/Products?id=${id}&data=${encodeURIComponent(data as any)}&category=${category}&backgroundImage=${backgroundImage}`;
             setTimeout(() => router.replace(`/Login?returnTo=${encodeURIComponent(currentRoute)}`), 1000);
             return;
         }
@@ -235,11 +242,11 @@ const Products = () => {
         const cartItem = {
             id: product.id,
             name: product.name,
-            pack: selectedSize,
+            pack: selectedVariant?.label || '',
             cost_price: product.cost_price,
             price: variantSalePrice || variantPrice || product.sale_price || product.regular_price || 0,
             sale_price: variantSalePrice || product.sale_price || undefined,
-            points: product.pts,
+            points: selectedVariant?.points !== undefined ? selectedVariant.points : product.pts,
             stock: selectedVariant?.stock !== undefined ? selectedVariant.stock : product.quantity,
             image: imageForCart,
             user: phone,
@@ -283,12 +290,12 @@ const Products = () => {
     const insets = useSafeAreaInsets();
     const cartItemCount = useCartStore(state =>
         state.cartItems
-            .filter((item: any) => String(item.user) === String(phone))
-            .reduce((sum: number, item: any) => sum + item.quantity, 0)
+            .filter((item) => String(item.user) === String(phone))
+            .reduce((sum, item) => sum + item.quantity, 0)
     );
     return (
         <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
-            <ImageBackground source={bgKey ? backgroundImages[bgKey] : require('../assets/images/ss1.png')} style={{ flex: 1 }} resizeMode="cover">
+            <ImageBackground source={bgKey ? (backgroundImages as any)[bgKey] : require('../assets/images/ss1.png')} style={{ flex: 1 }} resizeMode="cover">
                 <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
                     <View style={[styles.header, { justifyContent: 'space-between', paddingHorizontal: 16 }]}>
                         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
@@ -300,7 +307,7 @@ const Products = () => {
                                 onPress={() => {
                                     if (!isAuthenticated) {
                                         setCartMessage('Please log in to view your cart.');
-                                        const currentRoute = `/Products?id=${id}&data=${encodeURIComponent(data as string)}&category=${category}&backgroundImage=${backgroundImage}`;
+                                        const currentRoute = `/Products?id=${id}&data=${encodeURIComponent(data as any)}&category=${category}&backgroundImage=${backgroundImage}`;
                                         setTimeout(() => router.replace(`/Login?returnTo=${encodeURIComponent(currentRoute)}`), 1000);
                                         return;
                                     }
@@ -332,28 +339,27 @@ const Products = () => {
                                     if (!isAuthenticated) {
                                         setWishlistMessage('Please log in to use wishlist.');
                                         setTimeout(() => setWishlistMessage(null), 1000);
-                                        const currentRoute = `/Products?id=${id}&data=${encodeURIComponent(data as string)}&category=${category}&backgroundImage=${backgroundImage}`;
+                                        const currentRoute = `/Products?id=${id}&data=${encodeURIComponent(data as any)}&category=${category}&backgroundImage=${backgroundImage}`;
                                         setTimeout(() => router.replace(`/Login?returnTo=${encodeURIComponent(currentRoute)}`), 1000);
                                         return;
                                     }
 
-                                    const inWishlist = wishlistItems.some((w: { id: string }) => w.id === product.id);
+                                    const inWishlist = wishlistItems.some((w) => w.id === product.id);
 
                                     if (inWishlist) {
                                         await useWishlistStore.getState().removeFromWishlist(product.id);
                                         setWishlistMessage('Removed from wishlist');
                                     } else {
-                                        const selectedVariant = variants.find(v => v.label === selectedSize) || variants[0];
-                                        const selectedVariantLabel = (selectedVariant?.label || (selectedVariant as any)?.name || (selectedVariant as any)?.pack || selectedSize || variants[0]?.label || '').toString();
+                                        const selectedVariantLabel = selectedVariant?.label || '';
 
                                         await useWishlistStore.getState().addToWishlist({
                                             id: product.id,
                                             name: product.name,
-                                            regular_price: selectedVariant?.price ?? product.regular_price,
+                                            regular_price: selectedVariant?.price ?? product.regular_price ?? 0,
                                             sale_price: selectedVariant?.sale_price ?? product.sale_price,
                                             image: product.img || product.image || selectedImg,
                                             pack: selectedVariantLabel,
-                                            category: product.Category || (category as string),
+                                            category: product.Category || (category),
                                             variant: selectedVariant ? {
                                                 label: selectedVariantLabel,
                                                 price: selectedVariant.price,
@@ -366,9 +372,9 @@ const Products = () => {
                                 }}
                             >
                                 <Ionicons
-                                    name={wishlistItems.some((w: { id: string }) => w.id === product.id) ? 'heart' : 'heart-outline'}
+                                    name={wishlistItems.some((w) => w.id === product.id) ? 'heart' : 'heart-outline'}
                                     size={24}
-                                    color={wishlistItems.some((w: { id: string }) => w.id === product.id) ? 'red' : mainColor}
+                                    color={wishlistItems.some((w) => w.id === product.id) ? 'red' : mainColor}
                                 />
                             </TouchableOpacity>
                         </View>
@@ -376,7 +382,7 @@ const Products = () => {
                     <View style={styles.imageWrap}>
                         <Image source={typeof selectedImg === 'string' ? { uri: selectedImg } : selectedImg} style={styles.productImg} resizeMode="contain" />
                         <View style={styles.thumbnailRow}>
-                            {images.map((img: any, idx: any) => (
+                            {images.map((img,idx) => (
                                 <TouchableOpacity
                                     key={idx}
                                     onPress={() => setSelectedImg(img)}
@@ -392,12 +398,28 @@ const Products = () => {
                     <View style={styles.cardSection}>
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                             {product.brand && <Text style={styles.brand}>{product.brand}</Text>}
-                            <View style={styles.ptsBadge}><Text style={[styles.ptsText, { color: mainColor }]}>{product.pts} PTS</Text></View>
+
+                            {/* ✅ Show ONLY when no variants */}
+                            {variants.length === 0 && product.pts !== undefined && (
+                                <View style={styles.ptsBadge}>
+                                    <Text style={[styles.ptsText, { color: mainColor }]}>
+                                        {product.pts} PTS
+                                    </Text>
+                                </View>
+                            )}
                         </View>
                         <Text style={styles.title}>{product.name}</Text>
-                        <Text style={styles.pcs}>{product.stock} pcs</Text>
+
+                        {/* ✅ Only show when NO variants */}
+                        {variants.length === 0 && (
+                            <>
+                                {product.quantity !== undefined && (
+                                    <Text style={styles.pcs}>{product.quantity} pcs</Text>
+                                )}
+                            </>
+                        )}
                         <Text style={styles.sectionTitle}>Product Details</Text>
-                        <RenderHtml html={cleanedHTML} style={styles.details}/>
+                        <RenderHtml html={cleanedHTML} style={styles.details} />
                         <View style={styles.divider} />
                         <Text style={styles.sectionTitle}>Reviews</Text>
                         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
@@ -413,7 +435,15 @@ const Products = () => {
                 {/* Price & Add to Cart */}
                 <View style={styles.bottomBar}>
                     <View>
-                        <Text style={[styles.priceLabel, { color: mainColor }]}>Total Price</Text>
+                        {variants.length === 0 ? (
+                            <Text style={[styles.priceLabel, { color: mainColor }]}>
+                                Total Price
+                            </Text>
+                        ) : (
+                            <Text style={[styles.priceLabel, { color: mainColor }]}>
+                                Price Starting From
+                            </Text>
+                        )}
                         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                             {priceRange ? (
                                 <Text style={[styles.price, { color: mainColor, fontSize: moderateScale(22) }]}>
@@ -477,51 +507,144 @@ const Products = () => {
                             maxWidth: '100%'
                         }}>
                             {variants.length > 0 && (
-                                <Text style={{ color: mainColor, fontFamily: 'PoppinsRegular', fontSize: moderateScale(15), marginBottom: 10 }}>Variants</Text>
-                            )}
-                            <View style={{ flexDirection: 'row', marginBottom: 16, flexWrap: 'wrap' }}>
-                                {variants.map((s: any, index: number) => (
-                                    <TouchableOpacity
-                                        key={`${s.label}-${s.price}-${index}`}
-                                        onPress={() => { setSelectedSize(s.label); setSelectedImg(s.image); }}
+                                <>
+                                    <Text
                                         style={{
-                                            borderWidth: selectedSize === s.label ? 2 : 0,
-                                            borderColor: mainColor,
-                                            borderRadius: 12,
-                                            marginRight: 16,
-                                            marginBottom: 8,
-                                            padding: 8,
-                                            alignItems: 'center',
-                                            width: scale(94),
-                                            height: verticalScale(105)
+                                            color: mainColor,
+                                            fontFamily: 'PoppinsRegular',
+                                            fontSize: moderateScale(15),
+                                            marginBottom: 10,
                                         }}
                                     >
-                                        <Image source={typeof s.image === 'string' ? { uri: s.image } : s.image} style={{ width: scale(65), height: verticalScale(45), borderRadius: 12, marginBottom: 6, resizeMode: 'contain' }} />
-                                        <Text style={{ color: selectedSize === s.label ? mainColor : '#1A1A1A', fontFamily: 'PoppinsBold', fontSize: moderateScale(12), marginBottom: 2 }}>
-                                            {s.label}
-                                        </Text>
-                                        {s.sale_price ? (
-                                            <View style={{ alignItems: 'center' }}>
-                                                <Text style={{
-                                                    color: '#E53935',
-                                                    fontFamily: 'PoppinsBold',
-                                                    fontSize: moderateScale(12),
-                                                }}>
-                                                    Pkr {s.sale_price}
-                                                </Text>
-                                            </View>
-                                        ) : (
-                                            <Text style={{
-                                                color: mainColor,
-                                                fontFamily: 'PoppinsBold',
-                                                fontSize: moderateScale(12)
-                                            }}>
-                                                Pkr {s.price}
-                                            </Text>
-                                        )}
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
+                                        Variants
+                                    </Text>
+
+                                    <ScrollView
+                                        horizontal
+                                        showsHorizontalScrollIndicator={false}
+                                        contentContainerStyle={{ paddingHorizontal: 4 }}
+                                        style={{ marginBottom: 16 }}
+                                    >
+                                        <View style={{ flexDirection: 'row' }}>
+                                            {variants.map((s, index) => {
+                                                const isSelected = s.id?.toString() === selectedVariantId;
+
+                                                return (
+                                                    <TouchableOpacity
+                                                        key={`${s.label}-${s.price}-${index}`}
+                                                        onPress={() => {
+                                                            setSelectedVariantId(s.id?.toString() || '');
+                                                            setSelectedImg(s.image);
+                                                        }}
+                                                        activeOpacity={0.8}
+                                                        style={{
+                                                            borderWidth: isSelected ? 2 : 1,
+                                                            borderColor: isSelected ? mainColor : '#ddd',
+                                                            borderRadius: 12,
+                                                            marginRight: 12,
+                                                            padding: 10,
+                                                            alignItems: 'center',
+                                                            width: scale(100),
+                                                            minHeight: verticalScale(120),
+                                                            backgroundColor: '#fff',
+                                                        }}
+                                                    >
+                                                        {/* Image */}
+                                                        <Image
+                                                            source={
+                                                                typeof s.image === 'string'
+                                                                    ? { uri: s.image }
+                                                                    : s.image
+                                                            }
+                                                            style={{
+                                                                width: scale(70),
+                                                                height: verticalScale(50),
+                                                                borderRadius: 8,
+                                                                marginBottom: 6,
+                                                                resizeMode: 'contain',
+                                                            }}
+                                                        />
+
+                                                        {/* Label */}
+                                                        <Text
+                                                            style={{
+                                                                color: isSelected ? mainColor : '#1A1A1A',
+                                                                fontFamily: 'PoppinsBold',
+                                                                fontSize: moderateScale(10),
+                                                                textAlign: 'center',
+                                                            }}
+                                                        >
+                                                            {s.label}
+                                                        </Text>
+
+                                                        {/* ✅ Stock */}
+                                                        {s.stock !== undefined && (
+                                                            <Text
+                                                                style={{
+                                                                    fontSize: 10,
+                                                                    color: '#666',
+                                                                    fontFamily: 'PoppinsRegular',
+                                                                    marginTop: 2,
+                                                                }}
+                                                            >
+                                                                Stock: {s.stock}
+                                                            </Text>
+                                                        )}
+
+                                                        {/* ✅ Points */}
+                                                        {s.points !== undefined && (
+                                                            <Text
+                                                                style={{
+                                                                    fontSize: 10,
+                                                                    color: mainColor,
+                                                                    fontFamily: 'PoppinsBold',
+                                                                }}
+                                                            >
+                                                                {s.points} pts
+                                                            </Text>
+                                                        )}
+
+                                                        {/* Price */}
+                                                        {s.sale_price ? (
+                                                            <Text
+                                                                style={{
+                                                                    color: '#E53935',
+                                                                    fontFamily: 'PoppinsBold',
+                                                                    fontSize: moderateScale(12),
+                                                                    marginTop: 4,
+                                                                }}
+                                                            >
+                                                                Pkr {s.sale_price}
+                                                            </Text>
+                                                        ) : (
+                                                            <Text
+                                                                style={{
+                                                                    color: mainColor,
+                                                                    fontFamily: 'PoppinsBold',
+                                                                    fontSize: moderateScale(12),
+                                                                    marginTop: 4,
+                                                                }}
+                                                            >
+                                                                Pkr {s.price}
+                                                            </Text>
+                                                        )}
+                                                    </TouchableOpacity>
+                                                );
+                                            })}
+                                        </View>
+                                    </ScrollView>
+                                </>
+                            )}
+                            {selectedVariant?.description ? (
+                                <View style={styles.variantDescriptionContainer}>
+                                    <Text style={[styles.variantDescriptionTitle, { color: mainColor }]}>
+                                        Description
+                                    </Text>
+                                    <Text style={styles.variantDescriptionText} numberOfLines={5}>
+                                        {selectedVariant.description}
+                                    </Text>
+                                </View>
+                            ) : null}
                             {variants.length > 0 && <View style={{ height: 1, backgroundColor: '#E5E5E5', marginVertical: 10 }} />}
 
                             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
@@ -595,7 +718,6 @@ const Products = () => {
                                             {(() => {
 
                                                 if (variants.length > 0) {
-                                                    const selectedVariant = variants.find((v: Variant) => v.label === selectedSize);
                                                     if (!selectedVariant) return null;
 
                                                     const variantPrice = Number(selectedVariant.price) || 0;
@@ -807,17 +929,16 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         borderWidth: 2,
         borderColor: 'transparent',
-        padding: 2,
         backgroundColor: '#fff',
         marginHorizontal: 2,
-        marginTop: verticalScale(30)
+        marginTop: verticalScale(10)
     },
     thumbnailSelected: {
         borderColor: colors.primaryDark,
     },
     thumbnailImg: {
-        width: scale(15),
-        height: verticalScale(15),
+        width: scale(45),
+        height: verticalScale(45),
         borderRadius: 6,
     },
     cardSection: {
@@ -896,7 +1017,7 @@ const styles = StyleSheet.create({
     },
     priceLabel: {
         color: colors.textSecondary,
-        fontSize: moderateScale(15),
+        fontSize: moderateScale(12),
         fontFamily: 'PoppinsRegular',
     },
     price: {
@@ -917,6 +1038,23 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontFamily: 'PoppinsSemi',
         fontSize: moderateScale(15),
+    },
+    variantDescriptionContainer: {
+        marginTop: 8,
+        marginBottom: 12,
+    },
+
+    variantDescriptionTitle: {
+        fontSize: moderateScale(14),
+        fontFamily: 'PoppinsSemi',
+        marginBottom: 4,
+    },
+
+    variantDescriptionText: {
+        fontSize: moderateScale(13),
+        fontFamily: 'PoppinsRegular',
+        color: '#333',
+        lineHeight: 18,
     },
 });
 

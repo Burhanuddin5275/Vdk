@@ -2,35 +2,31 @@ import { Api_url, img_url } from "../url/url";
 type ApiUser = any;
 export const registerUser = async ({
   number,
+  token,
   name,
   email,
   password,
 }: {
   number: string;
+  token: string;
   name?: string;
   email?: string;
   password?: string;
 }) => {
   try {
-    const response = await fetch(`${Api_url}/api/app-users/`, {
+    const response = await fetch(`${Api_url}/api/complete_profile/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Accept: 'application/json',
+        Authorization: `Token ${token}`,
       },
       body: JSON.stringify({ number, name, email, password }),
     });
 
     const data = await response.json().catch(() => ({}));
 
-    if (!response.ok) {
-      const errorMessage =
-        data.detail ||
-        data.message ||
-        Object.values(data).flat().join('\n') ||
-        `HTTP ${response.status} - ${response.statusText}`;
-      throw new Error(errorMessage);
-    }
+
 
     return data;
   } catch (error: any) {
@@ -151,3 +147,83 @@ export const updateUserProfile = async (
 
   return response;
 };
+
+export const ResetPassword = async ({
+  number,
+  otp,
+  new_password
+}:{number:string, otp:string, new_password:string}) => {
+  try {
+    const res = await fetch(`${Api_url}/api/reset-password/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({ number, otp, new_password }),
+    });
+
+    const response = await res.json().catch(() => ({}));
+
+    return response;
+  } catch (error:any) {
+    throw new Error(error.message || 'Failed to create account.');
+  }
+};
+export const otpVerify = async ({
+  number,
+  otp,
+}:{number:string, otp:string}) => {
+  try {
+    const res = await fetch(`${Api_url}/api/app-users/verify-otp/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({ number, otp }),
+    });
+    const response = await res.json().catch(() => ({}));
+    return response;
+  } catch (error:any) {
+    throw new Error(error.message || 'Failed to register user.');
+  }
+};
+export const numberVerify = async ({
+  number,
+}:{number:string}) => {
+  try {
+    const res = await fetch(`${Api_url}/api/app-users/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({ number }),
+    });
+    const response= await res.json().catch(() => ({}));
+    return response;
+  } catch (error:any) {
+    throw new Error(error.message || 'Failed to register user.');
+  }
+};
+export const Forgetpassword = async ({
+  number,
+}:{number:string}) => {
+  try {
+    const res = await fetch(`${Api_url}/api/forgot-password/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({ number }),
+    });
+    const response = await res.json().catch(() => ({}));
+    return response;
+  } catch (error:any) {
+    throw new Error(error.message || 'Failed to register user.');
+  }
+};
+
+

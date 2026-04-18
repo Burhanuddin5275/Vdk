@@ -1,7 +1,9 @@
 import AlertModal from '@/components/Alert';
+import { otpVerify } from '@/services/user';
+import { Api_url } from '@/url/url';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, ImageBackground, Keyboard, Linking, Platform, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, ImageBackground, Keyboard, Platform, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { verticalScale } from 'react-native-size-matters';
 
@@ -9,45 +11,16 @@ const OTP_LENGTH = 4;
 const RESEND_TIME = 19; // seconds
 
 const VerifyNumber = () => {
-  const { phone } = useLocalSearchParams<{ phone: string }>();
+  const { phone } = useLocalSearchParams();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [otp, setOtp] = useState<string[]>(Array(OTP_LENGTH).fill(''));
-  const [timer, setTimer] = useState<number>(RESEND_TIME);
-  const [isVerifying, setIsVerifying] = useState<boolean>(false);
-  const [verificationCode, setVerificationCode] = useState<string>('');
-  const inputRefs = useRef<Array<TextInput | null>>([]);
-  const [showErrorModal, setShowErrorModal] = useState<boolean>(false);
-const { phone: phoneParam, source } = useLocalSearchParams<{ 
-  phone?: string; 
-  source?: 'signup' | 'forgot' 
-}>();
-  useEffect(() => {
-    const sendOtpEmail = async (code: string) => {
-      const emailAddress = 'bhamza4747@gmail.com';
-      const emailSubject = 'Your Verification Code';
-      const emailBody = `Your verification code is: ${code}\n\nPlease use this code to verify your account.`;
-      const emailUrl = `mailto:${emailAddress}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
-
-      try {
-        await Linking.openURL(emailUrl);
-        console.log('Verification code email sent');
-      } catch (error) {
-        console.error('Error sending verification email:', error);
-        // Fallback to alert if email client fails to open
-        Alert.alert('Verification Code', `Your verification code is: ${code}`);
-      }
-    };
-
-    const randomDelay = Math.floor(Math.random() * 1000) + 3000; // Random delay between 3-4 seconds
-    const timer = setTimeout(() => {
-      const randomCode = Math.floor(1000 + Math.random() * 9000).toString();
-      setVerificationCode(randomCode);
-      sendOtpEmail(randomCode);
-    }, randomDelay);
-
-    return () => clearTimeout(timer);
-  }, []);
+  const [otp, setOtp] = useState(Array(OTP_LENGTH).fill(''));
+  const [timer, setTimer] = useState(RESEND_TIME);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [verificationCode, setVerificationCode] = useState('');
+  const inputRefs = useRef([]);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const { phone: phoneParam, source } = useLocalSearchParams();
 
   useEffect(() => {
     if (timer === 0) return;
@@ -55,7 +28,7 @@ const { phone: phoneParam, source } = useLocalSearchParams<{
     return () => clearInterval(interval);
   }, [timer]);
 
-  const handleChange = (text: string, idx: number) => {
+  const handleChange = (text:string,idx:number) => {
     if (/^\d$/.test(text)) {
       const newOtp = [...otp];
       newOtp[idx] = text;
@@ -72,7 +45,7 @@ const { phone: phoneParam, source } = useLocalSearchParams<{
     }
   };
 
-  const handleKeyPress = (e: { nativeEvent: { key: string } }, idx: number) => {
+  const handleKeyPress = (e:any, idx:number) => {
     if (e.nativeEvent.key === 'Backspace' && otp[idx] === '' && idx > 0) {
       inputRefs.current[idx - 1]?.focus();
     }
@@ -80,11 +53,14 @@ const { phone: phoneParam, source } = useLocalSearchParams<{
 
   const handleVerify = async () => {
     if (isVerifying) return;
+
     const code = otp.join('');
+
     if (!/^\d{4}$/.test(code)) {
       Alert.alert('Invalid code', 'Please enter the 4-digit verification code.');
       return;
     }
+
     if (!phone) {
       Alert.alert('Error', 'Phone number not found');
       return;
@@ -93,31 +69,41 @@ const { phone: phoneParam, source } = useLocalSearchParams<{
     setIsVerifying(true);
 
     try {
-      if (code !== verificationCode) {
-        setShowErrorModal(true);
-        setTimeout(() => setShowErrorModal(false), 3000); // Auto-dismiss after 3 seconds
-        return;
+      console.log("phone", phone)
+      const data = await otpVerify({
+        number: phone as string,
+        otp: code,
+      });
+
+      console.log('VERIFY SUCCESS:', data);
+
+      // ✅ SUCCESS FLOW
+      if (data.message === 'OTP verified. Please complete your profile.') {
+        router.replace({
+          pathname: '/Signup',
+          params: {
+            phone: phone,
+            temp_token: data.temp_token,
+            verified: 'true',
+
+          },
+        });
+      } else {
+        router.replace({
+          pathname: '/ForgetPassword',
+          params: {
+            phone: phone,
+            verified: 'true',
+          },
+        });
       }
 
+    } catch (error:any) {
+      console.log('VERIFY ERROR:', error?.response?.data || error.message);
 
-  if (source === 'signup') {
-    router.push({
-      pathname: '/Signup',
-      params: { 
-        phone: `${phone}`,
-        verified: 'true'
-      }
-    });
-  } else {
-    // Default to forget password if no source or source is 'forgot'
-    router.push({
-      pathname: '/ForgetPassword',
-      params: { 
-        phone: `${phone}`,
-        verified: 'true'
-      }
-    });
-  }
+      setShowErrorModal(true);
+      setTimeout(() => setShowErrorModal(false), 3000);
+
     } finally {
       setIsVerifying(false);
     }
@@ -130,35 +116,18 @@ const { phone: phoneParam, source } = useLocalSearchParams<{
       Alert.alert('Error', 'Phone number not found');
       return;
     }
-
-    setOtp(Array(OTP_LENGTH).fill(''));
+    const data = await fetch(`${Api_url}/api/app-users/resend_otp/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({ number: phone }),
+    });
+    console.log("data", data)
     setTimer(RESEND_TIME);
 
-    const sendOtpEmail = async (code: string) => {
-      const emailAddress = 'bhamza4747@gmail.com';
-      const emailSubject = 'Your New Verification Code';
-      const emailBody = `Your new verification code is: ${code}\n\nPlease use this code to verify your account.`;
-      const emailUrl = `mailto:${emailAddress}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
 
-      try {
-        await Linking.openURL(emailUrl);
-        console.log('New verification code email sent');
-        Alert.alert('Code Sent', 'A new verification code has been sent to your email.');
-      } catch (error) {
-        console.error('Error sending verification email:', error);
-        // Fallback to alert if email client fails to open
-        Alert.alert('New Verification Code', `Your new verification code is: ${code}`);
-      }
-    };
-
-    const newCode = Math.floor(1000 + Math.random() * 9000).toString();
-    setVerificationCode(newCode);
-
-    // Add a small delay before sending the email
-    const randomDelay = Math.floor(Math.random() * 1000) + 1000;
-    setTimeout(() => {
-      sendOtpEmail(newCode);
-    }, randomDelay);
   };
 
   return (
@@ -220,19 +189,19 @@ const { phone: phoneParam, source } = useLocalSearchParams<{
           )}
         </View>
       </ImageBackground>
-<AlertModal
-  visible={showErrorModal}
-  message="Incorrect Code"
-  subtitle="The verification code you entered is incorrect. Please try again."
-  onClose={() => setShowErrorModal(false)}
-/>
+      <AlertModal
+        visible={showErrorModal}
+        message="Incorrect Code"
+        subtitle="The verification code you entered is incorrect. Please try again."
+        onClose={() => setShowErrorModal(false)}
+      />
 
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  
+
   container: {
     flex: 1,
     alignItems: 'center',

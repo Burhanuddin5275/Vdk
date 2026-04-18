@@ -6,125 +6,90 @@ import { colors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { createOrderApi } from '../services/orders';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import {
     ActivityIndicator,
     Alert,
     Dimensions,
+    FlatList,
     Image,
     ImageBackground,
     SafeAreaView,
     ScrollView,
     StyleSheet,
     Text,
+    TextInput,
     TouchableOpacity,
-    View
+    View,
+    Switch
 } from 'react-native';
-import { moderateScale } from 'react-native-size-matters';
+import { moderateScale, scale } from 'react-native-size-matters';
+import { createOrderApi } from '../services/orders';
 import { Api_url } from '../url/url';
-const { width, height } = Dimensions.get('window');
+
+const { width } = Dimensions.get('window');
 
 const PAYMENT_METHODS = [
     {
         id: 'card',
         label: 'Add Card',
         icon: <Ionicons name="card-outline" size={moderateScale(25)} color={colors.primary} />,
-        type: 'card',
     },
 ];
 
-const MORE_OPTIONS = [
-    { id: 'easypaisa', label: 'Easypaisa', icon: require('../assets/images/easypaisa.png') },
-    { id: 'jazzcash', label: 'Jazzcash', icon: require('../assets/images/jazzcash.png') },
-    { id: 'Cod', label: 'Cash on Delivery', icon: require('../assets/images/cash.png') },
-];
-
-const RadioButton = ({ selected, onPress }: { selected: boolean; onPress: () => void }) => (
-    <TouchableOpacity
-        style={[styles.radioButton, selected && styles.radioButtonSelected]}
-        onPress={onPress}
-    >
-        {selected && <View style={styles.radioButtonInner} />}
-    </TouchableOpacity>
-);
-
 const Payment = () => {
     const router = useRouter();
-    const params = useLocalSearchParams();
 
     const [selected, setSelected] = useState<string>('');
     const [isLoading, setIsLoading] = useState(false);
+
     const { clearCart } = useCartStore();
-    const { shippingAddress: shippingAddressStr, shippingMethod: shippingMethodStr, cartItems } = useLocalSearchParams<{
-        shippingAddress: string;
-        shippingMethod: string;
-        cartItems: string;
-    }>();
-    const shippingAddress = shippingAddressStr ? JSON.parse(shippingAddressStr) : null;
-    const shippingMethod = shippingMethodStr ? JSON.parse(shippingMethodStr) : null;
+    const { isAuthenticated, phone, token } = useAuth();
 
-    const { isAuthenticated, phone, token, user } = useAuth();
-    const [userId, setUserId] = useState<string | null>(null);
-    const [showSuccessModal, setShowSuccessModal] = useState(false);
-    const [orderSuccess, setOrderSuccess] = useState(false);
+    const {
+        shippingAddress: shippingAddressStr,
+        shippingMethod: shippingMethodStr,
+        cartItems
+    } = useLocalSearchParams<any>();
 
-    const handleSuccessModalClose = () => {
-        setShowSuccessModal(false);
-        router.replace({
-            pathname: '/(tabs)/Orders',
-            params: { showSuccess: 'true', orderSuccess: 'true' }
-        });
-    };
-
-    useEffect(() => {
-        const fetchUserData = async () => {
-            try {
-                const response = await axios.get(`${Api_url}api/app-user/list/`);
-                const users = response.data;
-
-                const matchedUser = users.find((u: any) => u.number === phone);
-
-                if (matchedUser) {
-                    setUserId(matchedUser.id);
-                } else {
-                    setUserId(token);
-                }
-            } catch (error) {
-                setUserId(token);
-            }
-        };
-
-        if (phone) fetchUserData();
-        else setUserId(token);
-
-    }, [phone, token]);
+    const shippingAddress = useMemo(() => shippingAddressStr ? JSON.parse(shippingAddressStr) : null, [shippingAddressStr]);
+    const shippingMethod = useMemo(() => shippingMethodStr ? JSON.parse(shippingMethodStr) : null, [shippingMethodStr]);
 
     const parsedCartItems = useMemo(() => {
         try {
             return cartItems ? JSON.parse(cartItems) : [];
-        } catch (e) {
-            console.error('Error parsing cart items:', e);
+        } catch {
             return [];
         }
     }, [cartItems]);
 
-    // ------------------ CREATE ORDER ------------------
+    // ---------------- SPLIT PAYMENT ----------------
+    const [splitEnabled, setSplitEnabled] = useState(false);
+    const [points, setPoints] = useState('');
+    const [cash, setCash] = useState('');
+
+    const [userId, setUserId] = useState<string | null>(null);
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [orderSuccess, setOrderSuccess] = useState(false);
+
+    useEffect(() => {
+        const fetchUser = async () => {
+            try {
+                const res = await axios.get(`${Api_url}api/app-user/list/`);
+                const user = res.data.find((u: any) => u.number === phone);
+                setUserId(user?.id || token);
+            } catch {
+                setUserId(token);
+            }
+        };
+
+        if (phone) fetchUser();
+        else setUserId(token);
+    }, [phone, token]);
+
     const createOrder = async () => {
-        if (!selected) {
-            Alert.alert("Error", "Please select a payment method");
-            return;
-        }
-
-        if (!shippingAddress || !shippingMethod) {
-            Alert.alert('Error', 'Missing shipping information');
-            return;
-        }
-
-        if (!isAuthenticated || !token) {
-            Alert.alert('Authentication Required', 'Please log in to place an order');
-            return;
-        }
+        if (!selected) return Alert.alert("Error", "Select payment method");
+        if (!shippingAddress || !shippingMethod) return Alert.alert("Error", "Missing shipping");
 
         setIsLoading(true);
 
@@ -136,109 +101,140 @@ const Payment = () => {
                 shipping: shippingMethod,
                 status: 'pending',
                 product: parsedCartItems.map((item: any) => ({
-                    image: item.image || null,
-                    name: item.name || null,
-                    pts: item.points || null,
-                    quantity: item.quantity || null,
-                    variants: item.variants || null,
-                    cost_price: item.cost_price || null,
+                    image: item.image,
+                    name: item.name,
+                    quantity: item.quantity || 1,
                     price: item.price
-                        ? (parseFloat(item.price) * (item.quantity || 1)).toFixed(2)
-                        : '0.00',
                 })),
-                payment: [{ method: selected, status: "Pending" }],
+                payment: [{
+                    method: selected,
+                    split: splitEnabled
+                        ? { points, cash }
+                        : null,
+                    status: "Pending"
+                }],
                 created_at: new Date().toISOString(),
             };
 
-            const response = await createOrderApi(orderData, token);
-
+            await createOrderApi(orderData, token || '');
             await clearCart();
+
             setOrderSuccess(true);
             setShowSuccessModal(true);
 
-        } catch (error: any) {
-            Alert.alert('Error', error.message || 'Order Failed');
-            console.error('Order error:', error);
-
+        } catch (e: any) {
+            Alert.alert("Error", e.message);
         } finally {
             setIsLoading(false);
         }
     };
-    // -----------------------------------------------------
 
-    const renderPaymentOption = (item: any) => {
-        const isSelected = selected === item.id;
+    const renderCartItem = useCallback(({ item }: any) => (
+        <View style={styles.cartItem}>
+            <Image
+                source={
+                    item.image?.uri
+                        ? { uri: item.image.uri }
+                        : { uri: item.image }
+                }
+                style={styles.cartImage}
+            />
 
-        return (
-            <TouchableOpacity
-                key={item.id}
-                style={[styles.paymentOption, isSelected && styles.selectedPaymentOption]}
-                onPress={() => setSelected(item.id)}
-            >
-                <View style={styles.paymentOptionContent}>
-                    <View style={styles.paymentOptionLeft}>
-                        <Image source={item.icon} style={styles.paymentIcon} />
-                        <Text style={styles.paymentLabel}>{item.label}</Text>
-                    </View>
-                    <RadioButton selected={isSelected} onPress={() => setSelected(item.id)} />
-                </View>
-            </TouchableOpacity>
-        );
-    };
+            <View style={{ flex: 1, marginLeft: 12 }}>
+                <Text style={styles.cartName}>{item.name}</Text>
+                <Text style={styles.cartPrice}>PKR {item.price}</Text>
+            </View>
+        </View>
+    ), []);
 
     return (
         <SafeAreaView style={{ flex: 1 }}>
             <ImageBackground source={require('../assets/images/ss1.png')} style={styles.background}>
 
                 <View style={styles.container}>
+
+                    {/* HEADER */}
                     <View style={styles.header}>
-                        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-                            <Ionicons name="arrow-back" size={moderateScale(28)} color={colors.white} />
+                        <TouchableOpacity onPress={() => router.back()}>
+                            <Ionicons name="arrow-back" size={28} color="#fff" />
                         </TouchableOpacity>
-                        <Text style={styles.headerTitle}>Payment Method</Text>
+                        <Text style={styles.headerTitle}>Payment</Text>
                     </View>
 
-                    <ScrollView contentContainerStyle={{ paddingHorizontal: 16 }}>
+                    <ScrollView contentContainerStyle={{ paddingBottom: 20, width: '90%', alignSelf: 'center' }}>
 
-                        <Text style={styles.sectionTitle}>Credit & Debit Card</Text>
-
+                        {/* CARD */}
                         <TouchableOpacity
-                            style={[styles.cardRow, selected === "card" && styles.selectedRow]}
-                            onPress={() => { setSelected('card'); router.push('/Card'); }}
+                            style={styles.cardRow}
+                            onPress={() => setSelected('card')}
                         >
-                            <View style={styles.iconBox}>{PAYMENT_METHODS[0].icon}</View>
-                            <Text style={styles.cardLabel}>{PAYMENT_METHODS[0].label}</Text>
+                            {PAYMENT_METHODS[0].icon}
+                            <Text style={styles.cardLabel}>Add Card</Text>
                         </TouchableOpacity>
 
-                        <Text style={styles.sectionTitle}>More Payment Options</Text>
+                        {/* SPLIT PAYMENT SECTION */}
+                        <Text style={styles.sectionTitle}>Split Payment</Text>
 
-                        {MORE_OPTIONS.map(renderPaymentOption)}
+                        <View style={styles.splitRow}>
+                            <Text style={styles.cardLabel}>Enable Split Payment</Text>
+                            <Switch
+                                value={splitEnabled}
+                                onValueChange={setSplitEnabled}
+                            />
+                        </View>
+
+                        {splitEnabled && (
+                            <View style={{ marginBottom: 15 }}>
+
+                                {/* POINTS */}
+                                <Text style={styles.subHeading}>Points</Text>
+                                <TextInput
+                                    placeholder="Enter Points"
+                                    value={points}
+                                    onChangeText={setPoints}
+                                    keyboardType="numeric"
+                                    style={styles.input}
+                                />
+
+                                {/* CASH */}
+                                <Text style={styles.subHeading}>Cash Amount</Text>
+                                <TextInput
+                                    placeholder="Enter Cash Amount"
+                                    value={cash}
+                                    onChangeText={setCash}
+                                    keyboardType="numeric"
+                                    style={styles.input}
+                                />
+                            </View>
+                        )}
+
+                        {/* PRODUCTS */}
+                        <Text style={styles.sectionTitle}>Products</Text>
+
+                        <FlatList
+                            data={parsedCartItems}
+                            renderItem={renderCartItem}
+                            keyExtractor={(item, i) => i.toString()}
+                            scrollEnabled={false}
+                        />
 
                     </ScrollView>
 
+                    {/* FOOTER */}
                     <View style={styles.footer}>
-                        <Button
-                            variant="secondary"
-                            style={[styles.confirmBtn, isLoading && styles.disabledBtn]}
-                            onPress={createOrder}
-                            disabled={isLoading}
-                        >
+                        <Button onPress={createOrder} disabled={isLoading}>
                             {isLoading ? <ActivityIndicator color="#fff" /> : "Confirm Payment"}
                         </Button>
                     </View>
+
                 </View>
             </ImageBackground>
 
             <SuccessModal
                 visible={showSuccessModal}
-                message={orderSuccess ? "Order Placed Successfully!" : "Order Failed"}
-                subtitle={orderSuccess
-                    ? "Your order has been placed successfully"
-                    : "There was an error processing your order."}
-                autoCloseDelay={1000}
-                onClose={handleSuccessModalClose}
+                message={orderSuccess ? "Order Placed!" : "Failed"}
+                onClose={() => router.replace('/(tabs)/Orders')}
             />
-
         </SafeAreaView>
     );
 };
@@ -281,9 +277,9 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
-    radioButtonSelected: { 
-     borderColor: colors.primary,
-     },
+    radioButtonSelected: {
+        borderColor: colors.primary,
+    },
     radioButtonInner: {
         width: moderateScale(12),
         height: moderateScale(12),
@@ -341,6 +337,61 @@ const styles = StyleSheet.create({
         color: colors.primary,
         fontSize: 14,
         fontFamily: 'PoppinsSemi',
+    },
+    cartItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderRadius: 16,
+        padding: 10,
+        marginBottom: 12,
+    },
+    cartImage: {
+        width: scale(70),
+        height: scale(70),
+        borderRadius: 12,
+        backgroundColor: colors.white,
+    },
+    cartName: {
+        color: colors.white,
+        fontFamily: 'PoppinsMedium',
+        fontSize: moderateScale(15),
+        marginBottom: 2,
+    },
+    cartPack: {
+        color: colors.white,
+        fontFamily: 'PoppinsMedium',
+        fontSize: moderateScale(15),
+        opacity: 0.8,
+    },
+    cartPrice: {
+        color: colors.white,
+        fontFamily: 'PoppinsBold',
+        fontSize: moderateScale(16),
+        marginTop: 2,
+    },
+    splitRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        backgroundColor: colors.white,
+        padding: 14,
+        borderRadius: 12,
+        marginBottom: 10,
+    },
+subHeading: {
+    color: colors.white,
+    fontSize: 14,
+    fontFamily: 'PoppinsSemi',
+    marginBottom: 6,
+    marginTop: 8,
+},
+    input: {
+        borderWidth: 1,
+        borderColor: '#ddd',
+        borderRadius: 10,
+        padding: 10,
+        marginBottom: 10,
+        backgroundColor: '#fff',
     },
     footer: {
         backgroundColor: colors.secondaryLight,

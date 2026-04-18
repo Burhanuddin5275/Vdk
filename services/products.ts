@@ -10,6 +10,7 @@ export type Product =
     rating: number;
     regular_price: number;
     quantity: number;
+    is_active: boolean;
     stock: number;
     sale_price: number;
     cost_price?: number;
@@ -39,6 +40,7 @@ function toProduct(item: ApiProduct): Product {
   const cost_price = Number(item.cost_price ?? item.cost ?? 0);
   const sale_price = Number(item.sale_price ?? item.discounted_price ?? 0);
   const description = item.description ?? item.desc ?? undefined;
+  const is_active = item.is_active;
   const stock_status = item.stock_status ?? undefined;
   const gallery_images = item.gallery_images ?? [];
   const variants = item.variant ?? item.variants ?? [];
@@ -57,6 +59,7 @@ function toProduct(item: ApiProduct): Product {
    regular_price,
    sale_price,
     description,
+    is_active,
     gallery_images,
     variants,
     stock_status

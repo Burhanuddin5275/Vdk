@@ -18,21 +18,27 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, verticalScale } from 'react-native-size-matters';
-import { registerUser } from '@/services/user';
+import { numberVerify, registerUser } from '@/services/user';
 
 const Signup = () => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const { phone: phoneParam } = useLocalSearchParams<{ phone?: string }>();
-  const [phone, setPhone] = useState(phoneParam?.replace(/^\+92/, '') || '');
+  const { phone: phoneParam, temp_token } = {} as { phone: string; temp_token: string };
+  const [phone, setPhone] = useState(phoneParam?.toString().replace(/^\+92/, '') || '');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
+  const [isAgreed, setIsAgreed] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const isFromVerification = !!phoneParam;
   const insets = useSafeAreaInsets();
   const router = useRouter();
-
+  const isValidEmail = (email:any) => {
+    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return regex.test(email);
+  };
   const handleSendOtp = async () => {
     if (isSubmitting) return;
 
@@ -42,34 +48,92 @@ const Signup = () => {
       return;
     }
 
-    if (isFromVerification && (!password || password.length < 8)) {
-      Alert.alert('Password Required', 'Please enter a password with at least 8 characters.');
-      return;
-    }
-
     const e164Phone = `+92${digitsOnly}`;
 
-    if (isFromVerification && password) {
+    // ✅ STEP 1: NOT VERIFIED → OTP FLOW ONLY
+    if (!isFromVerification) {
       try {
         setIsSubmitting(true);
-        const data = await registerUser({
+
+        const data = await numberVerify({
           number: e164Phone,
-          name,
-          email,
-          password,
         });
-        console.log('User registered:', data);
-        setShowSuccessModal(true);
-      } catch (error: any) {
-        Alert.alert('Error', error.message);
+
+        console.log('number registered:', data);
+        if (data.message === 'OTP sent') {
+          router.push({
+            pathname: '/VerifyNumber',
+            params: { phone: e164Phone, source: 'signup' }
+          });
+        } else {
+          Alert.alert('Number already exists');
+        }
+
+      } catch (error:any) {
+        console.log('FULL ERROR:', error);
+        console.log('ERROR RESPONSE:', error?.response);
+        console.log('ERROR DATA:', error?.response?.data);
+
+        Alert.alert(
+          'Error',
+          error?.response?.data?.message || error.message || 'Something went wrong'
+        );
       } finally {
         setIsSubmitting(false);
       }
-    } else {
-      router.push({
-        pathname: '/VerifyNumber',
-        params: { phone: e164Phone, source: 'signup' }
+
+      return; // 🚨 VERY IMPORTANT (stops further execution)
+    }
+
+    // ✅ STEP 2: VERIFIED → VALIDATE FULL FORM
+    if (!name.trim()) {
+      Alert.alert('Name Required', 'Please enter your name.');
+      return;
+    }
+
+    if (!email) {
+      Alert.alert('Email Required', 'Please enter your email.');
+      return;
+    }
+
+    if (!isValidEmail(email)) {
+      Alert.alert('Invalid Email', 'Please enter a valid email address.');
+      return;
+    }
+
+    if (!password || password.length < 8) {
+      Alert.alert('Password Required', 'Minimum 8 characters required.');
+      return;
+    }
+    if (password !== confirmPassword) {
+      Alert.alert('Password Mismatch', 'Passwords do not match.');
+      return;
+    }
+
+    if (!isAgreed) {
+      Alert.alert('Agreement Required', 'Please accept terms and conditions.');
+      return;
+    }
+    // ✅ STEP 3: FINAL REGISTER
+    try {
+      setIsSubmitting(true);
+      console.log('phoneParam:', phoneParam);
+      console.log('temp_token:', temp_token);
+      const data = await registerUser({
+        number: phoneParam,
+        token: temp_token,
+        name,
+        email,
+        password,
       });
+
+      console.log('User registered:', data);
+      setShowSuccessModal(true);
+
+    } catch (error:any) {
+      Alert.alert('Error', error.message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -115,7 +179,7 @@ const Signup = () => {
                     style={[styles.input, { paddingRight: 40 }]}
                     value={name}
                     onChangeText={setName}
-                    placeholder="Username"
+                    placeholder="Enter profile name"
                     placeholderTextColor="#1A1A1A"
                     autoCapitalize="none"
                     autoCorrect={false}
@@ -126,13 +190,14 @@ const Signup = () => {
                     style={[styles.input, { paddingRight: 40 }]}
                     value={email}
                     onChangeText={setEmail}
-                    placeholder="Create Email"
+                    keyboardType="email-address"
+                    placeholder="Enter Email"
                     placeholderTextColor="#1A1A1A"
                     autoCapitalize="none"
                     autoCorrect={false}
                   />
                 </View>
-                <View style={[styles.inputWrap, { marginBottom: 4 }]}>
+                <View style={[styles.inputWrap, { marginBottom: 15 }]}>
                   <TextInput
                     style={[styles.input, { paddingRight: 40 }]}
                     value={password}
@@ -154,18 +219,62 @@ const Signup = () => {
                     />
                   </TouchableOpacity>
                 </View>
+                <View style={[styles.inputWrap, { marginBottom: 4 }]}>
+                  <TextInput
+                    style={[styles.input, { paddingRight: 40 }]}
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                    placeholder="Enter Confirm Password"
+                    placeholderTextColor="#1A1A1A"
+                    secureTextEntry={!showConfirmPassword}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+                  <TouchableOpacity
+                    style={styles.passwordToggle}
+                    onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                  >
+                    <Ionicons
+                      name={showConfirmPassword ? 'eye-off' : 'eye'}
+                      size={20}
+                      color="#666"
+                    />
+                  </TouchableOpacity>
+                </View>
                 {password.length > 0 && password.length < 8 && (
                   <Text style={styles.errorText}>
                     Password must be at least 8 characters long
                   </Text>
                 )}
+                {email.length > 0 && !isValidEmail(email) && (
+                  <Text style={styles.errorText}>
+                    Please enter a valid email address
+                  </Text>
+                )}
+                <View style={styles.checkboxContainer}>
+                  <TouchableOpacity
+                    style={styles.checkbox}
+                    onPress={() => setIsAgreed(!isAgreed)}
+                  >
+                    {isAgreed && <View style={styles.checkboxInner} />}
+                  </TouchableOpacity>
+
+                  <Text style={styles.checkboxText}>
+                    I agree to{' '}
+                    <Text style={styles.link}>Terms & Conditions</Text> and{' '}
+                    <Text style={styles.link}>Privacy Policy</Text>
+                  </Text>
+                </View>
               </View>
             )}
-
             <TouchableOpacity
               style={[styles.continueBtn, (isSubmitting || (isFromVerification && !password && !email)) && { opacity: 0.7 }]}
               onPress={handleSendOtp}
-              disabled={isSubmitting || (isFromVerification && !password && !email)}
+              disabled={
+                isSubmitting ||
+                (isFromVerification &&
+                  (!password || !email || !isAgreed))
+              }
             >
               {isSubmitting ? (
                 <ActivityIndicator color={colors.textPrimary} />
@@ -210,6 +319,36 @@ const styles = StyleSheet.create({
   welcome: { color: colors.white, fontSize: 26, fontFamily: 'Sigmar', textAlign: 'center', marginBottom: 32 },
   inputWrap: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 16, paddingHorizontal: 12, paddingVertical: 5, marginBottom: 5, width: '100%', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 4, elevation: 2, position: 'relative' },
   passwordToggle: { position: 'absolute', right: 16, padding: 8 },
+  checkboxContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 10,
+    paddingHorizontal: 4,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderWidth: 1.5,
+    borderColor: '#fff',
+    borderRadius: 14,
+    marginRight: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  checkboxInner: {
+    width: 12,
+    height: 12,
+    backgroundColor: '#fff',
+    borderRadius: 14,
+  },
+
+  checkboxText: {
+    flex: 1,
+    color: '#fff',
+    fontSize: 13,
+    fontFamily: 'Inter-Regular',
+  },
   errorText: { color: 'white', fontSize: 12, marginLeft: 12, marginTop: 4, fontFamily: 'Inter-Regular' },
   flagWrap: { flexDirection: 'row', alignItems: 'center', marginRight: 8 },
   flag: { width: 32, height: 32, borderRadius: 16, marginRight: 4 },
