@@ -518,7 +518,7 @@ if (loading) {
                       {/* Footer */}
                       <View style={bestSellerStyles.cardFooter}>
                         <View style={{ flex: 1 }}>
-                          <Text style={bestSellerStyles.cardTitle}>{product.name}</Text>
+                          <Text style={bestSellerStyles.cardTitle} numberOfLines={2}>{product.name}</Text>
                           <Text style={{ fontSize: moderateScale(10) }}>
                             Ratings <Text style={bestSellerStyles.rating}>{"★".repeat(Math.round(product.rating || 0))}</Text>
                           </Text>

@@ -46,10 +46,6 @@ const Login = () => {
 
       const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error('Invalid login');
-      }
-
       const token = data.api_token;
 
       if (!token) {
@@ -57,14 +53,7 @@ const Login = () => {
       }
 
       login({ phone: formattedPhone, token, password });
-      const decodedReturnTo = decodeURIComponent(returnTo as string);
-      // Ensure the path starts with a valid route pattern
-      if (decodedReturnTo.startsWith('/') || decodedReturnTo.startsWith('/(tabs)')) {
-        router.replace(decodedReturnTo as any); // Type assertion needed for dynamic paths
-      } else {
-        // If the path doesn't match expected patterns, default to Home
-        router.replace('/(tabs)/Home');
-      }
+      router.replace('/(tabs)/Home');
     } catch (err: any) {
       console.log(err);
       setError(err.message);
@@ -185,14 +174,7 @@ const Login = () => {
 
       // Save phone number and token to auth context
       login({ phone: userPhone, token, password });
-      const decodedReturnTo = decodeURIComponent(returnTo as string);
-      // Ensure the path starts with a valid route pattern
-      if (decodedReturnTo.startsWith('/') || decodedReturnTo.startsWith('/(tabs)')) {
-        router.replace(decodedReturnTo as any); // Type assertion needed for dynamic paths
-      } else {
-        // If the path doesn't match expected patterns, default to Home
-        router.replace('/(tabs)/Home');
-      }
+      router.replace('/(tabs)/Home');
 
     } catch (err: any) {
       console.error('Login error:', err);
@@ -428,12 +410,12 @@ const styles = StyleSheet.create({
     fontFamily: 'InterBold',
   },
   fingerprintBtn: {
-  padding: 12,
-  borderRadius: 50,
-  backgroundColor: 'rgba(255,255,255,0.15)',
-  alignItems: 'center',
-  justifyContent: 'center',
-},
+    padding: 12,
+    borderRadius: 50,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   signupContainer: {
     flexDirection: 'row',
     justifyContent: 'center',

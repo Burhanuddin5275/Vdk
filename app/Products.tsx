@@ -152,7 +152,9 @@ const Products = () => {
     const [users, setUsers] = useState<UserItem[]>([]);
     const [userId, setUserId] = useState<string | number | null>(null);
     const addToCart = useCartStore((state: any) => state.addToCart);
-    const selectedVariant = variants.find((v: any) => v.label === selectedSize);
+    const selectedVariant = variants.find(
+        (v: any) => v.id?.toString() === selectedVariantId
+    );
     const [showSuccess, setShowSuccess] = useState(false);
     const wishlistItems = useWishlistStore(state => state.items);
     const [wishlistMessage, setWishlistMessage] = useState<string | null>(null);
@@ -283,18 +285,18 @@ const Products = () => {
         return () => clearInterval(interval);
     }, [images]);
 
-useEffect(() => {
-    const loadUsers = async () => {
-        try {
-            const res = await fetchUsers();
-            setUsers(res || []);
-        } catch (error) {
-            console.error('Error loading users:', error);
-        }
-    };
+    useEffect(() => {
+        const loadUsers = async () => {
+            try {
+                const res = await fetchUsers();
+                setUsers(res || []);
+            } catch (error) {
+                console.error('Error loading users:', error);
+            }
+        };
 
-    loadUsers();
-}, []);
+        loadUsers();
+    }, []);
     const reviews = product?.reviews || [];
 
     const totalReviews = reviews.length;
@@ -426,7 +428,7 @@ useEffect(() => {
                     {/* Card Section */}
                     <View style={styles.cardSection}>
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                            {product.brand && <Text style={styles.brand}>{product.brand}</Text>}
+                            {product.brand && <Text style={styles.brand}><Text style={{ fontFamily: 'PoppinsBold', fontSize: moderateScale(20) }}>Brand:</Text> {product.brand}</Text>}
 
                             {/* ✅ Show ONLY when no variants */}
                             {variants.length === 0 && product.pts !== undefined && (
@@ -582,10 +584,10 @@ useEffect(() => {
                                 Price Starting From
                             </Text>
                         )}
-                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: scale(150) }}>
                             {priceRange ? (
-                                <Text style={[styles.price, { color: mainColor, fontSize: moderateScale(22) }]}>
-                                    {`Pkr ${priceRange.min} - ${priceRange.max}`}
+                                <Text style={[styles.price, { color: mainColor, fontSize: moderateScale(18) }]} numberOfLines={1}>
+                                    {`Rs ${priceRange.min} - ${priceRange.max}`}
                                 </Text>
                             ) : (
                                 <>
@@ -1017,12 +1019,12 @@ const styles = StyleSheet.create({
         paddingTop: verticalScale(10),
         paddingBottom: verticalScale(40),
         backgroundColor: '#fff',
-        borderBottomEndRadius: 32,
-        borderBottomStartRadius: 32,
+        borderBottomEndRadius: 20,
+        borderBottomStartRadius: 20,
     },
     productImg: {
-        width: scale(220),
-        height: verticalScale(220),
+        width: scale(340),
+        height: verticalScale(250),
     },
     thumbnailRow: {
         flexDirection: 'row',
@@ -1036,7 +1038,6 @@ const styles = StyleSheet.create({
         borderColor: 'transparent',
         backgroundColor: '#fff',
         marginHorizontal: 2,
-        marginTop: verticalScale(10)
     },
     thumbnailSelected: {
         borderColor: colors.primaryDark,
@@ -1054,7 +1055,7 @@ const styles = StyleSheet.create({
     },
     brand: {
         color: '#fff',
-        fontSize: moderateScale(18),
+        fontSize: moderateScale(16),
         fontFamily: 'PoppinsSemi',
     },
     ptsBadge: {
@@ -1074,8 +1075,8 @@ const styles = StyleSheet.create({
     },
     title: {
         color: '#fff',
-        fontSize: moderateScale(30),
-        lineHeight: verticalScale(30),
+        fontSize: moderateScale(25),
+        lineHeight: verticalScale(25),
         fontFamily: 'Sigmar',
         marginTop: 8,
     },
