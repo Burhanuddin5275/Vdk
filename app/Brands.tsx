@@ -379,6 +379,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     textAlign: 'center',
+    width: scale(225),
     fontSize: moderateScale(25),
     color: '#fff',
     fontFamily: 'Sigmar',

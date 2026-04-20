@@ -96,11 +96,11 @@ export default function CartScreen() {
         body: JSON.stringify({
           code: promoCode.trim(),
           total: subTotal,
-          products: cartItems.map((item: any) => Number(item.id)), 
+          products: cartItems.map((item: any) => Number(item.id)),
           items: cartItems.map((item: any) => ({
             id: Number(item.id),
             price: item.price,
-            quantity: item.quantity, 
+            quantity: item.quantity,
           })),
         }),
       });
@@ -113,7 +113,7 @@ export default function CartScreen() {
         throw new Error('Invalid coupon code for this product');
       }
 
-      const data = await response.json(); 
+      const data = await response.json();
       console.log('Response data:', data);
 
       if (!response.ok) {
@@ -122,7 +122,7 @@ export default function CartScreen() {
       }
 
       if (data.valid) {
- 
+
 
         setDiscount(data.discount_amount);
         setDiscountMessage(data.message || 'Promo code applied successfully!');
@@ -199,15 +199,13 @@ export default function CartScreen() {
                         <TouchableOpacity
                           style={[
                             styles.plusButton,
-                            item.stock !== null && item.quantity >= item.stock && styles.disabledButton
                           ]}
                           onPress={() => useCartStore.getState().updateQuantity(item.id, 1, undefined, item.variant)}
-                          disabled={item.stock !== null && item.quantity >= item.stock}
                         >
                           <Ionicons
                             name="add"
                             size={moderateScale(20)}
-                            color={item.stock !== null && item.quantity >= item.stock ? '#cccccc' : 'red'}
+                            color={'red'}
                           />
                         </TouchableOpacity>
                       </View>
@@ -226,41 +224,41 @@ export default function CartScreen() {
                 </View>
               );
             })}
-          {/* Checkout Button */}
-<View style={styles.checkoutContainer}>
-  {!phone ? (
-    <Button
-      variant="primary"
-      style={styles.checkoutButton}
-      onPress={() => router.push('/Login')}
-    >
-      Login to Checkout
-    </Button>
-  ) : (
-    <Button
-      variant="primary"
-      style={styles.checkoutButton}
-      onPress={() => {
-        if (cartItems.length > 0) {
-          setCheckoutModalVisible(true);
-        } else {
-          setEmptyCartMessage('Please add a product to your cart before checking out.');
-          setTimeout(() => setEmptyCartMessage(''), 2000);
-        }
-      }}
-      disabled={cartItems.length === 0}
-    >
-      Checkout
-    </Button>
-  )}
-</View>
+            {/* Checkout Button */}
+            <View style={styles.checkoutContainer}>
+              {!phone ? (
+                <Button
+                  variant="primary"
+                  style={styles.checkoutButton}
+                  onPress={() => router.push('/Login')}
+                >
+                  Login to Checkout
+                </Button>
+              ) : (
+                <Button
+                  variant="primary"
+                  style={styles.checkoutButton}
+                  onPress={() => {
+                    if (cartItems.length > 0) {
+                      setCheckoutModalVisible(true);
+                    } else {
+                      setEmptyCartMessage('Please add a product to your cart before checking out.');
+                      setTimeout(() => setEmptyCartMessage(''), 2000);
+                    }
+                  }}
+                  disabled={cartItems.length === 0}
+                >
+                  Checkout
+                </Button>
+              )}
+            </View>
           </ScrollView>
 
           {/* Delete Modal */}
           <Modal
             visible={deleteModalVisible}
             transparent
-            animationType="slide" 
+            animationType="slide"
             onRequestClose={() => setDeleteModalVisible(false)}
           >
             <Pressable style={modalStyles.overlay} onPress={() => setDeleteModalVisible(false)}>
@@ -552,8 +550,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   productImage: {
-    width:"100%",
-    resizeMode:'contain',
+    width: "100%",
+    resizeMode: 'contain',
     height: moderateScale(80),
     borderRadius: moderateScale(8),
     marginBottom: verticalScale(4),

@@ -28,6 +28,7 @@ interface OrderData {
   items: OrderItem[];
   address?: string;
   shipping?: string;
+  points_discount?: number;
   user_id?: string;
   type?: string;
 }
@@ -70,7 +71,10 @@ const OrderTracker = () => {
   const [isCancelling, setIsCancelling] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-
+  React.useEffect(() => {
+    console.log('ORDER DATA:', order);
+    console.log('POINTS DISCOUNT:', order?.points_discount);
+  }, [order]);
   const handleCancelPress = () => {
     setShowCancelModal(true);
   };
@@ -101,7 +105,9 @@ const OrderTracker = () => {
   const statusSteps = order ? getStatusSteps(order.status, order.created_at) : [];
   const orderDate = order ? new Date(order.created_at).toLocaleDateString() : '';
   const totalItems = order?.items?.reduce((s, i) => s + (i.quantity || 1), 0) || 0;
-
+  const itemsTotal = order?.items.reduce((s, i) => s + parseFloat(i.price || '0'), 0) || 0;
+  const discount = order?.points_discount || 0;
+  const finalTotal = itemsTotal - discount;
   return (
     <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
       <SuccessModal
@@ -214,6 +220,17 @@ const OrderTracker = () => {
           {/* Total */}
           {order?.items?.length ? (
             <View style={styles.totalContainer}>
+              {order?.type !== 'redeem' && Number(order?.points_discount) > 0 && (
+                <View style={styles.totalRow}>
+                  <Text style={styles.totalLabel}>
+                    Points discount:
+                  </Text>
+
+                  <Text style={{ fontSize: scale(15), color: 'white' }}>
+                    Rs. {order.points_discount}
+                  </Text>
+                </View>
+              )}
               <View style={styles.totalRow}>
                 <Text style={styles.totalLabel}>
                   {order.type === 'redeem' ? 'Redeem' : 'Order Total:'}
@@ -222,7 +239,7 @@ const OrderTracker = () => {
                 <Text style={styles.totalAmount}>
                   {order.type === 'redeem'
                     ? `${order.items[0]?.pts} PTS`
-                    : `Rs. ${order.items.reduce((s, i) => s + parseFloat(i.price), 0).toFixed(2)}`
+                    : `Rs. ${finalTotal.toFixed(2)}`
                   }
                 </Text>
               </View>

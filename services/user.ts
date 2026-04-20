@@ -2,13 +2,13 @@ import { Api_url, img_url } from "../url/url";
 type ApiUser = any;
 export const registerUser = async ({
   number,
-  token,
+  temp_token,
   name,
   email,
   password,
 }: {
   number: string;
-  token: string;
+  temp_token: string;
   name?: string;
   email?: string;
   password?: string;
@@ -19,9 +19,8 @@ export const registerUser = async ({
       headers: {
         'Content-Type': 'application/json',
         Accept: 'application/json',
-        Authorization: `Token ${token}`,
       },
-      body: JSON.stringify({ number, name, email, password }),
+      body: JSON.stringify({ number, temp_token, name, email, password }),
     });
 
     const data = await response.json().catch(() => ({}));
@@ -41,6 +40,7 @@ export type UserItem = {
   image_url: any;
   image: any;
   total_points: number;
+  point_value: number;
   addresses?: any[];
 };
 
@@ -50,7 +50,8 @@ function toUser(item: ApiUser): UserItem {
   const id = String(item.id ?? null);
   const name = String(item.name ?? item.title ?? null);
   const number = String(item.number ?? null);
-  const total_points = Number(item.total_points ?? null);
+  const total_points = Number(item.points ?? null);
+  const point_value = Number(item.point_value ?? null);
   const image_url = { uri: `${img_url}${item.image}` };
   const image = { uri: `${item.image}` };
   const addresses = item.addresses?.map((addr: any) => ({
@@ -68,6 +69,7 @@ function toUser(item: ApiUser): UserItem {
     image_url,
     image,
     total_points,
+    point_value,
     addresses,
   };
 }

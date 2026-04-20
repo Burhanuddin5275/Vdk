@@ -4,16 +4,18 @@ import { useAppSelector } from '@/store/hooks';
 import { colors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Image, ImageBackground, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { useCartStore } from '../store/cartStore';
 import { useWishlistStore } from './Wishlist';
 import { useMemo } from 'react';
+import RenderHTML from 'react-native-render-html';
+import { fetchUsers, UserItem } from '@/services/user';
 const backgroundImages = {
     ss1: require('../assets/images/ss1.png'),
-    ss2: require('../assets/images/ss2.png'), 
+    ss2: require('../assets/images/ss2.png'),
 };
 interface Product {
     id: string;
@@ -29,7 +31,7 @@ interface Product {
     quantity?: number;
     sale_price?: number;
     description?: string;
-    is_active:boolean;
+    is_active: boolean;
     rating?: number;
     gallery_images?: Array<{
         id: number;
@@ -84,27 +86,30 @@ const Products = () => {
 
         rawVariants.forEach((v: any, index: number) => {
             if (v?.attributes) {
-                const attributes = Array.isArray(v.attributes) ? v.attributes : [v.attributes];
-                attributes.forEach((attr: any) => {
-                    const options = attr?.options || {};
-                    const optionValues = Object.values(options).map(String).filter(Boolean);
-                    const label = optionValues.join(' - ') || 'Default';
-                    const variantId = v.id || `variant-${uniqueIdCounter++}`;
-                    const variantKey = `${variantId}-${label}`;
+                const attrObj = v.attributes;
 
-                    if (!variantMap.has(variantKey)) {
-                        variantMap.set(variantKey, {
-                            id: variantId,
-                            label: label,
-                            price: Number(attr.regular_price || attr.price || v.price || 0),
-                            ...(attr.sale_price ? { sale_price: Number(attr.sale_price) } : {}),
-                            description: attr.description || '',
-                            points: attr.points || 0,
-                            image: v.image || v.img || product.img,
-                            stock: v.stock !== undefined ? Number(v.stock) : undefined
-                        });
-                    }
+                // Remove non-display fields
+                const { points, description, ...rest } = attrObj;
+
+                const optionValues = Object.values(rest).map(String).filter(Boolean);
+                const entries = Object.entries(rest).filter(([_, v]) => v);
+                const label = optionValues.join(' - ') || 'Default';
+
+                const variantId = v.id || `variant-${uniqueIdCounter++}`;
+                const variantKey = `${variantId}-${label}`;
+
+                variantMap.set(variantKey, {
+                    id: variantId,
+                    label, // keep for fallback
+                    attributes: entries, // 👈 ADD THIS
+                    price: Number(v.price || 0),
+                    ...(v.sale_price ? { sale_price: Number(v.sale_price) } : {}),
+                    description: attrObj.description || '',
+                    points: Number(attrObj.points) || 0,
+                    image: v.image || v.img || product.img,
+                    stock: v.stock !== undefined ? Number(v.stock) : undefined
                 });
+
             } else {
                 const label = v?.label || v?.name || v?.pack || String(v?.size || v?.title || '');
                 if (!label) return;
@@ -139,10 +144,13 @@ const Products = () => {
             priceRange = { min: minPrice, max: maxPrice };
         }
     }
-
+    const scrollRef = useRef<ScrollView>(null);
+    const [activeIndex, setActiveIndex] = useState(0);
     const [selectedVariantId, setSelectedVariantId] = useState(variants[0]?.id?.toString() || '');
-        const [selectedSize, setSelectedSize] = useState(variants[0]?.label || '');
+    const [selectedSize, setSelectedSize] = useState(variants[0]?.label || '');
     const [qty, setQty] = useState(1);
+    const [users, setUsers] = useState<UserItem[]>([]);
+    const [userId, setUserId] = useState<string | number | null>(null);
     const addToCart = useCartStore((state: any) => state.addToCart);
     const selectedVariant = variants.find((v: any) => v.label === selectedSize);
     const [showSuccess, setShowSuccess] = useState(false);
@@ -152,14 +160,13 @@ const Products = () => {
     const isAuthenticated = useAppSelector(selectIsAuthenticated);
     const phone = useAppSelector(selectPhone);
     const cartItems = useCartStore(state => state.cartItems);
-    const [stockLimit, setStockLimit] = useState<number | null>(null);
+
 
 
     // Calculate if product is out of stock
     const isOutOfStock = selectedVariant?.stock === 0 ||
         product.quantity === 0 ||
-        product?.stock_status === 'outofstock' ||
-        (stockLimit !== null && stockLimit < 1);
+        product?.stock_status === 'outofstock';
 
     let bgKey;
     if (Array.isArray(backgroundImage)) {
@@ -177,38 +184,7 @@ const Products = () => {
         .replace(/font-variant-[^;]+;/g, "")
         .replace(/font-family:[^;]+;/g, "") || "";
 
-    useEffect(() => {
-        // Only run if there are items in the cart
-        if (cartItems && cartItems.length > 0) {
-            const cartItem = cartItems.find(item => {
-                if (item.id !== product.id) return false;
-                if (variants.length > 0) {
-                    if (!selectedVariant) return false;
-                    return item.pack === selectedVariant.label &&
-                        item.variant?.price === selectedVariant.price &&
-                        item.variant?.sale_price === selectedVariant.sale_price;
-                }
-                return true;
-            });
 
-            if (cartItem) {
-                const availableStock = cartItem.stock - cartItem.quantity;
-                console.log('Product in cart:', {
-                    id: cartItem.id,
-                    name: cartItem.name,
-                    variant: cartItem.pack,
-                    cartQuantity: cartItem.quantity,
-                    availableInCart: availableStock,
-                    variantStock: selectedVariant?.stock
-                });
-                setStockLimit(availableStock);
-            } else {
-                setStockLimit(null);
-            }
-        } else {
-            setStockLimit(null);
-        }
-    }, [cartItems, product.id, product.quantity, selectedVariant?.stock]);
 
     const handleAddToCart = async () => {
         if (!isAuthenticated || !phone) {
@@ -223,8 +199,8 @@ const Products = () => {
                 setCartMessage('This variant is out of stock.');
                 setTimeout(() => setCartMessage(null), 2000);
                 return;
-            } else if (qty > (stockLimit || selectedVariant.stock)) {
-                const available = stockLimit || selectedVariant.stock;
+            } else if (qty > selectedVariant.stock) {
+                const available = selectedVariant.stock;
                 setCartMessage(`Only ${available} item${available === 1 ? '' : 's'} available in stock.`);
                 setTimeout(() => setCartMessage(null), 2000);
                 return;
@@ -293,6 +269,47 @@ const Products = () => {
             .filter((item) => String(item.user) === String(phone))
             .reduce((sum, item) => sum + item.quantity, 0)
     );
+    useEffect(() => {
+        if (!images.length) return;
+
+        const interval = setInterval(() => {
+            setSelectedImg((prev: any) => {
+                const currentIndex = images.findIndex(img => img === prev);
+                const nextIndex = currentIndex + 1 >= images.length ? 0 : currentIndex + 1;
+                return images[nextIndex];
+            });
+        }, 6000);
+
+        return () => clearInterval(interval);
+    }, [images]);
+
+useEffect(() => {
+    const loadUsers = async () => {
+        try {
+            const res = await fetchUsers();
+            setUsers(res || []);
+        } catch (error) {
+            console.error('Error loading users:', error);
+        }
+    };
+
+    loadUsers();
+}, []);
+    const reviews = product?.reviews || [];
+
+    const totalReviews = reviews.length;
+
+    const ratingCounts = [1, 2, 3, 4, 5].map(star => {
+        return reviews.filter((r: any) => Number(r.rating) === star).length;
+    });
+
+    const avgRating =
+        totalReviews > 0
+            ? reviews.reduce((sum: number, r: any) => sum + Number(r.rating || 0), 0) / totalReviews
+            : 0;
+
+    const roundedStars = Math.round(avgRating);
+
     return (
         <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
             <ImageBackground source={bgKey ? (backgroundImages as any)[bgKey] : require('../assets/images/ss1.png')} style={{ flex: 1 }} resizeMode="cover">
@@ -380,16 +397,28 @@ const Products = () => {
                         </View>
                     </View>
                     <View style={styles.imageWrap}>
-                        <Image source={typeof selectedImg === 'string' ? { uri: selectedImg } : selectedImg} style={styles.productImg} resizeMode="contain" />
+                        <Image
+                            source={typeof selectedImg === 'string' ? { uri: selectedImg } : selectedImg}
+                            style={styles.productImg}
+                            resizeMode="contain"
+                        />
+
                         <View style={styles.thumbnailRow}>
-                            {images.map((img,idx) => (
+                            {images.map((img, idx) => (
                                 <TouchableOpacity
                                     key={idx}
                                     onPress={() => setSelectedImg(img)}
-                                    style={[styles.thumbnailWrap, selectedImg === img && styles.thumbnailSelected]}
+                                    style={[
+                                        styles.thumbnailWrap,
+                                        selectedImg === img && styles.thumbnailSelected
+                                    ]}
                                     activeOpacity={0.7}
                                 >
-                                    <Image source={typeof img === 'string' ? { uri: img } : img} style={styles.thumbnailImg} resizeMode="contain" />
+                                    <Image
+                                        source={typeof img === 'string' ? { uri: img } : img}
+                                        style={styles.thumbnailImg}
+                                        resizeMode="contain"
+                                    />
                                 </TouchableOpacity>
                             ))}
                         </View>
@@ -422,14 +451,123 @@ const Products = () => {
                         <RenderHtml html={cleanedHTML} style={styles.details} />
                         <View style={styles.divider} />
                         <Text style={styles.sectionTitle}>Reviews</Text>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-                            <Text style={{ color: '#FFD600', fontSize: moderateScale(15), marginRight: 4 }}>
-                                {typeof product.rating === 'number' ? Array(Math.max(0, Math.min(5, Math.round(product.rating)))).fill('★').join('') : '★★★★★'}
-                            </Text>
-                            <Text style={{ color: colors.white, fontSize: moderateScale(15) }}>
-                                {typeof product.rating === 'number' ? product.rating.toFixed(1) : '5.0'}
-                            </Text>
+
+                        {/* Top Summary */}
+                        <View style={{ flexDirection: 'row', marginBottom: 16 }}>
+
+                            {/* LEFT: Breakdown */}
+                            <View style={{ flex: 1 }}>
+                                {[5, 4, 3, 2, 1].map((star, index) => {
+                                    const count = ratingCounts[star - 1];
+                                    const percentage = totalReviews ? (count / totalReviews) * 100 : 0;
+
+                                    return (
+                                        <View key={star} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+
+                                            <Text style={{ color: '#d6b627ff', width: 30 }}>
+                                                {star}★
+                                            </Text>
+
+                                            <View style={{
+                                                flex: 1,
+                                                height: 6,
+                                                backgroundColor: 'white',
+                                                borderRadius: 4,
+                                                marginHorizontal: 8,
+                                                overflow: 'hidden'
+                                            }}>
+                                                <View style={{
+                                                    width: `${percentage}%`,
+                                                    height: '100%',
+                                                    backgroundColor: '#d6b627ff'
+                                                }} />
+                                            </View>
+
+                                            <Text style={{ color: '#ccc', width: 30, textAlign: 'right' }}>
+                                                {count}
+                                            </Text>
+                                        </View>
+                                    );
+                                })}
+                            </View>
+
+                            {/* RIGHT: Average */}
+                            <View style={{ width: 90, alignItems: 'center', justifyContent: 'center' }}>
+                                <Text style={{ fontSize: 28, color: '#fff', fontFamily: 'PoppinsBold' }}>
+                                    {avgRating.toFixed(1)}
+                                </Text>
+                                <Text style={{ color: '#d6b627ff' }}>
+                                    {Array(roundedStars).fill('★').join('')}
+                                </Text>
+                                <Text style={{ color: '#ccc', fontSize: 12 }}>
+                                    {totalReviews} reviews
+                                </Text>
+                            </View>
+
                         </View>
+                        {reviews.length > 0 ? (
+                            reviews.map((review: any) => {
+                                const reviewDate = new Date(review.created_at).toLocaleDateString();
+                                const matchedUser = users.find(u => String(u.id) === String(review.user));
+                                return (
+                                    <View key={review.id} style={{ marginBottom: 16 }}>
+
+                                        {/* Top Row */}
+                                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+
+                                            {/* LEFT: User */}
+                                            <Text style={{
+                                                color: '#fff',
+                                                fontFamily: 'PoppinsBold',
+                                                fontSize: 14
+                                            }}>
+                                                {matchedUser?.name || `User #${review.user}`}
+                                            </Text>
+
+                                            {/* RIGHT: Date */}
+                                            <Text style={{
+                                                color: '#ccc',
+                                                fontSize: 12
+                                            }}>
+                                                {reviewDate}
+                                            </Text>
+                                        </View>
+
+                                        {/* Comment */}
+                                        <Text style={{
+                                            color: '#fff',
+                                            fontSize: 14,
+                                            marginTop: 6,
+                                            marginRight: 60 // space for rating on right
+                                        }}>
+                                            {review.comment}
+                                        </Text>
+
+                                        {/* Rating on right */}
+                                        <View style={{
+                                            position: 'absolute',
+                                            right: 0,
+                                            top: 24
+                                        }}>
+                                            <Text style={{ color: '#FFD600', fontSize: 14 }}>
+                                                {Array(review.rating).fill('★').join('')}
+                                            </Text>
+                                        </View>
+
+                                        {/* Divider */}
+                                        <View style={{
+                                            height: 1,
+                                            backgroundColor: 'rgba(255,255,255,0.1)',
+                                            marginTop: 12
+                                        }} />
+                                    </View>
+                                );
+                            })
+                        ) : (
+                            <Text style={{ color: '#ccc', fontSize: 14 }}>
+                                No reviews yet
+                            </Text>
+                        )}
                     </View>
                 </ScrollView>
                 {/* Price & Add to Cart */}
@@ -549,61 +687,59 @@ const Products = () => {
                                                             backgroundColor: '#fff',
                                                         }}
                                                     >
-                                                        {/* Image */}
-                                                        <Image
-                                                            source={
-                                                                typeof s.image === 'string'
-                                                                    ? { uri: s.image }
-                                                                    : s.image
-                                                            }
-                                                            style={{
-                                                                width: scale(70),
-                                                                height: verticalScale(50),
-                                                                borderRadius: 8,
-                                                                marginBottom: 6,
-                                                                resizeMode: 'contain',
-                                                            }}
-                                                        />
-
-                                                        {/* Label */}
-                                                        <Text
-                                                            style={{
-                                                                color: isSelected ? mainColor : '#1A1A1A',
-                                                                fontFamily: 'PoppinsBold',
-                                                                fontSize: moderateScale(10),
-                                                                textAlign: 'center',
-                                                            }}
-                                                        >
-                                                            {s.label}
-                                                        </Text>
-
-                                                        {/* ✅ Stock */}
-                                                        {s.stock !== undefined && (
-                                                            <Text
+                                                        <View style={{ position: 'relative' }}>
+                                                            <Image
+                                                                source={
+                                                                    typeof s.image === 'string'
+                                                                        ? { uri: s.image }
+                                                                        : s.image
+                                                                }
                                                                 style={{
-                                                                    fontSize: 10,
-                                                                    color: '#666',
-                                                                    fontFamily: 'PoppinsRegular',
-                                                                    marginTop: 2,
+                                                                    width: scale(100),
+                                                                    height: verticalScale(80),
+                                                                    borderRadius: 8,
+                                                                    resizeMode: 'contain',
                                                                 }}
-                                                            >
-                                                                Stock: {s.stock}
-                                                            </Text>
-                                                        )}
+                                                            />
 
-                                                        {/* ✅ Points */}
-                                                        {s.points !== undefined && (
-                                                            <Text
-                                                                style={{
-                                                                    fontSize: 10,
-                                                                    color: mainColor,
-                                                                    fontFamily: 'PoppinsBold',
-                                                                }}
-                                                            >
-                                                                {s.points} pts
-                                                            </Text>
-                                                        )}
-
+                                                            {/* ✅ PTS Badge Top Right */}
+                                                            {s.points !== undefined && (
+                                                                <View
+                                                                    style={{
+                                                                        position: 'absolute',
+                                                                        top: -6,
+                                                                        right: -6,
+                                                                        backgroundColor: '#fff',
+                                                                        paddingHorizontal: 6,
+                                                                        paddingVertical: 2,
+                                                                        borderRadius: 8,
+                                                                        elevation: 2,
+                                                                    }}
+                                                                >
+                                                                    <Text
+                                                                        style={{
+                                                                            fontSize: 10,
+                                                                            color: mainColor,
+                                                                            fontFamily: 'PoppinsBold',
+                                                                        }}
+                                                                    >
+                                                                        {s.points} pts
+                                                                    </Text>
+                                                                </View>
+                                                            )}
+                                                        </View>
+                                                        <View style={{ alignItems: 'center' }}>
+                                                            {s.attributes.map(([key, value]: any, i: number) => (
+                                                                <Text key={i} style={{ fontSize: 10, textAlign: 'center' }}>
+                                                                    <Text style={{ color: '#000', fontFamily: 'PoppinsBold' }}>
+                                                                        {key}{' '}
+                                                                    </Text>
+                                                                    <Text style={{ color: '#E53935', fontFamily: 'PoppinsBold' }}>
+                                                                        {value}
+                                                                    </Text>
+                                                                </Text>
+                                                            ))}
+                                                        </View>
                                                         {/* Price */}
                                                         {s.sale_price ? (
                                                             <Text
@@ -614,7 +750,7 @@ const Products = () => {
                                                                     marginTop: 4,
                                                                 }}
                                                             >
-                                                                Pkr {s.sale_price}
+                                                                Rs {s.sale_price}
                                                             </Text>
                                                         ) : (
                                                             <Text
@@ -625,7 +761,7 @@ const Products = () => {
                                                                     marginTop: 4,
                                                                 }}
                                                             >
-                                                                Pkr {s.price}
+                                                                Rs {s.price}
                                                             </Text>
                                                         )}
                                                     </TouchableOpacity>
@@ -667,43 +803,12 @@ const Products = () => {
                                             justifyContent: 'center',
                                             marginLeft: 12,
                                         }]}
-                                        onPress={() => {
-                                            const variantStock = selectedVariant?.stock ?? product.quantity ?? 0;
-                                            const maxQty = selectedVariant
-                                                ? (stockLimit !== null ? Math.min(variantStock, stockLimit) : variantStock)
-                                                : (stockLimit !== null ? Math.min(product.quantity ?? 0, stockLimit) : (product.quantity ?? 0));
-
-                                            if (qty < maxQty) {
-                                                setQty(q => q + 1);
-                                            }
-                                        }}
-                                        disabled={(() => {
-                                            const variantStock = selectedVariant?.stock ?? product.quantity ?? 0;
-                                            const maxQty = selectedVariant
-                                                ? (stockLimit !== null ? Math.min(variantStock, stockLimit) : variantStock)
-                                                : (stockLimit !== null ? Math.min(product.quantity ?? 0, stockLimit) : (product.quantity ?? 0));
-                                            return qty >= maxQty;
-                                        })()}
+                                        onPress={() => setQty(q => q + 1)}
                                     >
                                         <Ionicons
                                             name="add"
                                             size={20}
-                                            color={(() => {
-                                                const variantStock = selectedVariant?.stock ?? product.quantity ?? 0;
-                                                const maxQty = selectedVariant
-                                                    ? (stockLimit !== null ? Math.min(variantStock, stockLimit) : variantStock)
-                                                    : (stockLimit !== null ? Math.min(product.quantity ?? 0, stockLimit) : (product.quantity ?? 0));
-                                                return qty >= maxQty ? '#999' : mainColor;
-                                            })()}
-                                            style={{
-                                                opacity: (() => {
-                                                    const variantStock = selectedVariant?.stock ?? product.quantity ?? 0;
-                                                    const maxQty = selectedVariant
-                                                        ? (stockLimit !== null ? Math.min(variantStock, stockLimit) : variantStock)
-                                                        : (stockLimit !== null ? Math.min(product.quantity ?? 0, stockLimit) : (product.quantity ?? 0));
-                                                    return qty >= maxQty ? 0.5 : 1;
-                                                })()
-                                            }}
+                                            color={mainColor}
                                         />
                                     </TouchableOpacity>
                                 </View>
@@ -969,7 +1074,7 @@ const styles = StyleSheet.create({
     },
     title: {
         color: '#fff',
-        fontSize: moderateScale(36),
+        fontSize: moderateScale(30),
         lineHeight: verticalScale(30),
         fontFamily: 'Sigmar',
         marginTop: 8,

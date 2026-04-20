@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { Api_url } from '../url/url';
 import TabLayout from './(tabs)/_layout';
+import { createReview } from '@/services/orders';
 const bgImage = require('../assets/images/ss1.png');
 
 interface OrderItem {
@@ -24,9 +25,10 @@ interface OrderData {
   id: string;
   total: string;
   status: string;
+  points_discount?: number;
   created_at: string;
   items: OrderItem[];
-    type?: string;
+  type?: string;
 }
 
 const formatDate = (dateString: string) => {
@@ -72,10 +74,10 @@ const OrderReview = () => {
   const [rating, setRating] = React.useState(0);
   const [currentProduct, setCurrentProduct] = React.useState<OrderItem | null>(null);
   const [reviewedProductIds, setReviewedProductIds] = React.useState<Set<string>>(new Set());
-  const { phone } = useAuth();
+  const { phone, token } = useAuth();
   const insets = useSafeAreaInsets();
   const [userId, setUserId] = React.useState<string | null>(null);
-useEffect(() => {
+  useEffect(() => {
     const fetchUserData = async () => {
       try {
         const response = await axios.get(`${Api_url}api/app-user/list/`);
@@ -87,7 +89,7 @@ useEffect(() => {
           console.log('Matched user ID:', matchedUser.id);
         } else {
           console.log('No user found with phone:', phone);
-          
+
         }
       } catch (error) {
         console.error('Error fetching user data:', error);
@@ -100,107 +102,58 @@ useEffect(() => {
     }
   }, [phone]);
   const handleRateProduct = (product: OrderItem) => {
-    console.log('Rating product with ID:', product.id); 
+    console.log('Rating product with ID:', product.id);
     setCurrentProduct(product);
     setModalVisible(true);
   };
-const submitReview = async (productId: string, rating: number, review: string) => {
-  if (!phone) {
-    Alert.alert('Error', 'Please log in to submit a review');
-    return;
-  }
+  const submitReview = async (productId: string, rating: number, review: string) => {
+    if (!phone) {
+      Alert.alert('Error', 'Please log in to submit a review');
+      return;
+    }
 
-  if (!userId) {
-    Alert.alert('Error', 'User information not available. Please try again.');
-    return;
-  }
+    if (!userId) {
+      Alert.alert('Error', 'User information not available. Please try again.');
+      return;
+    }
 
-  // Validate the review data
-  if (!review.trim()) {
-    Alert.alert('Error', 'Please enter a review comment');
-    return;
-  }
+    if (!review.trim()) {
+      Alert.alert('Error', 'Please enter a review comment');
+      return;
+    }
 
-  if (rating < 1 || rating > 5) {
-    Alert.alert('Error', 'Please select a rating between 1 and 5');
-    return;
-  }
+    if (rating < 1 || rating > 5) {
+      Alert.alert('Error', 'Please select a rating between 1 and 5');
+      return;
+    }
 
-  try {
-    const reviewData = {
-      item: parseInt(productId),
-      user: parseInt(userId, 10),
-      rating: Number(rating),
-      comment: review.trim()   
-    };
-
-    console.log('Submitting review with data:', JSON.stringify(reviewData, null, 2));
-
-    const response = await fetch(`${Api_url}create-review/`, {
-      method: 'POST',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(reviewData),
-    });
-
-    let responseData;
     try {
-      responseData = await response.json();
-    } catch (e) {
-      console.error('Failed to parse JSON response:', e);
-      throw new Error('Invalid response from server');
-    }
+      const reviewData = {
+        item: parseInt(productId),
+        user: parseInt(userId, 10),
+        rating: Number(rating),
+        comment: review.trim(),
+      };
 
-    if (!response.ok) {
-      console.error('Review submission failed:', {
-        status: response.status,
-        statusText: response.statusText,
-        responseData
-      });
-      
-      // More detailed error message
-      const errorMessage = 
-        responseData?.errors?.product?.[0] || 
-        responseData?.errors?.non_field_errors?.[0] ||
-        responseData?.message || 
-        `Failed to submit review: ${response.status} ${response.statusText}`;
-      
-      throw new Error(errorMessage);
-    }
+      console.log('Submitting review:', reviewData);
 
-    // If we get here, the review was successful
-    console.log('Review submitted successfully:', responseData);
-    // Add the product ID to the reviewed set
-    setReviewedProductIds(prev => new Set([...prev, productId]));
-    Alert.alert('Success', 'Thank you for your review!');
-    setModalVisible(false);
-    setReviewText('');
-    setRating(0);
-    return responseData;
-  } catch (error) {
-    console.error('Error in submitReview:', {
-      error,
-      productId,
-      userId,
-      rating,
-      review
-    });
-    
-    let errorMessage = 'Failed to submit review. Please try again.';
-    if (error instanceof Error) {
-      if (error.message.includes('Network')) {
-        errorMessage = 'Network error. Please check your internet connection.';
-      } else {
-        errorMessage = error.message;
-      }
+      const response = await createReview(reviewData);
+      console.log(response)
+      // ✅ Success
+      setReviewedProductIds(prev => new Set([...prev, productId]));
+      Alert.alert('Success', 'Thank you for your review!');
+      setModalVisible(false);
+      setReviewText('');
+      setRating(0);
+
+    } catch (error: any) {
+      Alert.alert(
+        'Error',
+        error?.response?.data?.message || 'Failed to submit review'
+      );
     }
-    
-    Alert.alert('Error', errorMessage);
-  }
-};
- 
+  };
+
 
   // Get status steps based on order status
   const statusSteps = order ? getStatusSteps(order.status, order.created_at) : [];
@@ -210,6 +163,9 @@ const submitReview = async (productId: string, rating: number, review: string) =
 
   // Calculate total items
   const totalItems = order?.items?.reduce((sum, item) => sum + (item.quantity || 1), 0) || 0;
+  const itemsTotal = order?.items.reduce((s, i) => s + parseFloat(i.price || '0'), 0) || 0;
+  const discount = order?.points_discount || 0;
+  const finalTotal = itemsTotal - discount;
   if (!order) {
     return (
       <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -261,12 +217,12 @@ const submitReview = async (productId: string, rating: number, review: string) =
             renderItem={({ item }) => (
               <View style={styles.productRow}>
                 {item.image ? (
-                  <Image 
-                    source={{ 
-                      uri: item.image && !item.image.startsWith('http') 
+                  <Image
+                    source={{
+                      uri: item.image && !item.image.startsWith('http')
                         ? `${Api_url}${item.image.startsWith('/') ? '' : '/'}${item.image}`
-                        : item.image 
-                    }} 
+                        : item.image
+                    }}
                     style={styles.productImage}
                     onError={(e) => console.log('Image load error:', e.nativeEvent.error)}
                   />
@@ -276,7 +232,7 @@ const submitReview = async (productId: string, rating: number, review: string) =
                   </View>
                 )}
                 <View style={styles.productInfo}>
-                  <View  style={{ width: scale(150)}}>
+                  <View style={{ width: scale(150) }}>
                     <Text style={styles.productName} numberOfLines={2}>{item.name || 'Product'}</Text>
                     <Text style={styles.quantityText}>Qty: {item.quantity || 1}</Text>
                     <Text style={styles.productPack}>Pts: {item.pts}</Text>
@@ -294,26 +250,39 @@ const submitReview = async (productId: string, rating: number, review: string) =
             )}
             ListEmptyComponent={
               <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText}>No items found in this order</Text> 
+                <Text style={styles.emptyText}>No items found in this order</Text>
               </View>
             }
             style={{ flexGrow: 0 }}
           />
-           {order?.items && order.items.length > 0 ? (
-                   <View style={styles.totalContainer}>
-                     <View style={styles.totalRow}>
-                       <Text style={styles.totalLabel}>
-                         {order.type === 'redeem' ? 'Redeem' : 'Order Total:'}
-                       </Text>
-                       <Text style={styles.totalAmount}>
-                         {order.type === 'redeem' 
-                           ? `${order.items[0]?.pts || 0} PTS`
-                           : `Rs. ${order.items.reduce((sum, item) => sum + (parseFloat(item.price)), 0).toFixed(2)}`
-                         }
-                       </Text>
-                     </View>
-                   </View>
-                 ) : null}
+          {/* Total */}
+          {order?.items?.length ? (
+            <View style={styles.totalContainer}>
+              {order?.type !== 'redeem' && Number(order?.points_discount) > 0 && (
+                <View style={styles.totalRow}>
+                  <Text style={styles.totalLabel}>
+                    Points discount:
+                  </Text>
+
+                  <Text style={{ fontSize: scale(15), color: 'white' }}>
+                    Rs. {order.points_discount}
+                  </Text>
+                </View>
+              )}
+              <View style={styles.totalRow}>
+                <Text style={styles.totalLabel}>
+                  {order.type === 'redeem' ? 'Redeem' : 'Order Total:'}
+                </Text>
+
+                <Text style={styles.totalAmount}>
+                  {order.type === 'redeem'
+                    ? `${order.items[0]?.pts} PTS`
+                    : `Rs. ${finalTotal.toFixed(2)}`
+                  }
+                </Text>
+              </View>
+            </View>
+          ) : null}
         </View>
         <Modal
           visible={modalVisible}
@@ -339,12 +308,12 @@ const submitReview = async (productId: string, rating: number, review: string) =
                 <View style={styles.productInfoContainer}>
                   <View style={styles.modalProductRow}>
                     {currentProduct.image ? (
-                      <Image 
-                        source={{ 
-                          uri: currentProduct.image.startsWith('http') 
-                            ? currentProduct.image 
+                      <Image
+                        source={{
+                          uri: currentProduct.image.startsWith('http')
+                            ? currentProduct.image
                             : `${Api_url}${currentProduct.image.startsWith('/') ? '' : '/'}${currentProduct.image}`
-                        }} 
+                        }}
                         style={styles.modalProductImage}
                         resizeMode="cover"
                       />
@@ -387,7 +356,7 @@ const submitReview = async (productId: string, rating: number, review: string) =
             </View>
           </KeyboardAvoidingView>
         </Modal>
-        <TabLayout /> 
+        <TabLayout />
       </ImageBackground>
     </SafeAreaView>
   );

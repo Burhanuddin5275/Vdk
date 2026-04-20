@@ -8,17 +8,17 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { verticalScale } from 'react-native-size-matters';
 
 const OTP_LENGTH = 4;
-const RESEND_TIME = 19; // seconds
+const RESEND_TIME = 30; // seconds
 
 const VerifyNumber = () => {
-  const { phone } = useLocalSearchParams();
+  const { phone } = useLocalSearchParams<{ phone: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [otp, setOtp] = useState(Array(OTP_LENGTH).fill(''));
   const [timer, setTimer] = useState(RESEND_TIME);
   const [isVerifying, setIsVerifying] = useState(false);
   const [verificationCode, setVerificationCode] = useState('');
-  const inputRefs = useRef([]);
+  const inputRefs = useRef<(TextInput | null)[]>([]);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const { phone: phoneParam, source } = useLocalSearchParams();
 
@@ -71,7 +71,7 @@ const VerifyNumber = () => {
     try {
       console.log("phone", phone)
       const data = await otpVerify({
-        number: phone as string,
+        number: phone ,
         otp: code,
       });
 
@@ -79,7 +79,7 @@ const VerifyNumber = () => {
 
       // ✅ SUCCESS FLOW
       if (data.message === 'OTP verified. Please complete your profile.') {
-        router.replace({
+        router.push({
           pathname: '/Signup',
           params: {
             phone: phone,

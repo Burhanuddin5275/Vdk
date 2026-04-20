@@ -19,11 +19,14 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, verticalScale } from 'react-native-size-matters';
 import { numberVerify, registerUser } from '@/services/user';
-
+import * as SecureStore from 'expo-secure-store';
 const Signup = () => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const { phone: phoneParam, temp_token } = {} as { phone: string; temp_token: string };
-  const [phone, setPhone] = useState(phoneParam?.toString().replace(/^\+92/, '') || '');
+  const { phone: phoneParam, temp_token } = useLocalSearchParams<{
+    phone: string;
+    temp_token: string;
+  }>();
+  const [phone, setPhone] = useState(phoneParam?.replace(/^\+92/, '') || '');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [email, setEmail] = useState('');
@@ -35,7 +38,7 @@ const Signup = () => {
   const isFromVerification = !!phoneParam;
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const isValidEmail = (email:any) => {
+  const isValidEmail = (email: any) => {
     const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return regex.test(email);
   };
@@ -69,7 +72,7 @@ const Signup = () => {
           Alert.alert('Number already exists');
         }
 
-      } catch (error:any) {
+      } catch (error: any) {
         console.log('FULL ERROR:', error);
         console.log('ERROR RESPONSE:', error?.response);
         console.log('ERROR DATA:', error?.response?.data);
@@ -121,16 +124,18 @@ const Signup = () => {
       console.log('temp_token:', temp_token);
       const data = await registerUser({
         number: phoneParam,
-        token: temp_token,
+        temp_token: temp_token,
         name,
         email,
         password,
       });
 
       console.log('User registered:', data);
+      await SecureStore.setItemAsync('userPhone',  phoneParam);
+      await SecureStore.setItemAsync('userPassword', password);
       setShowSuccessModal(true);
 
-    } catch (error:any) {
+    } catch (error: any) {
       Alert.alert('Error', error.message);
     } finally {
       setIsSubmitting(false);

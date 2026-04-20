@@ -134,8 +134,7 @@ const Address = () => {
   };
   const handleSuccessModalClose = () => {
     setShowSuccessModal(false);
-    // Navigate back to ShippingAddress screen
-    router.replace('/ShippingAddress');
+    router.back();
   };
   const openPickerModal = (type: 'state' | 'city') => {
     setCurrentPicker(type);

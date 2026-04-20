@@ -5,7 +5,7 @@ import { Address, useAddressStore } from '@/store/addressStore';
 import { colors } from '@/theme/colors';
 import { Api_url } from '@/url/url';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -37,29 +37,30 @@ const ShippingAddress = () => {
   const router = useRouter();
   const [userAddresses, setUserAddresses] = useState<Address[]>([]);
 
-  useEffect(() => {
-    const loadUserAddresses = async () => {
-      try {
-        setIsLoading(true);
-        const users = await fetchUsers();
-        if (users?.length > 0) {
-          const currentUser = users.find(u => u.number === phone) || users[0];
-          setUser(currentUser);
-        }
-      } catch (error) {
-        console.error('Error loading addresses:', error);
-        Alert.alert('Error', 'Failed to load addresses');
-      } finally {
-        setIsLoading(false);
-      }
-    };
 
-    if (isAuthenticated) {
-      loadUserAddresses();
-    } else {
+  useFocusEffect(
+    React.useCallback(() => {
+      if (isAuthenticated) {
+        loadUserAddresses();
+      }
+    }, [isAuthenticated])
+  );
+  const loadUserAddresses = async () => {
+    try {
+      setIsLoading(true);
+      const users = await fetchUsers();
+      if (users?.length > 0) {
+        const currentUser = users.find(u => u.number === phone) || users[0];
+        setUser(currentUser);
+      }
+    } catch (error) {
+      console.error('Error loading addresses:', error);
+      Alert.alert('Error', 'Failed to load addresses');
+    } finally {
       setIsLoading(false);
     }
-  }, [isAuthenticated, phone]);
+  };
+
 
   const addresses = user?.addresses || [];
 
@@ -72,9 +73,9 @@ const ShippingAddress = () => {
         'Content-Type': 'application/json',
       },
     });
-    
-      setShowDeleteModal(false);
-      setShowSuccessModal(true);
+
+    setShowDeleteModal(false);
+    setShowSuccessModal(true);
 
   };
 
@@ -89,7 +90,7 @@ const ShippingAddress = () => {
       Alert.alert('Please select an address');
       return;
     }
-      
+
     const selectedAddress = userAddresses[selected];
     const addressForStore: Address = {
       id: selectedAddress.id || Date.now().toString(),
@@ -108,7 +109,7 @@ const ShippingAddress = () => {
   // Set initial selected address when user or selectedAddress changes
   useEffect(() => {
     if (user && Array.isArray(user.addresses) && user.addresses.length > 0 && selectedAddress) {
-      const initialSelectedIndex = user.addresses.findIndex(addr => 
+      const initialSelectedIndex = user.addresses.findIndex(addr =>
         addr.id === selectedAddress.id
       );
       if (initialSelectedIndex !== -1) {
@@ -295,37 +296,37 @@ const ShippingAddress = () => {
           onClose={handleSuccessModalClose}
         />
         {/* Delete Confirmation Modal */}
-<Modal
-  visible={showDeleteModal}
-  transparent={true}
-  animationType="fade"
-  onRequestClose={() => setShowDeleteModal(false)}
->
-  <View style={styles.modalOverlay}>
-    <View style={styles.modalContent}>
-      <Text style={styles.modalTitle}>Delete Address</Text>
-      <Text style={styles.modalText}>Are you sure you want to delete this address?</Text>
-      <View style={styles.modalButtons}>
-        <TouchableOpacity
-          style={styles.cancelButton}
-          onPress={() => setShowDeleteModal(false)}
-          disabled={isLoading}
+        <Modal
+          visible={showDeleteModal}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setShowDeleteModal(false)}
         >
-          <Text style={styles.cancelButtonText}>Cancel</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.deleteButton}
-          onPress={() => addressToDelete && deleteAddress(addressToDelete)}
-          disabled={isLoading}
-        >
-          <Text style={styles.deleteButtonText}>
-            {isLoading ? 'Deleting...' : 'Delete'}
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  </View>
-</Modal>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Delete Address</Text>
+              <Text style={styles.modalText}>Are you sure you want to delete this address?</Text>
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={styles.cancelButton}
+                  onPress={() => setShowDeleteModal(false)}
+                  disabled={isLoading}
+                >
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.deleteButton}
+                  onPress={() => addressToDelete && deleteAddress(addressToDelete)}
+                  disabled={isLoading}
+                >
+                  <Text style={styles.deleteButtonText}>
+                    {isLoading ? 'Deleting...' : 'Delete'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
       </SafeAreaView>
     </TouchableWithoutFeedback>
   );
@@ -334,55 +335,55 @@ const ShippingAddress = () => {
 
 const styles = StyleSheet.create({
   modalOverlay: {
-  flex: 1,
-  backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  justifyContent: 'center',
-  alignItems: 'center',
-  padding: 20,
-},
-modalContent: {
-  backgroundColor: 'white',
-  borderRadius: 10,
-  padding: 20,
-  width: '100%',
-  maxWidth: 400,
-},
-modalTitle: {
-  fontSize: 18,
-  fontWeight: 'bold',
-  marginBottom: 10,
-},
-modalText: {
-  fontSize: 16,
-  marginBottom: 20,
-  color: '#333',
-},
-modalButtons: {
-  flexDirection: 'row',
-  justifyContent: 'flex-end',
-  marginTop: 20,
-},
-cancelButton: {
-  padding: 10,
-  marginRight: 10,
-  borderRadius: 5,
-},
-cancelButtonText: {
-  color: '#007AFF',
-  fontSize: 16,
-},
-deleteButton: {
-  backgroundColor: '#FF3B30',
-  padding: 10,
-  borderRadius: 5,
-  minWidth: 80,
-  alignItems: 'center',
-},
-deleteButtonText: {
-  color: 'white',
-  fontWeight: '600',
-  fontSize: 16,
-},
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    borderRadius: 10,
+    padding: 20,
+    width: '100%',
+    maxWidth: 400,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  modalText: {
+    fontSize: 16,
+    marginBottom: 20,
+    color: '#333',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: 20,
+  },
+  cancelButton: {
+    padding: 10,
+    marginRight: 10,
+    borderRadius: 5,
+  },
+  cancelButtonText: {
+    color: '#007AFF',
+    fontSize: 16,
+  },
+  deleteButton: {
+    backgroundColor: '#FF3B30',
+    padding: 10,
+    borderRadius: 5,
+    minWidth: 80,
+    alignItems: 'center',
+  },
+  deleteButtonText: {
+    color: 'white',
+    fontWeight: '600',
+    fontSize: 16,
+  },
   safeArea: {
     flex: 1,
   },
@@ -479,7 +480,7 @@ deleteButtonText: {
     width: '55%',
     textAlign: 'right',
   },
- 
+
   signInButton: {
     backgroundColor: colors.primary,
     paddingHorizontal: 24,

@@ -7,8 +7,8 @@ import { colors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import React, { useEffect, useRef, useState } from 'react';
-import { Dimensions, Image, ImageBackground, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { ActivityIndicator, Dimensions, Image, ImageBackground, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { useWishlistStore } from '../../app/Wishlist';
@@ -16,6 +16,8 @@ import { fetchAds, type AdsItem } from '../../services/ads';
 import { fetchBrands, type BrandItem } from '../../services/brands';
 import { fetchCategories, type CategoryItem } from '../../services/categories';
 import { fetchProducts } from '../../services/products';
+import { useFocusEffect } from '@react-navigation/native';
+
 
 type SalePopupProps = {
   visible: boolean;
@@ -110,7 +112,43 @@ export default function HomeScreen() {
   const removeFromWishlist = useWishlistStore((state) => state.removeFromWishlist);
   const [wishlistMessage, setWishlistMessage] = useState<string | null>(null);
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
+  const [loading, setLoading] = useState(true);
   const insets = useSafeAreaInsets();
+useFocusEffect(
+  useCallback(() => {
+    let isActive = true;
+
+    const loadData = async () => {
+      setLoading(true); // 👈 start loader
+
+      try {
+        const [products, categories, brands, adsData] = await Promise.all([
+          fetchProducts(),
+          fetchCategories(),
+          fetchBrands(),
+          fetchAds(),
+        ]);
+
+        if (!isActive) return;
+
+        setApiProducts(products);
+        setApiCategories(categories);
+        setApiBrands(brands);
+        setAds(adsData);
+      } catch (e) {
+        console.log('refresh error:', e);
+      } finally {
+        if (isActive) setLoading(false); // 👈 stop loader
+      }
+    };
+
+    loadData();
+
+    return () => {
+      isActive = false;
+    };
+  }, [])
+);
   useEffect(() => {
     const loadUsers = async () => {
       try {
@@ -169,20 +207,16 @@ export default function HomeScreen() {
 
     initWishlistAndUser();
   }, [phone, token, loadWishlist]);
-  useEffect(() => {
+useFocusEffect(
+  useCallback(() => {
     const loadHeroContent = async () => {
-      try {
-        const heroes = await fetchHeroes();
-        if (heroes.length > 0) {
-          setHeroContent(heroes);
-        }
-      } catch (error) {
-        console.error('Failed to load hero content:', error);
-      }
+      const heroes = await fetchHeroes();
+      setHeroContent(heroes);
     };
 
     loadHeroContent();
-  }, []);
+  }, [])
+);
 
   const isInWishlist = (productId: string, variantLabel?: string) => {
     return wishlistItems.some(item => {
@@ -198,43 +232,6 @@ export default function HomeScreen() {
     }
   }, []);
 
-  useEffect(() => {
-    (async () => {
-      const products = await fetchProducts();
-      setApiProducts(products);
-    })();
-  }, []);
-
-  useEffect(() => {
-    (async () => {
-      const categories = await fetchCategories();
-      setApiCategories(categories);
-    })();
-  }, []);
-
-  useEffect(() => {
-    (async () => {
-      const brands = await fetchBrands();
-      setApiBrands(brands);
-    })();
-  }, []);
-
-  useEffect(() => {
-    (async () => {
-      const adsData = await fetchAds();
-      setAds(adsData);
-    })();
-  }, []);
-
-  useEffect(() => {
-    if (ads.length > 1) {
-      const interval = setInterval(() => {
-        setCurrentBannerIndex(prev => (prev === ads.length - 1 ? 0 : prev + 1));
-      }, 12000);
-
-      return () => clearInterval(interval);
-    }
-  }, [ads]);
 
   useEffect(() => {
     if (scrollViewRef.current) {
@@ -244,7 +241,14 @@ export default function HomeScreen() {
       });
     }
   }, [currentBannerIndex]);
-
+if (loading) {
+  return (
+    <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'white' }}>
+      <ActivityIndicator size="large" color={colors.primary} />
+      <Text style={{ marginTop: 10, color: '#000' }}>Loading...</Text>
+    </SafeAreaView>
+  );
+}
   return (
     <>
       <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
@@ -319,7 +323,7 @@ export default function HomeScreen() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.categoriesSlider}
             >
-              {apiCategories.map((category, idx) => (
+              {apiCategories.filter(category => category.is_active).map((category, idx) => (
                 <TouchableOpacity
                   key={idx}
                   onPress={() => router.push({ pathname: '/Categories', params: { category: category.label } })}
@@ -385,7 +389,7 @@ export default function HomeScreen() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.brandSlider}
             >
-              {apiBrands.map((brand, idx) => (
+              {apiBrands.filter(brand => brand.is_active).map((brand, idx) => (
                 <TouchableOpacity key={idx} style={styles.brandCard} onPress={() => router.push({ pathname: '/Brands', params: { brand: brand.name, image: brand.image } })}>
                   <Image
                     source={brand.image}
@@ -418,6 +422,7 @@ export default function HomeScreen() {
               contentContainerStyle={{ paddingHorizontal: 16 }}
             >
               {apiProducts.filter(p => 'rating' in p)
+                .filter(p => p.is_active)
                 .sort((a, b) => (b.rating || 0) - (a.rating || 0))
                 .slice(0, 4)
                 .map((product, idx) => {

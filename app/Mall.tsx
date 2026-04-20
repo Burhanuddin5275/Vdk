@@ -113,6 +113,7 @@ const CreateRedeem = async () => {
 
     const orderData = {
       user_id: userId,
+      applied_points: points,
       user_detail: { number: phone },
       address: selectedAddress,
       shipping: selectedShipping,

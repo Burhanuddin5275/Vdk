@@ -1,3 +1,4 @@
+import axios from "axios";
 import { Api_url } from "../url/url";
 export type OrderStatus = 'pending' | 'process' | 'on_the_way' | 'delivered' | 'cancelled';
 
@@ -10,6 +11,7 @@ export type orders = {
   user_detail:string;
   items: any[];
   payments: any[];
+  points_discount:number;
   created_at?: string;
 }
   
@@ -29,6 +31,7 @@ const type = item.type ?? item.type ?? "Product";
     : 'pending';
   const items = item.items ?? item.items ?? [];
   const payments = item.payments ?? item.payments ?? [];
+  const points_discount = item.points_discount;
   const created_at = item.created_at ?? new Date().toISOString();
 
   return {
@@ -40,6 +43,7 @@ const type = item.type ?? item.type ?? "Product";
     items,
     type,
     payments,
+    points_discount,
     created_at,
   };
 }
@@ -137,4 +141,27 @@ export const cancelOrder = async (orderId: string): Promise<CancelOrderResponse>
   }
 
   return data; // success
+};
+
+export const createReview = async (reviewData: {
+  item: number;
+  user: number;
+  rating: number;
+  comment: string;
+}) => {
+  try {
+    const res = await fetch(`${Api_url}/api/create-review/`, {
+      method:"POST",
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify(reviewData),
+    });
+    const response = await res.json();
+    return response;
+  } catch (error: any) {
+    console.log('AXIOS REVIEW ERROR:', error?.response?.data || error.message);
+    throw error;
+  }
 };

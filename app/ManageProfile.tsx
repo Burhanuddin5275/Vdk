@@ -10,7 +10,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { img_url } from '@/url/url';
 import SuccessModal from '@/components/SuccessModal';
 import { useRouter } from 'expo-router';
-
+import * as SecureStore from 'expo-secure-store';
 const screenWidth = Dimensions.get('window').width;
 const COLUMN_GAP = scale(12);
 const CARD_WIDTH = (screenWidth - COLUMN_GAP * 3) / 2
@@ -24,7 +24,7 @@ const ProfileTab = () => {
   const [error, setError] = useState('');
   const [user, setUser] = useState<UserItem | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-
+  const [biometricEnabled, setBiometricEnabled] = useState(false);
   const { phone, token } = useAuth();
   const [userId, setUserId] = useState<string | null>(null);
   const router = useRouter();
@@ -33,7 +33,19 @@ const ProfileTab = () => {
     setShowSuccessModal(false);
     router.replace('/(tabs)/Profile');
   };
+  useEffect(() => {
+    const loadBiometricSetting = async () => {
+      const value = await SecureStore.getItemAsync('biometric_enabled');
+      setBiometricEnabled(value === 'true');
+    };
 
+    loadBiometricSetting();
+  }, []);
+  const toggleBiometric = async () => {
+    const newValue = !biometricEnabled;
+    setBiometricEnabled(newValue);
+    await SecureStore.setItemAsync('biometric_enabled', String(newValue));
+  };
   useEffect(() => {
     const loadUsers = async () => {
       try {
@@ -82,7 +94,7 @@ const ProfileTab = () => {
       setError('User not identified');
       return;
     }
-  if (!token) {
+    if (!token) {
       setError('User not identified');
       return;
     }
@@ -109,6 +121,15 @@ const ProfileTab = () => {
 
   return (
     <ScrollView style={styles.tabContent} contentContainerStyle={styles.profileContent}>
+      <View style={styles.biometricBox}>
+        <Text style={styles.biometricText}>Fingerprint Login</Text>
+
+        <TouchableOpacity onPress={toggleBiometric} style={styles.switch}>
+          <View style={[styles.switchTrack, biometricEnabled && styles.switchTrackActive]}>
+            <View style={[styles.switchThumb, biometricEnabled && styles.switchThumbActive]} />
+          </View>
+        </TouchableOpacity>
+      </View>
       <View style={styles.avatarContainer}>
         <TouchableOpacity onPress={handleSelectImage} style={styles.avatarWrapper}>
           {profileImage ? (
@@ -154,104 +175,6 @@ const ProfileTab = () => {
   );
 };
 
-// ---------- Change Password Tab ----------
-const ChangePasswordTab = () => {
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-
-  const { password, token, phone } = useAuth();
-  const [userId, setUserId] = useState<string | null>(null);
-
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const users = await fetchUsers();
-        const matchedUser = users.find(u => u.number === phone);
-        if (matchedUser) setUserId(matchedUser.id.toString());
-      } catch (err) {
-        console.error(err);
-      }
-    };
-    if (phone) loadUser();
-  }, [phone]);
-
-  const handleChangePassword = async () => {
-    if (!currentPassword || !newPassword) {
-      setError('Please fill all fields');
-      return;
-    }
-
-    if (currentPassword !== password) {
-      setError('Current password is incorrect');
-      return;
-    }
-
-    if (!userId) {
-      setError('User not identified');
-      return;
-    }
-  if (!token) {
-      setError('User not identified');
-      return;
-    }
-    setIsLoading(true);
-    setError('');
-
-    try {
-      const response = await updateUserProfile(token, userId, { password: newPassword });
-      const data = await response.json();
-
-      if (!response.ok) throw new Error(data.detail || 'Failed to change password');
-
-      setSuccess('Password changed successfully!');
-      setCurrentPassword('');
-      setNewPassword('');
-
-      setTimeout(() => setSuccess(''), 3000);
-    } catch (err: any) {
-      setError(err.message || 'Failed to change password');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  return (
-    <ScrollView style={styles.tabContent} contentContainerStyle={styles.profileContent}>
-      <View style={styles.formGroup}>
-        <Text style={styles.label}>Current Password</Text>
-        <TextInput
-          style={styles.input}
-          value={currentPassword}
-          onChangeText={setCurrentPassword}
-          placeholder="Enter current password"
-          secureTextEntry
-        />
-      </View>
-
-      <View style={styles.formGroup}>
-        <Text style={styles.label}>New Password</Text>
-        <TextInput
-          style={styles.input}
-          value={newPassword}
-          onChangeText={setNewPassword}
-          placeholder="Enter new password"
-          secureTextEntry
-        />
-      </View>
-
-      {error ? <Text style={styles.errorText}>{error}</Text> : null}
-      {success ? <Text style={styles.successText}>{success}</Text> : null}
-
-      <TouchableOpacity style={styles.updateButton} onPress={handleChangePassword} disabled={isLoading}>
-        <Text style={styles.updateButtonText}>{isLoading ? 'Updating...' : 'Update Password'}</Text>
-      </TouchableOpacity>
-    </ScrollView>
-  );
-};
-
 // ---------- Main Page ----------
 const ManageProfile = () => {
   const insets = useSafeAreaInsets();
@@ -273,24 +196,7 @@ const ManageProfile = () => {
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Manage Profile</Text>
           </View>
-
-          {/* Tabs */}
-          <View style={styles.tabsContainer}>
-            {TABS.map(tab => (
-              <TouchableOpacity
-                key={tab}
-                style={[styles.tab, activeTab === tab && styles.activeTab]}
-                onPress={() => setActiveTab(tab)}
-              >
-                <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
-                  {tab}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          {/* Tab Content */}
-          {activeTab === 'Set Profile' ? <ProfileTab /> : <ChangePasswordTab />}
+          <ProfileTab />
         </View>
       </ImageBackground>
     </SafeAreaView>
@@ -316,6 +222,47 @@ const styles = StyleSheet.create({
   updateButtonText: { color: colors.white, fontSize: 16, fontFamily: 'PoppinsSemi' },
   errorText: { color: '#ff4444', fontSize: 14, fontFamily: 'Poppins', marginBottom: verticalScale(10), textAlign: 'center' },
   successText: { color: '#4CAF50', fontSize: 14, fontFamily: 'Poppins', marginBottom: verticalScale(10), textAlign: 'center' },
+  biometricBox: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+    paddingHorizontal: 10,
+  },
+
+  biometricText: {
+    color: colors.white,
+    fontSize: 18,
+    fontFamily: 'PoppinsSemi',
+  },
+
+  switch: {
+    padding: 5,
+  },
+
+  switchTrack: {
+    width: 50,
+    height: 28,
+    borderRadius: 20,
+    backgroundColor: 'gray',
+    justifyContent: 'center',
+    padding: 3,
+  },
+
+  switchTrackActive: {
+    backgroundColor: '#A01D20',
+  },
+
+  switchThumb: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#fff',
+  },
+
+  switchThumbActive: {
+    alignSelf: 'flex-end',
+  },
   avatarContainer: { alignItems: 'center', marginBottom: 30 },
   avatarWrapper: { position: 'relative', width: 120, height: 120, borderRadius: 60, backgroundColor: 'black', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
   avatar: { width: '100%', height: '100%', borderRadius: 60 },

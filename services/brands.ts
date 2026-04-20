@@ -4,6 +4,7 @@ type ApiBrand = any;
 export type BrandItem = {
   name: string;
   image: any;
+  is_active: boolean;
 };
 
 const API_URL = `${Api_url}api/brands/`;
@@ -12,7 +13,8 @@ function toBrand(item: ApiBrand): BrandItem {
   const name = String(item.name ?? item.title ?? item.label ?? "Brand");
   const imageUrl = item.image?.url ?? item.image ?? null;
   const image = imageUrl ? { uri: String(imageUrl) } : null;
-  return { name, image };
+  const is_active = item.is_active;
+  return { name, image, is_active };
 }
 
 export async function fetchBrands(): Promise<BrandItem[]> {

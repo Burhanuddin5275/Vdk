@@ -1,8 +1,10 @@
 import SuccessModal from '@/components/SuccessModal';
+import { Forgetpassword, ResetPassword } from '@/services/user';
 import { colors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
+import * as SecureStore from 'expo-secure-store';
 import {
   ActivityIndicator,
   Alert,
@@ -18,7 +20,6 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, verticalScale } from 'react-native-size-matters';
-import { Forgetpassword, ResetPassword } from '@/services/user';
 
 const ForgetPassword = () => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -27,12 +28,14 @@ const ForgetPassword = () => {
 
   const [phone, setPhone] = useState(phoneParam?.toString().replace(/^\+92/, '') || '');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [otp, setOtp] = useState('');
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
- const [step, setStep] = useState<'phone' | 'otp'>('phone');
+  const [step, setStep] = useState<'phone' | 'otp'>('phone');
 
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -63,7 +66,7 @@ const ForgetPassword = () => {
 
         setStep('otp'); // show OTP + password UI
 
-      } catch (error:any) {
+      } catch (error: any) {
         Alert.alert(
           'Error',
           error?.response?.data?.message || error.message || 'Something went wrong'
@@ -88,6 +91,11 @@ const ForgetPassword = () => {
         Alert.alert('Password Required', 'Minimum 8 characters required.');
         return;
       }
+      if (password !== confirmPassword) {
+        Alert.alert('confirm password doesnot match');
+        return;
+      }
+
 
       try {
         setIsSubmitting(true);
@@ -99,10 +107,11 @@ const ForgetPassword = () => {
         });
 
         console.log('PASSWORD RESET:', data);
-
+        await SecureStore.setItemAsync('userPhone', e164Phone);
+        await SecureStore.setItemAsync('userPassword', password);
         setShowSuccessModal(true);
 
-      } catch (error:any) {
+      } catch (error: any) {
         Alert.alert(
           'Error',
           error?.response?.data?.message || error.message
@@ -188,7 +197,27 @@ const ForgetPassword = () => {
                     />
                   </TouchableOpacity>
                 </View>
+                <View style={styles.inputWrap}>
+                  <TextInput
+                    style={[styles.input, { paddingRight: 40 }]}
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                    placeholder="confirm Password"
+                    placeholderTextColor="#1A1A1A"
+                    secureTextEntry={!showConfirmPassword}
+                  />
 
+                  <TouchableOpacity
+                    style={styles.passwordToggle}
+                    onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                  >
+                    <Ionicons
+                      name={showConfirmPassword ? 'eye-off' : 'eye'}
+                      size={20}
+                      color="#666"
+                    />
+                  </TouchableOpacity>
+                </View>
               </View>
             )}
 

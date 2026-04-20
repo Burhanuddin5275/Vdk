@@ -1,12 +1,12 @@
 import { Button } from '@/components/Button';
 import SuccessModal from '@/components/SuccessModal';
 import { useAuth } from '@/hooks/useAuth';
+import { fetchUsers, UserItem } from '@/services/user';
 import { useCartStore } from '@/store/cartStore';
 import { colors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
-import axios from 'axios';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
@@ -17,15 +17,14 @@ import {
     SafeAreaView,
     ScrollView,
     StyleSheet,
+    Switch,
     Text,
     TextInput,
     TouchableOpacity,
-    View,
-    Switch
+    View
 } from 'react-native';
 import { moderateScale, scale } from 'react-native-size-matters';
 import { createOrderApi } from '../services/orders';
-import { Api_url } from '../url/url';
 
 const { width } = Dimensions.get('window');
 
@@ -36,10 +35,16 @@ const PAYMENT_METHODS = [
         icon: <Ionicons name="card-outline" size={moderateScale(25)} color={colors.primary} />,
     },
 ];
-
+const MORE_OPTIONS =
+    [
+        {
+            id: 'Cod',
+            label: 'Cash on Delivery',
+            icon: require('../assets/images/cash.png'),
+        },
+    ];
 const Payment = () => {
     const router = useRouter();
-
     const [selected, setSelected] = useState<string>('');
     const [isLoading, setIsLoading] = useState(false);
 
@@ -67,26 +72,37 @@ const Payment = () => {
     const [splitEnabled, setSplitEnabled] = useState(false);
     const [points, setPoints] = useState('');
     const [cash, setCash] = useState('');
-
-    const [userId, setUserId] = useState<string | null>(null);
+    const [user, setUser] = useState<UserItem | string | null | undefined>(undefined);
+    const [userId, setUserId] = useState<string | number | null>(null);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [orderSuccess, setOrderSuccess] = useState(false);
-
     useEffect(() => {
-        const fetchUser = async () => {
+        const loadUsers = async () => {
             try {
-                const res = await axios.get(`${Api_url}api/app-user/list/`);
-                const user = res.data.find((u: any) => u.number === phone);
-                setUserId(user?.id || token);
-            } catch {
-                setUserId(token);
+                const users = await fetchUsers();
+                const matchedUser = users.find((u) => u.number === phone);
+
+                if (matchedUser) {
+                    setUser(matchedUser);
+                    setUserId(matchedUser.id);
+                    console.log('Matched user:', matchedUser);
+                    console.log('Matched user ID:', matchedUser.id);
+                } else {
+                    console.log('No user found with phone:', phone);
+                    setUser(token);
+                }
+            } catch (error) {
+                console.error('Error loading users:', error);
+                setUser(token);
             }
         };
+        if (phone) {
+            loadUsers();
+        } else {
+            setUser(token); // Fallback to token if no phone
+        }
 
-        if (phone) fetchUser();
-        else setUserId(token);
     }, [phone, token]);
-
     const createOrder = async () => {
         if (!selected) return Alert.alert("Error", "Select payment method");
         if (!shippingAddress || !shippingMethod) return Alert.alert("Error", "Missing shipping");
@@ -96,6 +112,7 @@ const Payment = () => {
         try {
             const orderData = {
                 user_id: userId,
+                applied_points: points || 0,
                 user_detail: { number: phone },
                 address: shippingAddress,
                 shipping: shippingMethod,
@@ -103,19 +120,18 @@ const Payment = () => {
                 product: parsedCartItems.map((item: any) => ({
                     image: item.image,
                     name: item.name,
+                    pts: item.points || null,
                     quantity: item.quantity || 1,
+                    variants: item.variants || null,
                     price: item.price
                 })),
                 payment: [{
                     method: selected,
-                    split: splitEnabled
-                        ? { points, cash }
-                        : null,
                     status: "Pending"
                 }],
                 created_at: new Date().toISOString(),
             };
-
+            console.log('Order data:', orderData);
             await createOrderApi(orderData, token || '');
             await clearCart();
 
@@ -128,7 +144,21 @@ const Payment = () => {
             setIsLoading(false);
         }
     };
+    const cartTotal = useMemo(() => {
+        return parsedCartItems.reduce((sum: number, item: any) => {
+            return sum + (item.price * (item.quantity || 1));
+        }, 0);
+    }, [parsedCartItems]);
+    const redeemValue = useMemo(() => {
+        const pts = Number(points) || 0;
+        const pointValue = typeof user === 'object' ? Number(user?.point_value) || 0 : 0;
 
+        return pts * pointValue;
+    }, [points, user]);
+    const finalTotal = useMemo(() => {
+        const total = cartTotal - redeemValue;
+        return total > 0 ? total : 0; // prevent negative
+    }, [cartTotal, redeemValue]);
     const renderCartItem = useCallback(({ item }: any) => (
         <View style={styles.cartItem}>
             <Image
@@ -142,11 +172,16 @@ const Payment = () => {
 
             <View style={{ flex: 1, marginLeft: 12 }}>
                 <Text style={styles.cartName}>{item.name}</Text>
+                {item.variant && (
+                    <Text style={styles.cartPack}>
+                        {item.variant}
+                    </Text>
+                )}
+                <Text style={{ color: 'white' }}>Qty: {item.quantity}</Text>
                 <Text style={styles.cartPrice}>PKR {item.price}</Text>
             </View>
         </View>
     ), []);
-
     return (
         <SafeAreaView style={{ flex: 1 }}>
             <ImageBackground source={require('../assets/images/ss1.png')} style={styles.background}>
@@ -163,13 +198,23 @@ const Payment = () => {
 
                     <ScrollView contentContainerStyle={{ paddingBottom: 20, width: '90%', alignSelf: 'center' }}>
 
-                        {/* CARD */}
                         <TouchableOpacity
                             style={styles.cardRow}
                             onPress={() => setSelected('card')}
                         >
-                            {PAYMENT_METHODS[0].icon}
-                            <Text style={styles.cardLabel}>Add Card</Text>
+                            {/* LEFT SIDE */}
+                            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                                {PAYMENT_METHODS[0].icon}
+                                <Text style={[styles.cardLabel, { marginLeft: 10 }]}>Add Card</Text>
+                            </View>
+
+                            {/* RIGHT SIDE (RADIO) */}
+                            <View style={[
+                                styles.radioButton,
+                                selected === 'card' && styles.radioButtonSelected
+                            ]}>
+                                {selected === 'card' && <View style={styles.radioButtonInner} />}
+                            </View>
                         </TouchableOpacity>
 
                         {/* SPLIT PAYMENT SECTION */}
@@ -180,19 +225,44 @@ const Payment = () => {
                             <Switch
                                 value={splitEnabled}
                                 onValueChange={setSplitEnabled}
+                                trackColor={{
+                                    false: '#ccc',
+                                    true: 'red',   // ON state background
+                                }}
+                                thumbColor={splitEnabled ? 'red' : '#f4f3f4'}
                             />
                         </View>
 
                         {splitEnabled && (
                             <View style={{ marginBottom: 15 }}>
-
-                                {/* POINTS */}
-                                <Text style={styles.subHeading}>Points</Text>
+                                <Text style={styles.subHeading}>Total Points</Text>
                                 <TextInput
                                     placeholder="Enter Points"
-                                    value={points}
-                                    onChangeText={setPoints}
+                                    placeholderTextColor="#999"
+                                    editable={false}
+                                    value={(typeof user === 'object' && user?.total_points?.toString()) || ''}
                                     keyboardType="numeric"
+                                    style={styles.input}
+                                />
+
+                                <TextInput
+                                    placeholder="Enter Points"
+                                    placeholderTextColor="#999"
+                                    value={points}
+                                    keyboardType="numeric"
+                                    onChangeText={(value) => {
+                                        const numericValue = value.replace(/[^0-9]/g, '');
+
+                                        const maxPoints =
+                                            typeof user === 'object' ? Number(user?.total_points) || 0 : 0;
+
+                                        if (Number(numericValue) <= maxPoints) {
+                                            setPoints(numericValue);
+                                        } else {
+                                            setPoints(maxPoints.toString());
+                                            Alert.alert('Limit exceeded', 'You cannot use more than your total points');
+                                        }
+                                    }}
                                     style={styles.input}
                                 />
 
@@ -200,14 +270,42 @@ const Payment = () => {
                                 <Text style={styles.subHeading}>Cash Amount</Text>
                                 <TextInput
                                     placeholder="Enter Cash Amount"
-                                    value={cash}
-                                    onChangeText={setCash}
+                                    value={finalTotal?.toString() || ''}
+                                    editable={false}
                                     keyboardType="numeric"
                                     style={styles.input}
                                 />
                             </View>
                         )}
+                        <Text style={styles.sectionTitle}>More Options</Text>
 
+                        {MORE_OPTIONS.map((item) => (
+                            <TouchableOpacity
+                                key={item.id}
+                                style={[
+                                    styles.cardRow,
+                                    selected === item.id && styles.selectedRow
+                                ]}
+                                onPress={() => setSelected(item.id)}
+                            >
+                                {/* LEFT SIDE */}
+                                <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                                    <Image
+                                        source={item.icon}
+                                        style={{ width: 25, height: 25, marginRight: 10 }}
+                                    />
+                                    <Text style={styles.cardLabel}>{item.label}</Text>
+                                </View>
+
+                                {/* RIGHT SIDE RADIO */}
+                                <View style={[
+                                    styles.radioButton,
+                                    selected === item.id && styles.radioButtonSelected
+                                ]}>
+                                    {selected === item.id && <View style={styles.radioButtonInner} />}
+                                </View>
+                            </TouchableOpacity>
+                        ))}
                         {/* PRODUCTS */}
                         <Text style={styles.sectionTitle}>Products</Text>
 
@@ -217,13 +315,27 @@ const Payment = () => {
                             keyExtractor={(item, i) => i.toString()}
                             scrollEnabled={false}
                         />
+                        <View style={{ marginTop: 15 }}>
+                            <Text style={styles.sectionTitle}>Summary</Text>
 
+                            <View style={{ backgroundColor: '#fff', padding: 15, borderRadius: 12 }}>
+                                <Text>Total: PKR {cartTotal.toFixed(2)}</Text>
+
+                                {splitEnabled && (
+                                    <Text>Redeem: - PKR {redeemValue.toFixed(2)}</Text>
+                                )}
+
+                                <Text style={{ fontWeight: 'bold', marginTop: 5 }}>
+                                    Payable: PKR {finalTotal.toFixed(2)}
+                                </Text>
+                            </View>
+                        </View>
                     </ScrollView>
 
                     {/* FOOTER */}
                     <View style={styles.footer}>
-                        <Button onPress={createOrder} disabled={isLoading}>
-                            {isLoading ? <ActivityIndicator color="#fff" /> : "Confirm Payment"}
+                        <Button onPress={createOrder} disabled={isLoading} style={styles.confirmBtn}>
+                            <Text style={{ color: colors.white, textAlign: 'center' }}>Confirm Payment</Text>
                         </Button>
                     </View>
 
@@ -319,6 +431,7 @@ const styles = StyleSheet.create({
         marginBottom: 8,
     },
     cardRow: {
+        marginTop: 10,
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: colors.white,
@@ -346,8 +459,8 @@ const styles = StyleSheet.create({
         marginBottom: 12,
     },
     cartImage: {
-        width: scale(70),
-        height: scale(70),
+        width: scale(80),
+        height: scale(80),
         borderRadius: 12,
         backgroundColor: colors.white,
     },
@@ -355,12 +468,11 @@ const styles = StyleSheet.create({
         color: colors.white,
         fontFamily: 'PoppinsMedium',
         fontSize: moderateScale(15),
-        marginBottom: 2,
     },
     cartPack: {
         color: colors.white,
         fontFamily: 'PoppinsMedium',
-        fontSize: moderateScale(15),
+        fontSize: moderateScale(12),
         opacity: 0.8,
     },
     cartPrice: {
@@ -378,13 +490,13 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         marginBottom: 10,
     },
-subHeading: {
-    color: colors.white,
-    fontSize: 14,
-    fontFamily: 'PoppinsSemi',
-    marginBottom: 6,
-    marginTop: 8,
-},
+    subHeading: {
+        color: colors.white,
+        fontSize: 14,
+        fontFamily: 'PoppinsSemi',
+        marginBottom: 6,
+        marginTop: 8,
+    },
     input: {
         borderWidth: 1,
         borderColor: '#ddd',
@@ -404,7 +516,7 @@ subHeading: {
     confirmBtn: {
         width: '100%',
         borderRadius: 16,
-        paddingVertical: 16,
+        paddingVertical: 12,
         backgroundColor: colors.primary,
     },
     disabledBtn: { backgroundColor: 'gray' },

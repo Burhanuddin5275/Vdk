@@ -3,8 +3,8 @@ import { fetchOrders, type OrderStatus } from '@/services/orders';
 import { colors } from '@/theme/colors';
 import { img_url } from '@/url/url';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Image, ImageBackground, Modal, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
@@ -35,6 +35,7 @@ interface DisplayOrder {
   created_at: string;
   items: OrderItem[];
   type: string;
+  points_discount?: number;
 }
 
 export default function OrdersScreen() {
@@ -50,110 +51,46 @@ export default function OrdersScreen() {
   const [tabLayouts, setTabLayouts] = useState<{ x: number; width: number }[]>([]);
   const { phone } = useAuth();
 
-  useEffect(() => {
-    const loadOrders = async () => {
-      try {
-        setLoading(true);
-        // Pass the logged-in user's phone number to fetch only their orders
-        const apiData = await fetchOrders(phone || undefined);
-        console.log('Raw orders data:', apiData);
-        
-        // Map API data to DisplayOrder type and filter by current user
-        const userOrders: DisplayOrder[] = [];
-        let totalUserPoints = 0;
-        
-        apiData.forEach(order => {
-          // Get the user detail from the order
-          const userDetail = typeof order.user_detail === 'string' 
-            ? order.user_detail 
-            : (order.user_detail as UserDetailObject)?.number || '';
-            
-          // Check if this order belongs to the current user and is completed
-          const isCurrentUser = userDetail === phone;
-          const isCompletedOrder = order.status === 'delivered';
-          
-          // Initialize points for this order
-          let orderPoints = 0;
-          
-          if (isCurrentUser) {
-            // Only calculate points for completed orders
-            if (isCompletedOrder) {
-              orderPoints = order.items.reduce((sum: number, item: any) => {
-                const points = item.pts ? parseInt(item.pts) : 0;
-                const quantity = item.quantity || 1;
-                if (item.price === null || item.price === '0.00') {
-                  return sum - (points * quantity);
-                }
-                return sum + (points * quantity); 
-              }, 0);
-              
-              totalUserPoints += orderPoints;
-              
-              console.log('Adding points for completed order:', {
-                orderId: order.id,
-                points: orderPoints,
-                status: order.status
-              });
-            }
-            
-            console.log('Order details:', {
-              orderId: order.id,
-              status: order.status,
-              orderUserPhone: userDetail,
-              itemsCount: order.items.length,
-              orderPoints: orderPoints,
-              items: order.items.map((item: any) => ({
-                name: item.name,
-                points: item.pts || 0,
-                quantity: item.quantity || 1,
-                totalPoints: (item.pts || 0) * (item.quantity || 1)
-              }))
-            });
-            
-            const total = order.items?.reduce((sum: number, item: any) => {
-              const price = parseFloat(item.price || '0');
-              // const quantity = item.quantity || 1;
-              return price ; 
-            }, 0) || 0; 
-            
-            // Map the API order to DisplayOrder type
-            const displayOrder: DisplayOrder = {
-              id: order.id.toString(),
-              total: total.toString(),
-              user_detail: userDetail,
-              status: order.status,
-              type: order.type,
-              created_at: order.created_at || new Date().toISOString(),
-              items: Array.isArray(order.items) ? order.items.map((item: any) => ({
-                id: item.id?.toString() || '',
-                name: item.name || 'Unknown Item',
-                price: item.price?.toString() || '0',
-                quantity: item.quantity || 1,
-                image: item.image,
-                pts: item.pts,
-              })) : []
-            };
-            
-            userOrders.push(displayOrder);
-          }
+const loadOrders = useCallback(async () => {
+  try {
+    setLoading(true);
+    const apiData = await fetchOrders(phone || undefined);
+
+    const userOrders: DisplayOrder[] = [];
+
+    apiData.forEach(order => {
+      const userDetail =
+        typeof order.user_detail === 'string'
+          ? order.user_detail
+          : (order.user_detail as UserDetailObject)?.number || '';
+
+      if (userDetail === phone) {
+        userOrders.push({
+          id: order.id.toString(),
+          total: (order.items.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0) - (order.points_discount || 0)).toFixed(2),
+          user_detail: userDetail,
+          status: order.status,
+          type: order.type,
+          created_at: order.created_at || new Date().toISOString(),
+          items: order.items || [],
+          points_discount: order.points_discount ?? 0, 
         });
-        
-        setOrders(userOrders);
-
-        
-        // Log all unique status values for debugging
-        const statuses = [...new Set(apiData.map((order: any) => order.status))];
-        console.log('Unique status values in data:', statuses);
-      } catch (error) {
-        console.error('Error loading orders:', error);
-      } finally {
-        setLoading(false);
       }
-    };
+    });
 
+    setOrders(userOrders);
+  } catch (e) {
+    console.log(e);
+  } finally {
+    setLoading(false);
+  }
+}, [phone]);
+
+useFocusEffect(
+  useCallback(() => {
     loadOrders();
-  }, []);
-
+  }, [loadOrders])
+);
   const filterOrdersByTab = (orders: DisplayOrder[]) => {
     if (activeTab === 'All') return orders;
     if (activeTab === 'Active') return orders.filter(o => o.status === 'process');

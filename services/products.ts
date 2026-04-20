@@ -1,4 +1,4 @@
-import {Api_url} from "../url/url";
+import { Api_url } from "../url/url";
 export type Product =
   | {
     id: string;
@@ -18,6 +18,9 @@ export type Product =
     stock_status?: string;
     gallery_images?: any[];
     variants?: any[];
+    reviews?: any[];
+    avg_rating?: number       // ✅ ADD
+    total_reviews?: number
   }
   | { banner: string };
 
@@ -42,8 +45,11 @@ function toProduct(item: ApiProduct): Product {
   const description = item.description ?? item.desc ?? undefined;
   const is_active = item.is_active;
   const stock_status = item.stock_status ?? undefined;
+  const avg_rating = Number(item.avg_rating ?? 0);
+  const total_reviews = Number(item.total_reviews ?? 0);
   const gallery_images = item.gallery_images ?? [];
   const variants = item.variant ?? item.variants ?? [];
+  const reviews = item.reviews ?? [];
 
   return {
     id,
@@ -56,12 +62,15 @@ function toProduct(item: ApiProduct): Product {
     cost_price,
     rating,
     quantity,
-   regular_price,
-   sale_price,
+    regular_price,
+    sale_price,
     description,
     is_active,
     gallery_images,
     variants,
+    reviews,
+    avg_rating,        // ✅ ADD
+    total_reviews,
     stock_status
   };
 }

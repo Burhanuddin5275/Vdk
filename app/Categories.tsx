@@ -496,7 +496,8 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     textAlign: 'center',
-    fontSize: moderateScale(25),
+    fontSize: moderateScale(20),
+    width: scale(225),
     color: '#fff',
     fontFamily: 'Sigmar',
   },
