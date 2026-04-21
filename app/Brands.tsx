@@ -51,7 +51,7 @@ const Brands = () => {
   }, []);
 
   // Filter products by brand and category
-  let filtered = allProducts;
+  let filtered = allProducts.filter((p:any) => p.is_active);
   if (selectedCategory) {
     const cat = String(selectedCategory).toLowerCase();
     filtered = allProducts.filter(p => {

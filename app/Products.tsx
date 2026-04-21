@@ -44,6 +44,7 @@ interface Product {
         price: string | number;
         sale_price?: string | number;
         image?: string;
+        is_active?:boolean;
         attributes?: any;
         [key: string]: any;
     }>;
@@ -107,6 +108,7 @@ const Products = () => {
                     description: attrObj.description || '',
                     points: Number(attrObj.points) || 0,
                     image: v.image || v.img || product.img,
+                    is_active: v.is_active ?? true,
                     stock: v.stock !== undefined ? Number(v.stock) : undefined
                 });
 
@@ -125,6 +127,7 @@ const Products = () => {
                         description: v.description || '',
                         points: v.points || 0,
                         image: v.image || v.img || product.img,
+                        is_active: v.is_active ?? true,
                         stock: v.stock !== undefined ? Number(v.stock) : undefined
                     });
                 }
@@ -155,6 +158,7 @@ const Products = () => {
     const selectedVariant = variants.find(
         (v: any) => v.id?.toString() === selectedVariantId
     );
+    const isVariantInactive = selectedVariant?.is_active === false;
     const [showSuccess, setShowSuccess] = useState(false);
     const wishlistItems = useWishlistStore(state => state.items);
     const [wishlistMessage, setWishlistMessage] = useState<string | null>(null);
@@ -166,9 +170,7 @@ const Products = () => {
 
 
     // Calculate if product is out of stock
-    const isOutOfStock = selectedVariant?.stock === 0 ||
-        product.quantity === 0 ||
-        product?.stock_status === 'outofstock';
+    const isOutOfStock =  product?.stock_status === 'outofstock';
 
     let bgKey;
     if (Array.isArray(backgroundImage)) {
@@ -900,14 +902,14 @@ const Products = () => {
                                         </View>
                                     </View>
                                 </View>
-                                {isOutOfStock ? (
+                               {isOutOfStock || isVariantInactive ? (
                                     <View style={[{
                                         backgroundColor: 'gray',
                                         borderRadius: 24,
                                         flexDirection: 'row',
                                         alignItems: 'center',
                                         justifyContent: 'center',
-                                        paddingHorizontal: 22,
+                                        paddingHorizontal: 22, 
                                         paddingVertical: 12
                                     }]}>
                                         <Ionicons name="cart" size={20} color="#fff" style={{ marginRight: 8 }} />

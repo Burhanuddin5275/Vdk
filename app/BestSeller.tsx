@@ -49,7 +49,8 @@ const BestSeller = () => {
           'regular_price' in p &&
           'img' in p &&
           'rating' in p &&
-          'pts' in p
+          'pts' in p &&
+          p.is_active === true
       );
       setDisplayList(list);
     })();

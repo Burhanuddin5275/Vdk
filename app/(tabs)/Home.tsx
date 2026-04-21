@@ -114,41 +114,41 @@ export default function HomeScreen() {
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const [loading, setLoading] = useState(true);
   const insets = useSafeAreaInsets();
-useFocusEffect(
-  useCallback(() => {
-    let isActive = true;
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
 
-    const loadData = async () => {
-      setLoading(true); // 👈 start loader
+      const loadData = async () => {
+        setLoading(true); // 👈 start loader
 
-      try {
-        const [products, categories, brands, adsData] = await Promise.all([
-          fetchProducts(),
-          fetchCategories(),
-          fetchBrands(),
-          fetchAds(),
-        ]);
+        try {
+          const [products, categories, brands, adsData] = await Promise.all([
+            fetchProducts(),
+            fetchCategories(),
+            fetchBrands(),
+            fetchAds(),
+          ]);
 
-        if (!isActive) return;
+          if (!isActive) return;
 
-        setApiProducts(products);
-        setApiCategories(categories);
-        setApiBrands(brands);
-        setAds(adsData);
-      } catch (e) {
-        console.log('refresh error:', e);
-      } finally {
-        if (isActive) setLoading(false); // 👈 stop loader
-      }
-    };
+          setApiProducts(products);
+          setApiCategories(categories);
+          setApiBrands(brands);
+          setAds(adsData);
+        } catch (e) {
+          console.log('refresh error:', e);
+        } finally {
+          if (isActive) setLoading(false); // 👈 stop loader
+        }
+      };
 
-    loadData();
+      loadData();
 
-    return () => {
-      isActive = false;
-    };
-  }, [])
-);
+      return () => {
+        isActive = false;
+      };
+    }, [])
+  );
   useEffect(() => {
     const loadUsers = async () => {
       try {
@@ -207,16 +207,16 @@ useFocusEffect(
 
     initWishlistAndUser();
   }, [phone, token, loadWishlist]);
-useFocusEffect(
-  useCallback(() => {
-    const loadHeroContent = async () => {
-      const heroes = await fetchHeroes();
-      setHeroContent(heroes);
-    };
+  useFocusEffect(
+    useCallback(() => {
+      const loadHeroContent = async () => {
+        const heroes = await fetchHeroes();
+        setHeroContent(heroes);
+      };
 
-    loadHeroContent();
-  }, [])
-);
+      loadHeroContent();
+    }, [])
+  );
 
   const isInWishlist = (productId: string, variantLabel?: string) => {
     return wishlistItems.some(item => {
@@ -234,21 +234,31 @@ useFocusEffect(
 
 
   useEffect(() => {
-    if (scrollViewRef.current) {
-      scrollViewRef.current.scrollTo({
-        x: currentBannerIndex * screenWidth,
-        animated: true
+    if (!ads.length) return;
+
+    const interval = setInterval(() => {
+      setCurrentBannerIndex((prev) => {
+        const nextIndex = prev + 1 >= ads.length ? 0 : prev + 1;
+
+        scrollViewRef.current?.scrollTo({
+          x: nextIndex * screenWidth,
+          animated: true,
+        });
+
+        return nextIndex;
       });
-    }
-  }, [currentBannerIndex]);
-if (loading) {
-  return (
-    <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'white' }}>
-      <ActivityIndicator size="large" color={colors.primary} />
-      <Text style={{ marginTop: 10, color: '#000' }}>Loading...</Text>
-    </SafeAreaView>
-  );
-}
+    }, 6000); // ⏱ 6 seconds
+
+    return () => clearInterval(interval);
+  }, [ads]);
+  if (loading) {
+    return (
+      <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'white' }}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={{ marginTop: 10, color: '#000' }}>Loading...</Text>
+      </SafeAreaView>
+    );
+  }
   return (
     <>
       <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
@@ -262,18 +272,18 @@ if (loading) {
             <View style={styles.headerBg}>
               <View style={styles.headerRow}>
                 <View style={{ width: scale(165), paddingLeft: scale(16) }}>
-                  {heroContent.length > 0 ? ( 
+                  {heroContent.length > 0 ? (
                     <>
                       <Text style={styles.hello}
                         ellipsizeMode="tail"
-                      > Welcome 
+                      > Welcome
                       </Text>
                       <Text
                         style={styles.subtext}
                         numberOfLines={3}
                         ellipsizeMode="tail"
                       >
-                     {typeof user === 'object' && user !== null && 'name' in user
+                        {typeof user === 'object' && user !== null && 'name' in user
                           ? (user as UserItem).name
                           : 'Guest'}
                       </Text>
@@ -365,15 +375,20 @@ if (loading) {
               </ScrollView>
 
               <View>
-                {ads.map((_, index) => (
-                  <View
-                    key={index}
-                    style={[
-
-                      index === currentBannerIndex && styles.adIndicatorActive
-                    ]}
-                  />
-                ))}
+                <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 8 }}>
+                  {ads.map((_, index) => (
+                    <View
+                      key={index}
+                      style={{
+                        width: 8,
+                        height: 8,
+                        borderRadius: 4,
+                        marginHorizontal: 4,
+                        backgroundColor: index === currentBannerIndex ? 'white' : 'rgba(255,255,255,0.4)'
+                      }}
+                    />
+                  ))}
+                </View>
               </View>
             </View>
 
@@ -719,8 +734,8 @@ const styles = StyleSheet.create({
   subtext: {
     color: '#fff',
     fontFamily: "RussoOne",
-    fontSize: moderateScale(22), 
-    marginLeft: scale(8),  
+    fontSize: moderateScale(22),
+    marginLeft: scale(8),
     marginBottom: verticalScale(12),
   },
   rewardBox: {

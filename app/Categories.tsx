@@ -13,7 +13,7 @@ import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { type BannerItem, fetchBanners } from '../services/banner';
 import { fetchProducts } from '../services/products';
 import { useWishlistStore } from './Wishlist';
-
+import { useFocusEffect } from '@react-navigation/native';
 const TABS = ['All'];
 
 const screenWidth = Dimensions.get('window').width;
@@ -38,25 +38,32 @@ const Categories = () => {
   const wishlistItems = useWishlistStore((state) => state.items);
   const isInWishlist = (productId: string) => wishlistItems.some(item => item.id === productId);
 
-  useEffect(() => {
-    (async () => {
-      const banners = await fetchBanners();
-      setBanner(banners);
-    })();
-  }, []);
-  useEffect(() => {
-    (async () => {
-      const Ads = await fetchAds();
-      setAds(Ads);
-    })();
-  }, []);
-  useEffect(() => {
-    (async () => {
-      const products = await fetchProducts();
-      setProducts(products);
-    })();
-  }, []);
-  let filtered = Products;
+  useFocusEffect(
+    React.useCallback(() => {
+      let isActive = true;
+
+      const loadData = async () => {
+        const [bannersData, adsData, productsData] = await Promise.all([
+          fetchBanners(),
+          fetchAds(),
+          fetchProducts(),
+        ]);
+
+        if (isActive) {
+          setBanner(bannersData);
+          setAds(adsData);
+          setProducts(productsData);
+        }
+      };
+
+      loadData();
+
+      return () => {
+        isActive = false;
+      };
+    }, [])
+  );
+  let filtered = Products.filter(p => p.is_active);
   if (selectedCategory) {
     const cat = String(selectedCategory).toLowerCase();
     filtered = Products.filter(p => {
@@ -93,7 +100,7 @@ const Categories = () => {
     if (filteredBanners.length > 1) {
       const interval = setInterval(() => {
         setCurrentAdIndex(prev => (prev === filteredBanners.length - 1 ? 0 : prev + 1));
-      }, 10000);
+      }, 8000);
 
       return () => clearInterval(interval);
     }
@@ -250,7 +257,8 @@ const Categories = () => {
             {mergedData.map((item, idx) => {
               if (item.type === "product") {
                 const p = item.data;
-                if ('id' in p && 'name' in p && 'regular_price' in p && 'img' in p) {
+                if ('id' in p && 'name' in p && 'regular_price' in p && 'img' in p &&
+                  p.is_active) {
                   const prod = p as Exclude<Product, { banner: string }>;
                   return (
                     <TouchableOpacity
