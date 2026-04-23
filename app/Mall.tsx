@@ -357,7 +357,7 @@ const styles = StyleSheet.create({
     height: verticalScale(100)
   },
   pointsWrap: {
-    flex: 1,
+    width:scale(150)
   },
   pointsLabel: {
     color: colors.primary,
@@ -366,7 +366,7 @@ const styles = StyleSheet.create({
   },
   pointsValue: {
     color: colors.primary,
-    fontSize: moderateScale(26),
+    fontSize: moderateScale(20),
     fontFamily: 'PoppinsBold',
   },
   redeemBtn: {
@@ -379,7 +379,7 @@ const styles = StyleSheet.create({
   },
   redeemText: {
     color: colors.white,
-    fontSize: moderateScale(18),
+    fontSize: moderateScale(16),
     fontFamily: 'PoppinsSemi',
   },
 });

@@ -29,6 +29,8 @@ interface OrderData {
   address?: string;
   shipping?: string;
   points_discount?: number;
+  discount_amount?: number;
+  total_amount?: number;
   user_id?: string;
   type?: string;
 }
@@ -106,6 +108,8 @@ const OrderTracker = () => {
   const orderDate = order ? new Date(order.created_at).toLocaleDateString() : '';
   const totalItems = order?.items?.reduce((s, i) => s + (i.quantity || 1), 0) || 0;
   const itemsTotal = order?.items.reduce((s, i) => s + parseFloat(i.price || '0'), 0) || 0;
+  const discountAmount = order?.discount_amount || 0;
+  const totalAmount = order?.total_amount || 0;
   const discount = order?.points_discount || 0;
   const finalTotal = itemsTotal - discount;
   return (
@@ -225,21 +229,32 @@ const OrderTracker = () => {
                   <Text style={styles.totalLabel}>
                     Points discount:
                   </Text>
-
+         
                   <Text style={{ fontSize: scale(15), color: 'white' }}>
                     Rs. {order.points_discount}
                   </Text>
                 </View>
               )}
+                {
+                  order?.discount_amount && Number(order?.discount_amount) > 0 && (
+                    <View style={styles.totalRow}>
+                      <Text style={styles.totalLabel}>
+                        Discount:
+                      </Text>
+                      <Text style={{ fontSize: scale(15), color: 'white' }}>
+                        Rs. {order.discount_amount}
+                      </Text>
+                    </View>
+                  )
+                }
               <View style={styles.totalRow}>
                 <Text style={styles.totalLabel}>
                   {order.type === 'redeem' ? 'Redeem' : 'Order Total:'}
                 </Text>
-
                 <Text style={styles.totalAmount}>
                   {order.type === 'redeem'
                     ? `${order.items[0]?.pts} PTS`
-                    : `Rs. ${finalTotal.toFixed(2)}`
+                    : `Rs. ${totalAmount}`
                   }
                 </Text>
               </View>

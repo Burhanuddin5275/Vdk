@@ -5,6 +5,7 @@ type ApiCategory = any;
 export type CategoryItem = {
   label: string;
   image: any;
+  position: number;
   is_active: boolean;
 };
 
@@ -14,8 +15,9 @@ function toCategory(item: ApiCategory): CategoryItem {
   const label = String(item.name ?? item.label ?? "Category");
   const imageUrl = item.image?.url ?? item.image ?? null;
   const image = imageUrl ? { uri: String(imageUrl) } : undefined;
+  const position = Number(item.position);
   const is_active = item.is_active;
-  return { label, image: image, is_active };
+  return { label, image: image, position, is_active };
 }
 
 export async function fetchCategories(): Promise<CategoryItem[]> {

@@ -28,13 +28,13 @@ import { createOrderApi } from '../services/orders';
 
 const { width } = Dimensions.get('window');
 
-const PAYMENT_METHODS = [
-    {
-        id: 'card',
-        label: 'Add Card',
-        icon: <Ionicons name="card-outline" size={moderateScale(25)} color={colors.primary} />,
-    },
-];
+// const PAYMENT_METHODS = [
+//     {
+//         id: 'card',
+//         label: 'Add Card',
+//         icon: <Ionicons name="card-outline" size={moderateScale(25)} color={colors.primary} />,
+//     },
+// ];
 const MORE_OPTIONS =
     [
         {
@@ -45,7 +45,7 @@ const MORE_OPTIONS =
     ];
 const Payment = () => {
     const router = useRouter();
-    const [selected, setSelected] = useState<string>('');
+    const [selected, setSelected] = useState<string>('Cod');
     const [isLoading, setIsLoading] = useState(false);
 
     const { clearCart } = useCartStore();
@@ -53,12 +53,12 @@ const Payment = () => {
 
     const {
         shippingAddress: shippingAddressStr,
-        shippingMethod: shippingMethodStr,
+        // shippingMethod: shippingMethodStr,
         cartItems
     } = useLocalSearchParams<any>();
 
     const shippingAddress = useMemo(() => shippingAddressStr ? JSON.parse(shippingAddressStr) : null, [shippingAddressStr]);
-    const shippingMethod = useMemo(() => shippingMethodStr ? JSON.parse(shippingMethodStr) : null, [shippingMethodStr]);
+    // const shippingMethod = useMemo(() => shippingMethodStr ? JSON.parse(shippingMethodStr) : null, [shippingMethodStr]);
 
     const parsedCartItems = useMemo(() => {
         try {
@@ -71,6 +71,7 @@ const Payment = () => {
     // ---------------- SPLIT PAYMENT ----------------
     const [splitEnabled, setSplitEnabled] = useState(false);
     const [points, setPoints] = useState('');
+    const [isRedeemChecked, setIsRedeemChecked] = useState(true);
     const [cash, setCash] = useState('');
     const [user, setUser] = useState<UserItem | string | null | undefined>(undefined);
     const [userId, setUserId] = useState<string | number | null>(null);
@@ -103,9 +104,28 @@ const Payment = () => {
         }
 
     }, [phone, token]);
+    useEffect(() => {
+        if (typeof user === 'object' && user?.total_points) {
+            setPoints(user.total_points.toString());
+        }
+    }, [user]);
+    useEffect(() => {
+        if (splitEnabled) {
+            // ON → restore max points
+            const maxPoints =
+                typeof user === 'object' ? Number(user?.total_points) || 0 : 0;
+
+            setPoints(maxPoints.toString());
+            setIsRedeemChecked(true);
+        } else {
+            // OFF → clear everything
+            setPoints('');
+            setIsRedeemChecked(false);
+        }
+    }, [splitEnabled, user]);
     const createOrder = async () => {
         if (!selected) return Alert.alert("Error", "Select payment method");
-        if (!shippingAddress || !shippingMethod) return Alert.alert("Error", "Missing shipping");
+        if (!shippingAddress) return Alert.alert("Error", "Missing shipping");
 
         setIsLoading(true);
 
@@ -115,8 +135,11 @@ const Payment = () => {
                 applied_points: points || 0,
                 user_detail: { number: phone },
                 address: shippingAddress,
-                shipping: shippingMethod,
+                shipping: 'Standered',
                 status: 'pending',
+                discount_code: discount.code || '',
+                discount_type: discount.type || 0,
+                discount_amount: discount.amount,
                 product: parsedCartItems.map((item: any) => ({
                     image: item.image,
                     name: item.name,
@@ -155,6 +178,17 @@ const Payment = () => {
 
         return pts * pointValue;
     }, [points, user]);
+    const discount = useMemo(() => {
+        if (!parsedCartItems.length) {
+            return { amount: 0, type: null, code: null };
+        }
+
+        return {
+            amount: Number(parsedCartItems[0]?.discount_amount) || 0,
+            type: parsedCartItems[0]?.discount_type || null,
+            code: parsedCartItems[0]?.discount_code || null,
+        };
+    }, [parsedCartItems]);
     const finalTotal = useMemo(() => {
         const total = cartTotal - redeemValue;
         return total > 0 ? total : 0; // prevent negative
@@ -178,7 +212,7 @@ const Payment = () => {
                     </Text>
                 )}
                 <Text style={{ color: 'white' }}>Qty: {item.quantity}</Text>
-                <Text style={styles.cartPrice}>PKR {item.price}</Text>
+                <Text style={styles.cartPrice}>Rs {item.price}</Text>
             </View>
         </View>
     ), []);
@@ -198,36 +232,31 @@ const Payment = () => {
 
                     <ScrollView contentContainerStyle={{ paddingBottom: 20, width: '90%', alignSelf: 'center' }}>
 
-                        <TouchableOpacity
+                        {/* <TouchableOpacity
                             style={styles.cardRow}
                             onPress={() => setSelected('card')}
                         >
-                            {/* LEFT SIDE */}
                             <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
                                 {PAYMENT_METHODS[0].icon}
                                 <Text style={[styles.cardLabel, { marginLeft: 10 }]}>Add Card</Text>
                             </View>
-
-                            {/* RIGHT SIDE (RADIO) */}
                             <View style={[
                                 styles.radioButton,
                                 selected === 'card' && styles.radioButtonSelected
                             ]}>
                                 {selected === 'card' && <View style={styles.radioButtonInner} />}
                             </View>
-                        </TouchableOpacity>
+                        </TouchableOpacity> */}
 
                         {/* SPLIT PAYMENT SECTION */}
-                        <Text style={styles.sectionTitle}>Split Payment</Text>
-
                         <View style={styles.splitRow}>
-                            <Text style={styles.cardLabel}>Enable Split Payment</Text>
+                            <Text style={styles.sectionTitle}>Want to split payment</Text>
                             <Switch
                                 value={splitEnabled}
                                 onValueChange={setSplitEnabled}
                                 trackColor={{
                                     false: '#ccc',
-                                    true: 'red',   // ON state background
+                                    true: '#ccc',   // ON state background
                                 }}
                                 thumbColor={splitEnabled ? 'red' : '#f4f3f4'}
                             />
@@ -235,77 +264,122 @@ const Payment = () => {
 
                         {splitEnabled && (
                             <View style={{ marginBottom: 15 }}>
-                                <Text style={styles.subHeading}>Total Points</Text>
-                                <TextInput
-                                    placeholder="Enter Points"
-                                    placeholderTextColor="#999"
-                                    editable={false}
-                                    value={(typeof user === 'object' && user?.total_points?.toString()) || ''}
-                                    keyboardType="numeric"
-                                    style={styles.input}
-                                />
 
-                                <TextInput
-                                    placeholder="Enter Points"
-                                    placeholderTextColor="#999"
-                                    value={points}
-                                    keyboardType="numeric"
-                                    onChangeText={(value) => {
-                                        const numericValue = value.replace(/[^0-9]/g, '');
+                                {/* ROW: CHECKBOX + LABEL + INPUT */}
+                                <View style={styles.redeemRow}>
 
-                                        const maxPoints =
-                                            typeof user === 'object' ? Number(user?.total_points) || 0 : 0;
+                                    {/* LEFT: CHECKBOX + TEXT */}
+                                    <TouchableOpacity
+                                        style={styles.redeemLeft}
+                                        onPress={() => {
+                                            setIsRedeemChecked(!isRedeemChecked);
 
-                                        if (Number(numericValue) <= maxPoints) {
-                                            setPoints(numericValue);
-                                        } else {
-                                            setPoints(maxPoints.toString());
-                                            Alert.alert('Limit exceeded', 'You cannot use more than your total points');
-                                        }
-                                    }}
-                                    style={styles.input}
-                                />
+                                            if (!isRedeemChecked) {
+                                                // turning ON → restore max points
+                                                const maxPoints =
+                                                    typeof user === 'object' ? Number(user?.total_points) || 0 : 0;
+                                                setPoints(maxPoints.toString());
+                                            } else {
+                                                // turning OFF → clear points
+                                                setPoints('');
+                                            }
+                                        }}
+                                        activeOpacity={0.7}
+                                    >
+                                        <View style={[
+                                            styles.checkbox,
+                                            isRedeemChecked ? styles.checkboxActive : {}
+                                        ]}>
+                                            {isRedeemChecked && <Ionicons name="checkmark" size={14} color="#fff" />}
+                                        </View>
 
-                                {/* CASH */}
-                                <Text style={styles.subHeading}>Cash Amount</Text>
-                                <TextInput
-                                    placeholder="Enter Cash Amount"
-                                    value={finalTotal?.toString() || ''}
-                                    editable={false}
-                                    keyboardType="numeric"
-                                    style={styles.input}
-                                />
+                                        <Text style={styles.redeemText}>Redeemable Points</Text>
+                                    </TouchableOpacity>
+
+                                    <TextInput
+                                        placeholder="0"
+                                        placeholderTextColor="#999"
+                                        value={points}
+                                        keyboardType="numeric"
+                                        editable={splitEnabled && isRedeemChecked}   // ✅ HARD DISABLE
+                                        selectTextOnFocus={splitEnabled && isRedeemChecked} // ✅ prevent cursor
+                                        pointerEvents={isRedeemChecked ? 'auto' : 'none'}   // ✅ block touches
+                                        style={[
+                                            styles.redeemInput,
+                                            !isRedeemChecked && styles.disabledInput
+                                        ]}
+                                        onChangeText={(value) => {
+                                            if (!isRedeemChecked) return; // extra safety
+
+                                            const numericValue = value.replace(/[^0-9]/g, '');
+                                            const maxPoints =
+                                                typeof user === 'object'
+                                                    ? Number(user?.total_points) || 0
+                                                    : 0;
+
+                                            if (Number(numericValue) <= maxPoints) {
+                                                setPoints(numericValue);
+                                            } else {
+                                                setPoints(maxPoints.toString());
+                                                Alert.alert('Limit exceeded', 'You cannot use more than your total points');
+                                            }
+                                        }}
+                                    />
+                                </View>
+                                <View style={styles.calcBox}>
+
+                                    {/* TOP ROW */}
+                                    <View style={styles.calcRow}>
+                                        <Text style={styles.calcLabel}>Available</Text>
+                                        <Text style={styles.calcValue}>
+                                            {typeof user === 'object' ? user?.total_points || 0 : 0} pts
+                                        </Text>
+                                    </View>
+
+                                    {/* DIVIDER */}
+                                    <View style={styles.calcDivider} />
+
+                                    {/* CALCULATION ROW */}
+                                    <View style={styles.calcRow}>
+                                        <Text style={styles.calcLabel}>
+                                            {points || 0} pts × {typeof user === 'object' ? Number(user?.point_value || 0) : 0}
+                                        </Text>
+                                        <Text style={styles.calcValue}>
+                                            Rs {redeemValue.toFixed(2)}
+                                        </Text>
+                                    </View>
+
+                                </View>
+
+                                {/* CASH ON DELIVERY BELOW */}
+                                {MORE_OPTIONS.map((item) => (
+                                    <TouchableOpacity
+                                        key={item.id}
+                                        style={[
+                                            styles.cardRow,
+                                            selected === item.id && styles.selectedRow
+                                        ]}
+                                        onPress={() => setSelected(item.id)}
+                                    >
+                                        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                                            <Image
+                                                source={item.icon}
+                                                style={{ width: 25, height: 25, marginRight: 10 }}
+                                            />
+                                            <Text style={styles.cardLabel}>{item.label}</Text>
+                                        </View>
+
+                                        <View style={[
+                                            styles.radioButton,
+                                            selected === item.id && styles.radioButtonSelected
+                                        ]}>
+                                            {selected === item.id && <View style={styles.radioButtonInner} />}
+                                        </View>
+                                    </TouchableOpacity>
+                                ))}
+
                             </View>
                         )}
-                        <Text style={styles.sectionTitle}>More Options</Text>
-
-                        {MORE_OPTIONS.map((item) => (
-                            <TouchableOpacity
-                                key={item.id}
-                                style={[
-                                    styles.cardRow,
-                                    selected === item.id && styles.selectedRow
-                                ]}
-                                onPress={() => setSelected(item.id)}
-                            >
-                                {/* LEFT SIDE */}
-                                <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                                    <Image
-                                        source={item.icon}
-                                        style={{ width: 25, height: 25, marginRight: 10 }}
-                                    />
-                                    <Text style={styles.cardLabel}>{item.label}</Text>
-                                </View>
-
-                                {/* RIGHT SIDE RADIO */}
-                                <View style={[
-                                    styles.radioButton,
-                                    selected === item.id && styles.radioButtonSelected
-                                ]}>
-                                    {selected === item.id && <View style={styles.radioButtonInner} />}
-                                </View>
-                            </TouchableOpacity>
-                        ))}
                         {/* PRODUCTS */}
                         <Text style={styles.sectionTitle}>Products</Text>
 
@@ -317,17 +391,43 @@ const Payment = () => {
                         />
                         <View style={{ marginTop: 15 }}>
                             <Text style={styles.sectionTitle}>Summary</Text>
+                            <View style={styles.summaryBox}>
 
-                            <View style={{ backgroundColor: '#fff', padding: 15, borderRadius: 12 }}>
-                                <Text>Total: PKR {cartTotal.toFixed(2)}</Text>
+                                {/* TOTAL */}
+                                <View style={styles.calcRow}>
+                                    <Text style={styles.calcLabel}>Subtotal</Text>
+                                    <Text style={styles.calcValue}>Rs {cartTotal.toFixed(2)}</Text>
+                                </View>
 
-                                {splitEnabled && (
-                                    <Text>Redeem: - PKR {redeemValue.toFixed(2)}</Text>
+                                {/* DISCOUNT */}
+                                {discount.amount > 0 && (
+                                    <View style={styles.calcRow}>
+                                        <Text style={styles.calcLabel}>Discount</Text>
+                                        <Text style={styles.negativeValue}>- Rs {discount.amount}</Text>
+                                    </View>
                                 )}
 
-                                <Text style={{ fontWeight: 'bold', marginTop: 5 }}>
-                                    Payable: PKR {finalTotal.toFixed(2)}
-                                </Text>
+                                {/* POINTS */}
+                                {splitEnabled && Number(points) > 0 && (
+                                    <View style={styles.calcRow}>
+                                        <Text style={styles.calcLabel}>Points Redeemed</Text>
+                                        <Text style={styles.negativeValue}>
+                                            Rs {redeemValue.toFixed(2)}
+                                        </Text>
+                                    </View>
+                                )}
+
+                                {/* DIVIDER */}
+                                <View style={styles.calcDivider} />
+
+                                {/* FINAL */}
+                                <View style={styles.calcRow}>
+                                    <Text style={styles.totalLabel}>Total Payable</Text>
+                                    <Text style={styles.totalValue}>
+                                        Rs {(finalTotal - discount.amount).toFixed(2)}
+                                    </Text>
+                                </View>
+
                             </View>
                         </View>
                     </ScrollView>
@@ -485,10 +585,118 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        backgroundColor: colors.white,
         padding: 14,
         borderRadius: 12,
         marginBottom: 10,
+    },
+    redeemRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: '#fff',
+        borderRadius: 12,
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+    },
+
+    redeemLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+
+    checkbox: {
+        width: 20,
+        height: 20,
+        borderWidth: 1.5,
+        borderColor: colors.primary,
+        borderRadius: 4,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 8,
+    },
+
+    checkboxActive: {
+        backgroundColor: colors.primary,
+    },
+
+    redeemText: {
+        color: colors.primary,
+        fontFamily: 'PoppinsSemi',
+        fontSize: 14,
+    },
+
+    redeemInput: {
+        minWidth: 80,
+        borderWidth: 1,
+        borderColor: '#ddd',
+        borderRadius: 8,
+        paddingVertical: 6,
+        paddingHorizontal: 10,
+        textAlign: 'right',
+    },
+    disabledInput: {
+        backgroundColor: '#f3f4f6',
+        color: '#9ca3af',
+        borderColor: '#e5e7eb',
+    },
+    availablePoints: {
+        color: '#fff',
+        fontSize: 12,
+
+        opacity: 0.8,
+    },
+    calcBox: {
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        borderRadius: 12,
+        padding: 10,
+        marginTop: 8,
+        marginBottom: 10,
+    },
+
+    calcRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    summaryBox: {
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        borderRadius: 14,
+        padding: 12,
+    },
+
+    negativeValue: {
+        color: '#fff',
+        fontSize: 13,
+        fontFamily: 'PoppinsSemi',
+    },
+
+    totalLabel: {
+        color: '#fff',
+        fontSize: 15,
+        fontFamily: 'PoppinsSemi',
+    },
+
+    totalValue: {
+        color: '#4ade80', // green highlight
+        fontSize: 16,
+        fontFamily: 'PoppinsBold',
+    },
+    calcLabel: {
+        color: '#fff',
+        fontSize: 13,
+        opacity: 0.8,
+    },
+
+    calcValue: {
+        color: '#fff',
+        fontSize: 13,
+        fontFamily: 'PoppinsSemi',
+    },
+
+    calcDivider: {
+        height: 1,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        marginVertical: 6,
     },
     subHeading: {
         color: colors.white,

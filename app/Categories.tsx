@@ -80,12 +80,24 @@ const Categories = () => {
     categoryBrands = Array.from(new Set(filtered.map(p => ('brand' in p && p.brand ? p.brand : undefined)).filter((b): b is string => Boolean(b))));
   }
   const [brandTab, setBrandTab] = useState('All');
-  let displayList = filtered;
-  if (selectedCategory && categoryBrands.length > 1 && brandTab !== 'All') {
-    displayList = filtered.filter(p => 'brand' in p && p.brand === brandTab);
-  } else if (!selectedCategory) {
-    displayList = [...filtered];
-  }
+let displayList = filtered;
+
+if (selectedCategory && categoryBrands.length > 1 && brandTab !== 'All') {
+  displayList = filtered.filter(p => 'brand' in p && p.brand === brandTab);
+} else if (!selectedCategory) {
+  displayList = [...filtered];
+}
+
+// ✅ SORT HERE
+displayList = displayList.sort((a, b) => {
+  const posA = Number(a.position ?? 999);
+  const posB = Number(b.position ?? 999);
+
+  if (posA !== posB) return posA - posB;
+
+  // optional fallback (recommended)
+  return (b.rating || 0) - (a.rating || 0);
+});
 
   useEffect(() => {
     const filteredBanners = banner.filter(ad =>
@@ -152,6 +164,19 @@ const Categories = () => {
     text: "#0B3D0B",
     card: "#C3FFFA",
   };
+  
+const getProductPoints = (product: any) => {
+  const variants = product?.variants;
+
+  if (Array.isArray(variants) && variants.length > 0) {
+    return variants.reduce((sum: number, v: any) => {
+      const p = Number(v?.attributes?.points ?? 0);
+      return sum + (isNaN(p) ? 0 : p);
+    }, 0);
+  }
+
+  return Number(product?.points ?? product?.pts ?? 0);
+};
 
   return (
     <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
@@ -432,7 +457,7 @@ const Categories = () => {
                                   { color: 'white' },
                                 ]}
                               >
-                                {prod.pts}
+                                {getProductPoints(prod)}
                                 {'\n'}PTS
                               </Text>
                             </ImageBackground>

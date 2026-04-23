@@ -44,7 +44,7 @@ interface Product {
         price: string | number;
         sale_price?: string | number;
         image?: string;
-        is_active?:boolean;
+        is_active?: boolean;
         attributes?: any;
         [key: string]: any;
     }>;
@@ -170,7 +170,7 @@ const Products = () => {
 
 
     // Calculate if product is out of stock
-    const isOutOfStock =  product?.stock_status === 'outofstock';
+    const isOutOfStock = product?.stock_status === 'outofstock';
 
     let bgKey;
     if (Array.isArray(backgroundImage)) {
@@ -586,7 +586,7 @@ const Products = () => {
                                 Price Starting From
                             </Text>
                         )}
-                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: scale(150) }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', width: scale(150) }}>
                             {priceRange ? (
                                 <Text style={[styles.price, { color: mainColor, fontSize: moderateScale(18) }]} numberOfLines={1}>
                                     {`Rs ${priceRange.min} - ${priceRange.max}`}
@@ -599,7 +599,7 @@ const Products = () => {
                                             color: mainColor,
                                             textDecorationLine: product.sale_price ? 'line-through' : 'none',
                                             opacity: product.sale_price ? 0.7 : 1,
-                                            fontSize: product.sale_price ? moderateScale(15) : moderateScale(25),
+                                            fontSize: product.sale_price ? moderateScale(15) : moderateScale(20),
                                             fontFamily: product.sale_price ? 'PoppinsBold' : 'PoppinsBold'
                                         }
                                     ]}>
@@ -608,7 +608,7 @@ const Products = () => {
                                     {product.sale_price ? (
                                         <Text style={[styles.price, {
                                             color: '#E53935',
-                                            fontSize: moderateScale(25),
+                                            fontSize: moderateScale(20),
                                             fontFamily: 'PoppinsBold'
                                         }]}>
                                             {` ${product.sale_price}`}
@@ -902,14 +902,14 @@ const Products = () => {
                                         </View>
                                     </View>
                                 </View>
-                               {isOutOfStock || isVariantInactive ? (
+                                {isOutOfStock || isVariantInactive ? (
                                     <View style={[{
                                         backgroundColor: 'gray',
                                         borderRadius: 24,
                                         flexDirection: 'row',
                                         alignItems: 'center',
                                         justifyContent: 'center',
-                                        paddingHorizontal: 22, 
+                                        paddingHorizontal: 22,
                                         paddingVertical: 12
                                     }]}>
                                         <Ionicons name="cart" size={20} color="#fff" style={{ marginRight: 8 }} />
@@ -1025,10 +1025,11 @@ const styles = StyleSheet.create({
         borderBottomStartRadius: 20,
     },
     productImg: {
-        width: scale(340),
-        height: verticalScale(250),
+        width: scale(320),
+        height: verticalScale(220),
     },
     thumbnailRow: {
+        marginTop: 10,
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
@@ -1045,8 +1046,8 @@ const styles = StyleSheet.create({
         borderColor: colors.primaryDark,
     },
     thumbnailImg: {
-        width: scale(45),
-        height: verticalScale(45),
+        width: scale(38),
+        height: verticalScale(40),
         borderRadius: 6,
     },
     cardSection: {

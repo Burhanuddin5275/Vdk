@@ -36,6 +36,8 @@ interface DisplayOrder {
   items: OrderItem[];
   type: string;
   points_discount?: number;
+  total_amount?: number;
+  discount_amount?: number;
 }
 
 export default function OrdersScreen() {
@@ -74,6 +76,8 @@ const loadOrders = useCallback(async () => {
           created_at: order.created_at || new Date().toISOString(),
           items: order.items || [],
           points_discount: order.points_discount ?? 0, 
+          discount_amount: order.discount_amount,
+          total_amount: order.total_amount,
         });
       }
     });
@@ -459,7 +463,7 @@ useFocusEffect(
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.orderNum}>Order #{order.id}</Text>
-                    <Text style={styles.orderPrice}>Rs. {order.total}</Text>
+                    <Text style={styles.orderPrice}>Rs. {order.total_amount}</Text>
                     <Text style={styles.orderDate}>
                       {new Date(order.created_at).toLocaleDateString()}
                     </Text>

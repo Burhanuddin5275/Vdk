@@ -333,22 +333,25 @@ export default function HomeScreen() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.categoriesSlider}
             >
-              {apiCategories.filter(category => category.is_active).map((category, idx) => (
-                <TouchableOpacity
-                  key={idx}
-                  onPress={() => router.push({ pathname: '/Categories', params: { category: category.label } })}
-                  style={styles.categoryCard}
-                >
-                  <LinearGradient colors={['#FFFFFF', '#E82A2F']} style={styles.categoryCard}>
-                    <Image
-                      source={category.image}
-                      style={styles.categoryImg}
-                      resizeMode="contain"
-                    />
-                    <Text style={styles.categoryLabel}>{category.label}</Text>
-                  </LinearGradient>
-                </TouchableOpacity>
-              ))}
+              {apiCategories
+                .filter(category => category.is_active)
+                .sort((a, b) => (a.position ?? 999) - (b.position ?? 999))
+                .map((category, idx) => (
+                  <TouchableOpacity
+                    key={idx}
+                    onPress={() => router.push({ pathname: '/Categories', params: { category: category.label } })}
+                    style={styles.categoryCard}
+                  >
+                    <LinearGradient colors={['#FFFFFF', '#E82A2F']} style={styles.categoryCard}>
+                      <Image
+                        source={category.image}
+                        style={styles.categoryImg}
+                        resizeMode="contain"
+                      />
+                      <Text style={styles.categoryLabel}>{category.label}</Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                ))}
             </ScrollView>
 
             {/* Banner Section */}
@@ -404,15 +407,18 @@ export default function HomeScreen() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.brandSlider}
             >
-              {apiBrands.filter(brand => brand.is_active).map((brand, idx) => (
-                <TouchableOpacity key={idx} style={styles.brandCard} onPress={() => router.push({ pathname: '/Brands', params: { brand: brand.name, image: brand.image } })}>
-                  <Image
-                    source={brand.image}
-                    style={styles.brandImg}
-                    resizeMode="contain"
-                  />
-                </TouchableOpacity>
-              ))}
+              {apiBrands
+                .filter(brand => brand.is_active)
+                .sort((a, b) => (a.position ?? 999) - (b.position ?? 999))
+                .map((brand, idx) => (
+                  <TouchableOpacity key={idx} style={styles.brandCard} onPress={() => router.push({ pathname: '/Brands', params: { brand: brand.name, image: brand.image } })}>
+                    <Image
+                      source={brand.image}
+                      style={styles.brandImg}
+                      resizeMode="contain"
+                    />
+                  </TouchableOpacity>
+                ))}
             </ScrollView>
 
             {/* Best Seller Section */}

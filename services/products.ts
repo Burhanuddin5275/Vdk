@@ -7,6 +7,7 @@ export type Product =
     Category: string;
     img: any;
     pts: number;
+    position: number;
     rating: number;
     regular_price: number;
     quantity: number;
@@ -17,11 +18,24 @@ export type Product =
     description?: string;
     stock_status?: string;
     gallery_images?: any[];
-    variants?: any[];
     reviews?: any[];
     avg_rating?: number       // ✅ ADD
     total_reviews?: number
+    variants?: {
+  id: number;
+  sku: string;
+  price: string;
+  stock: number;
+  attributes: {
+    points?: string;
+    description?: string;
+    [key: string]: any;
+  };
+  is_active: boolean;
+  image: string;
+}[];
   }
+  
   | { banner: string };
 
 const API_URL = `${Api_url}api/products/`;
@@ -38,7 +52,8 @@ function toProduct(item: ApiProduct): Product {
   const rating = Number(item.rating ?? item.stars ?? 5);
   const quantity = Number(item.quantity ?? null);
   const stock = Number(item.stock ?? item.quantity ?? 0);
-  const pts = Number(item.pts ?? item.points ?? 29);
+  const pts = Number(item.pts ?? item.points);
+  const position = Number(item.position);
   const regular_price = Number(item.regular_price ?? item.amount ?? 0);
   const cost_price = Number(item.cost_price ?? item.cost ?? 0);
   const sale_price = Number(item.sale_price ?? item.discounted_price ?? 0);
@@ -58,6 +73,7 @@ function toProduct(item: ApiProduct): Product {
     Category,
     img,
     pts,
+    position,
     stock,
     cost_price,
     rating,

@@ -26,6 +26,8 @@ interface OrderData {
   total: string;
   status: string;
   points_discount?: number;
+  discount_amount?: number;
+  total_amount?: number;
   created_at: string;
   items: OrderItem[];
   type?: string;
@@ -164,6 +166,8 @@ const OrderReview = () => {
   // Calculate total items
   const totalItems = order?.items?.reduce((sum, item) => sum + (item.quantity || 1), 0) || 0;
   const itemsTotal = order?.items.reduce((s, i) => s + parseFloat(i.price || '0'), 0) || 0;
+  const discountAmount = order?.discount_amount;
+  const totalAmount = order?.total_amount;
   const discount = order?.points_discount || 0;
   const finalTotal = itemsTotal - discount;
   if (!order) {
@@ -240,8 +244,8 @@ const OrderReview = () => {
                   <View style={styles.priceContainer}>
                     <Text style={styles.productPrice}>Rs. {parseFloat(item.price || '0').toFixed(2)}</Text>
                     {!reviewedProductIds.has(item.id) && (
-                      <TouchableOpacity onPress={() => handleRateProduct(item)}>
-                        <Text style={styles.rateLink}>Rate Product</Text>
+                      <TouchableOpacity onPress={() => handleRateProduct(item)} style={{backgroundColor: '#facc15', padding: scale(5), borderRadius: scale(5)}}>
+                        <Text style={styles.rateLink}>Review Product</Text>
                       </TouchableOpacity>
                     )}
                   </View>
@@ -269,6 +273,18 @@ const OrderReview = () => {
                   </Text>
                 </View>
               )}
+              {
+                order?.discount_amount && Number(order?.discount_amount) > 0 && (
+                  <View style={styles.totalRow}>
+                    <Text style={styles.totalLabel}>
+                      Discount:
+                    </Text>
+                    <Text style={{ fontSize: scale(15), color: 'white' }}>
+                      Rs. {order.discount_amount}
+                    </Text>
+                  </View>
+                )
+              }
               <View style={styles.totalRow}>
                 <Text style={styles.totalLabel}>
                   {order.type === 'redeem' ? 'Redeem' : 'Order Total:'}
@@ -277,7 +293,7 @@ const OrderReview = () => {
                 <Text style={styles.totalAmount}>
                   {order.type === 'redeem'
                     ? `${order.items[0]?.pts} PTS`
-                    : `Rs. ${finalTotal.toFixed(2)}`
+                    : `Rs. ${totalAmount}`
                   }
                 </Text>
               </View>
@@ -525,9 +541,9 @@ const styles = StyleSheet.create({
     fontFamily: 'PoppinsMedium',
   },
   rateLink: {
-    color: '#3ed543ff',
+    color: 'red',
     fontSize: moderateScale(12),
-    fontFamily: 'PoppinsMedium',
+    fontFamily: 'PoppinsSemiBold',
   },
   productPrice: {
     color: '#fff',

@@ -34,10 +34,10 @@ const Checkout = () => {
         router.push('/ShippingAddress');
     };
 
-    const handleShippingModalClose = () => {
-        setShippingModal(false);
-        router.push('/ChooseShipping');
-    };
+    // const handleShippingModalClose = () => {
+    //     setShippingModal(false);
+    //     router.push('/ChooseShipping');
+    // };
 
     let cartItems: CheckoutParams[] = [];
 
@@ -55,6 +55,7 @@ const Checkout = () => {
             quantity: params.quantity || '1',
             variant: params.variant || '',
             points: params.points || '0',
+            discount: params.discount || '0',
             description: params.description || '',
             type: params.type || '',
             userPoints: params.userPoints || '0'
@@ -78,7 +79,7 @@ const Checkout = () => {
                         {item.variant && <Text style={styles.cartPack}>{'\n'}{item.variant}</Text>}
                     </Text>
                     {item.price && item.price !== 'null' ? (
-                        <Text style={styles.cartPrice}>Pkr {item.price}</Text>
+                        <Text style={styles.cartPrice}>Rs {item.price}</Text>
                     ) : item.points && item.points !== 'null' ? (
                         <Text style={styles.cartPrice}>Pts: {item.points}</Text>
                     ) : (
@@ -141,7 +142,7 @@ const Checkout = () => {
                                 autoCloseDelay={1000}
                                 onClose={handleAddressModalClose}
                             />
-                        
+{/*                         
                             <Text style={styles.sectionTitle}>Shipping Method</Text>
                             <View style={styles.sectionRow}>
                                 {selectedShipping ? (
@@ -172,14 +173,14 @@ const Checkout = () => {
                                 >
                                     {selectedShipping ? 'Change' : 'Select'}
                                 </Button>
-                            </View>
-                            <AlertModal
+                            </View> */}
+                            {/* <AlertModal
                                 visible={ShippingModal}
                                 message="Shipping Required"
                                 subtitle="Please add a shipping method before redeeming."
                                 autoCloseDelay={1000}
                                 onClose={handleShippingModalClose}
-                            />
+                            /> */}
                         </>
                     ) : (
                         <View style={styles.loginPrompt}>
@@ -228,10 +229,10 @@ const Checkout = () => {
                                     return;
                                 }
 
-                                if (!selectedShipping) {
-                                  setShippingModal(true)
-                                    return;
-                                }
+                                // if (!selectedShipping) {
+                                //   setShippingModal(true)
+                                //     return;
+                                // }
 
                                 router.push({
                                     pathname: '/PaymentMethod',

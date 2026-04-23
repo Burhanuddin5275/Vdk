@@ -73,7 +73,18 @@ const BestSeller = () => {
 
     return data;
   }, [displayList, ads]);
+const getProductPoints = (product: any) => {
+  const variants = product?.variants;
 
+  if (Array.isArray(variants) && variants.length > 0) {
+    return variants.reduce((sum: number, v: any) => {
+      const p = Number(v?.attributes?.points ?? 0);
+      return sum + (isNaN(p) ? 0 : p);
+    }, 0);
+  }
+
+  return Number(product?.points ?? product?.pts ?? 0);
+};
   return (
     <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
       <ImageBackground
@@ -203,7 +214,7 @@ const BestSeller = () => {
                           imageStyle={{ borderRadius: moderateScale(6) }}
                         >
                           <Text style={[styles.ptsText, { color: 'white' }]}>
-                            {prod.pts}{'\n'}PTS
+                            {getProductPoints(prod)}{'\n'}PTS
                           </Text>
                         </ImageBackground>
                       </View>

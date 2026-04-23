@@ -24,7 +24,7 @@ const ProfileTab = () => {
   const [error, setError] = useState('');
   const [user, setUser] = useState<UserItem | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [biometricEnabled, setBiometricEnabled] = useState(false);
+  const [biometricEnabled, setBiometricEnabled] = useState(true);
   const { phone, token } = useAuth();
   const [userId, setUserId] = useState<string | null>(null);
   const router = useRouter();

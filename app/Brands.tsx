@@ -65,7 +65,8 @@ const Brands = () => {
     });
   }
 
-  const displayList = filtered.filter((p) => {
+const displayList = filtered
+  .filter((p) => {
     const hasRequiredFields =
       'brand' in p &&
       'id' in p &&
@@ -76,22 +77,25 @@ const Brands = () => {
       'pts' in p &&
       (!selectedBrand || p.brand === selectedBrand);
 
-    if (!hasRequiredFields) {
-      console.log('Product missing required fields:', {
-        id: 'id' in p,
-        name: 'name' in p,
-        brand: 'brand' in p,
-        regular_price: 'regular_price' in p,
-        img: 'img' in p,
-        rating: 'rating' in p,
-        pts: 'pts' in p,
-        matchesBrand: selectedBrand ? ('brand' in p ? p.brand === selectedBrand : 'NO BRAND') : 'N/A'
-      });
-    }
-
     return hasRequiredFields;
-  }) as (Product & { id: string; name: string; brand: string; regular_price: number; img: any; rating: number; pts: number })[];
+  })
+  .sort((a: any, b: any) => {
+    const posA = Number(a.position ?? 999);
+    const posB = Number(b.position ?? 999);
 
+    if (posA !== posB) return posA - posB;
+
+    // fallback (important)
+    return (b.rating || 0) - (a.rating || 0);
+  }) as (Product & {
+  id: string;
+  name: string;
+  brand: string;
+  regular_price: number;
+  img: any;
+  rating: number;
+  pts: number;
+})[];
   const isVidaBrand = displayList.length > 0 && displayList.every(item => item.brand === "Vidafem");
 
   // Auto-slide banner ads
@@ -139,7 +143,17 @@ const Brands = () => {
   }, [displayList]);
 
   const insets = useSafeAreaInsets();
+const getProductPoints = (product: any) => {
+  const variants = product?.variants;
 
+  if (Array.isArray(variants) && variants.length > 0) {
+    return variants.reduce((sum: number, v: any) => {
+      const p = Number(v?.attributes?.points ?? 0);
+      return sum + (isNaN(p) ? 0 : p);
+    }, 0);
+  }
+  return Number(product?.points ?? product?.pts ?? 0);
+};
   return (
     <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
       <ImageBackground
@@ -316,7 +330,7 @@ const Brands = () => {
                         style={[styles.ptsBadge, { justifyContent: 'center', alignItems: 'center' }]}
                       >
                         <Text style={styles.ptsText}>
-                          {prod.pts}{'\n'}PTS
+                          {getProductPoints(prod)}{'\n'}PTS
                         </Text>
                       </ImageBackground>
                     </View>

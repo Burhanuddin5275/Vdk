@@ -12,6 +12,8 @@ export type orders = {
   items: any[];
   payments: any[];
   points_discount:number;
+  discount_amount:number;
+  total_amount:number;
   created_at?: string;
 }
   
@@ -32,6 +34,8 @@ const type = item.type ?? item.type ?? "Product";
   const items = item.items ?? item.items ?? [];
   const payments = item.payments ?? item.payments ?? [];
   const points_discount = item.points_discount;
+  const discount_amount = item.discount_amount;
+  const total_amount = item.total_amount;
   const created_at = item.created_at ?? new Date().toISOString();
 
   return {
@@ -44,6 +48,8 @@ const type = item.type ?? item.type ?? "Product";
     type,
     payments,
     points_discount,
+    discount_amount,
+    total_amount,
     created_at,
   };
 }

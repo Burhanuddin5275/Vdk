@@ -44,7 +44,7 @@ export default function CartScreen() {
   );
   const [checkoutModalVisible, setCheckoutModalVisible] = useState(false);
   const [promoCode, setPromoCode] = useState('');
-  const [discount, setDiscount] = useState(0);
+  const [discount, setDiscount] = useState<any>(null);
   const [discountMessage, setDiscountMessage] = useState('');
   const [isValidating, setIsValidating] = useState(false);
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
@@ -75,7 +75,7 @@ export default function CartScreen() {
 
   const subTotal = cartItems.reduce((sum: number, item: CartItem) => sum + (item.price * item.quantity), 0);
   const deliveryFee = 0;
-  const totalCost = subTotal + deliveryFee - discount;
+  const totalCost = subTotal + deliveryFee - (discount?.discount_amount || 0);
   const validatePromoCode = async () => {
     if (!promoCode.trim()) {
       setDiscountMessage('Please enter a promo code');
@@ -123,8 +123,8 @@ export default function CartScreen() {
 
       if (data.valid) {
 
-
-        setDiscount(data.discount_amount);
+        
+        setDiscount(data);
         setDiscountMessage(data.message || 'Promo code applied successfully!');
       } else {
         setDiscount(0);
@@ -181,7 +181,7 @@ export default function CartScreen() {
                           </>
                         ) : (
                           <Text style={styles.productPrice}>
-                            Pkr {(item.price || 0).toLocaleString()}
+                            Rs {(item.price || 0).toLocaleString()}
                           </Text>
                         )}
                       </View>
@@ -269,8 +269,8 @@ export default function CartScreen() {
                   <View style={modalStyles.itemRow}>
                     <Image source={selectedItem && typeof selectedItem.image === 'string' ? { uri: selectedItem.image } : selectedItem.image} style={modalStyles.itemImage} />
                     <View>
-                      <Text style={modalStyles.itemName}>{selectedItem.name}</Text>
-                      <Text style={modalStyles.itemPrice}>Pkr {selectedItem.price}</Text>
+                      <Text style={modalStyles.itemName} numberOfLines={2}>{selectedItem.name}</Text>
+                      <Text style={modalStyles.itemPrice}>Rs {selectedItem.price}</Text>
                     </View>
                   </View>
                 )}
@@ -335,13 +335,13 @@ export default function CartScreen() {
                   <View style={[
                     styles.discountMessage,
                     {
-                      backgroundColor: discount > 0 ? 'rgba(40, 167, 69, 0.1)' : 'rgba(220, 53, 69, 0.1)',
-                      borderLeftColor: discount > 0 ? '#28a745' : '#dc3545'
+                      backgroundColor: discountMessage==='Coupon applied successfully!' ? 'rgba(40, 167, 69, 0.1)' : 'rgba(220, 53, 69, 0.1)',
+                      borderLeftColor: discountMessage==='Coupon applied successfully!' ? '#28a745' : '#dc3545'
                     }
                   ]}>
                     <Text style={[
                       styles.discountMessageText,
-                      { color: discount > 0 ? '#28a745' : '#dc3545' }
+                      { color: discountMessage==='Coupon applied successfully!' ? '#28a745' : '#dc3545' }
                     ]}>
                       {discountMessage}
                     </Text>
@@ -349,24 +349,24 @@ export default function CartScreen() {
                 ) : null}
                 <View style={checkoutModalStyles.calcRow}>
                   <Text style={checkoutModalStyles.label}>Sub-Total</Text>
-                  <Text style={checkoutModalStyles.valueBold}>Pkr {subTotal.toLocaleString()}</Text>
+                  <Text style={checkoutModalStyles.valueBold}>Rs {subTotal.toLocaleString()}</Text>
                 </View>
                 <View style={checkoutModalStyles.calcRow}>
                   <Text style={checkoutModalStyles.label}>Delivery Fee</Text>
-                  <Text style={checkoutModalStyles.valueBold}>Pkr {deliveryFee.toLocaleString()}</Text>
+                  <Text style={checkoutModalStyles.valueBold}>Rs {deliveryFee.toLocaleString()}</Text>
                 </View>
-                {discount > 0 && (
+                {discount && discount.discount_amount > 0 && (
                   <View style={checkoutModalStyles.calcRow}>
                     <Text style={checkoutModalStyles.label}>Discount Applied</Text>
                     <Text style={[checkoutModalStyles.discountValue, { color: '#28a745' }]}>
-                      - Pkr {discount.toLocaleString()}
+                      Rs {discount.discount_amount.toLocaleString()}
                     </Text>
                   </View>
                 )}
                 <View style={checkoutModalStyles.divider} />
                 <View style={checkoutModalStyles.calcRow}>
                   <Text style={checkoutModalStyles.label}>Total Cost</Text>
-                  <Text style={checkoutModalStyles.totalValue}>Pkr {totalCost.toLocaleString()}</Text>
+                  <Text style={checkoutModalStyles.totalValue}>Rs {totalCost.toLocaleString()}</Text>
                 </View>
 
                 {/* Proceed Button */}
@@ -384,6 +384,9 @@ export default function CartScreen() {
                       price: item.price,
                       image: item.image,
                       quantity: item.quantity,
+                      discount_amount: discount?.discount_amount,
+                      discount_type: discount?.discount_type,
+                      discount_code: discount?.code,
                       variant: item.pack,
                       points: item.points,
                     })));
@@ -677,23 +680,24 @@ const modalStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginVertical: verticalScale(16),
+    width:scale(320),
   },
   itemImage: {
-    width: moderateScale(80),
-    height: moderateScale(80),
+    width: moderateScale(70),
+    height: moderateScale(70),
     borderRadius: moderateScale(12),
     backgroundColor: 'white',
-    marginRight: scale(16),
+    marginRight: scale(10),
   },
   itemName: {
     color: 'white',
-    fontSize: moderateScale(18),
+    fontSize: moderateScale(16),
     fontWeight: 'bold',
     marginBottom: verticalScale(4),
   },
   itemPrice: {
     color: 'white',
-    fontSize: moderateScale(16),
+    fontSize: moderateScale(14),
     fontWeight: '600',
   },
   buttonRow: {
