@@ -217,7 +217,9 @@ const Products = () => {
 
         const variantPrice = selectedVariant?.price ?? 0;
         const variantSalePrice = selectedVariant?.sale_price;
-        const imageForCart = selectedVariant?.image || selectedImg;
+        const imageForCart = variants.length > 0
+            ? (selectedVariant?.image || selectedImg)
+            : (product.img || selectedImg);
 
         const cartItem = {
             id: product.id,
@@ -733,16 +735,23 @@ const Products = () => {
                                                             )}
                                                         </View>
                                                         <View style={{ alignItems: 'center' }}>
-                                                            {s.attributes.map(([key, value]: any, i: number) => (
-                                                                <Text key={i} style={{ fontSize: 10, textAlign: 'center' }}>
-                                                                    <Text style={{ color: '#000', fontFamily: 'PoppinsBold' }}>
-                                                                        {key}{' '}
+                                                            {s.attributes.map(([key, value]: any, i: number) => {
+                                                                const displayValue =
+                                                                    typeof value === 'object'
+                                                                        ? value?.name || value?.label || value?.value || ''
+                                                                        : String(value);
+
+                                                                return (
+                                                                    <Text key={i} style={{ fontSize: 10, textAlign: 'center' }}>
+                                                                        <Text style={{ color: '#000', fontFamily: 'PoppinsBold' }}>
+                                                                            {key}{' '}
+                                                                        </Text>
+                                                                        <Text style={{ color: '#E53935', fontFamily: 'PoppinsBold' }}>
+                                                                            {displayValue}
+                                                                        </Text>
                                                                     </Text>
-                                                                    <Text style={{ color: '#E53935', fontFamily: 'PoppinsBold' }}>
-                                                                        {value}
-                                                                    </Text>
-                                                                </Text>
-                                                            ))}
+                                                                );
+                                                            })}
                                                         </View>
                                                         {/* Price */}
                                                         {s.sale_price ? (

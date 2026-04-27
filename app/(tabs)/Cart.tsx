@@ -85,6 +85,7 @@ export default function CartScreen() {
     setIsValidating(true);
     setDiscountMessage('');
 
+
     try {
       console.log('Sending request to validate promo code:', promoCode.trim());
       const response = await fetch(`${Api_url}api/discounts/`, {
@@ -102,9 +103,20 @@ export default function CartScreen() {
             price: item.price,
             quantity: item.quantity,
           })),
+          phone: phone,
         }),
       });
-
+      console.log("Coupon validation response:", JSON.stringify({
+        code: promoCode.trim(),
+        total: subTotal,
+        products: cartItems.map((item: any) => Number(item.id)),
+        items: cartItems.map((item: any) => ({
+          id: Number(item.id),
+          price: item.price,
+          quantity: item.quantity,
+        })),
+        phone: phone,
+      }),)
       console.log('Response status:', response.status);
 
       const contentType = response.headers.get('content-type');
@@ -123,17 +135,17 @@ export default function CartScreen() {
 
       if (data.valid) {
 
-        
+
         setDiscount(data);
         setDiscountMessage(data.message || 'Promo code applied successfully!');
       } else {
-        setDiscount(0);
+        setDiscount(null);
         setDiscountMessage(data.message || 'Invalid promo code');
         Alert.alert('Invalid Code', data.message || 'The promo code is not valid.');
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to validate promo code';
-      setDiscount(0);
+      setDiscount(null);
       setDiscountMessage(errorMessage);
     } finally {
       setIsValidating(false);
@@ -335,13 +347,13 @@ export default function CartScreen() {
                   <View style={[
                     styles.discountMessage,
                     {
-                      backgroundColor: discountMessage==='Coupon applied successfully!' ? 'rgba(40, 167, 69, 0.1)' : 'rgba(220, 53, 69, 0.1)',
-                      borderLeftColor: discountMessage==='Coupon applied successfully!' ? '#28a745' : '#dc3545'
+                      backgroundColor: discountMessage === 'Coupon applied successfully!' ? 'rgba(40, 167, 69, 0.1)' : 'rgba(220, 53, 69, 0.1)',
+                      borderLeftColor: discountMessage === 'Coupon applied successfully!' ? '#28a745' : '#dc3545'
                     }
                   ]}>
                     <Text style={[
                       styles.discountMessageText,
-                      { color: discountMessage==='Coupon applied successfully!' ? '#28a745' : '#dc3545' }
+                      { color: discountMessage === 'Coupon applied successfully!' ? '#28a745' : '#dc3545' }
                     ]}>
                       {discountMessage}
                     </Text>
@@ -355,7 +367,7 @@ export default function CartScreen() {
                   <Text style={checkoutModalStyles.label}>Delivery Fee</Text>
                   <Text style={checkoutModalStyles.valueBold}>Rs {deliveryFee.toLocaleString()}</Text>
                 </View>
-                {discount && discount.discount_amount > 0 && (
+                {discount?.discount_amount > 0 && (
                   <View style={checkoutModalStyles.calcRow}>
                     <Text style={checkoutModalStyles.label}>Discount Applied</Text>
                     <Text style={[checkoutModalStyles.discountValue, { color: '#28a745' }]}>
@@ -380,6 +392,7 @@ export default function CartScreen() {
                     setCheckoutModalVisible(false);
                     // Convert cart items to a format that can be passed as URL params
                     const itemsParam = JSON.stringify(cartItems.map((item: CartItem) => ({
+                      id: item.id,
                       name: item.name,
                       price: item.price,
                       image: item.image,
@@ -680,7 +693,7 @@ const modalStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginVertical: verticalScale(16),
-    width:scale(320),
+    width: scale(320),
   },
   itemImage: {
     width: moderateScale(70),

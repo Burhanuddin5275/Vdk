@@ -9,6 +9,7 @@ import React, { useEffect, useState } from 'react';
 import { Dimensions, Image, ImageBackground, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
+import { useAddressStore } from '@/store/addressStore';
 const { width } = Dimensions.get('window');
 
 export default function Profile() {
@@ -18,6 +19,7 @@ export default function Profile() {
   const insets = useSafeAreaInsets();
   const [user, setUser] = useState<UserItem | string | null | undefined>(undefined);
   const [userId, setUserId] = useState<string | number | null>(null);
+  const { setSelectedAddress } = useAddressStore.getState();
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   useEffect(() => {
     const loadUsers = async () => {
@@ -46,6 +48,7 @@ export default function Profile() {
 
   }, [phone, token]);
   const handleLogout = () => {
+    setSelectedAddress(null);
     logout();
     router.push('/(tabs)/Home');
     router.replace('/(tabs)/Home');

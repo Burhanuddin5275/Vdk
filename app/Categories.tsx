@@ -80,24 +80,24 @@ const Categories = () => {
     categoryBrands = Array.from(new Set(filtered.map(p => ('brand' in p && p.brand ? p.brand : undefined)).filter((b): b is string => Boolean(b))));
   }
   const [brandTab, setBrandTab] = useState('All');
-let displayList = filtered;
+  let displayList = filtered;
 
-if (selectedCategory && categoryBrands.length > 1 && brandTab !== 'All') {
-  displayList = filtered.filter(p => 'brand' in p && p.brand === brandTab);
-} else if (!selectedCategory) {
-  displayList = [...filtered];
-}
+  if (selectedCategory && categoryBrands.length > 1 && brandTab !== 'All') {
+    displayList = filtered.filter(p => 'brand' in p && p.brand === brandTab);
+  } else if (!selectedCategory) {
+    displayList = [...filtered];
+  }
 
-// ✅ SORT HERE
-displayList = displayList.sort((a, b) => {
-  const posA = Number(a.position ?? 999);
-  const posB = Number(b.position ?? 999);
+  // ✅ SORT HERE
+  displayList = displayList.sort((a, b) => {
+    const posA = Number(a.position ?? 999);
+    const posB = Number(b.position ?? 999);
 
-  if (posA !== posB) return posA - posB;
+    if (posA !== posB) return posA - posB;
 
-  // optional fallback (recommended)
-  return (b.rating || 0) - (a.rating || 0);
-});
+    // optional fallback (recommended)
+    return (b.rating || 0) - (a.rating || 0);
+  });
 
   useEffect(() => {
     const filteredBanners = banner.filter(ad =>
@@ -164,19 +164,19 @@ displayList = displayList.sort((a, b) => {
     text: "#0B3D0B",
     card: "#C3FFFA",
   };
-  
-const getProductPoints = (product: any) => {
-  const variants = product?.variants;
 
-  if (Array.isArray(variants) && variants.length > 0) {
-    return variants.reduce((sum: number, v: any) => {
-      const p = Number(v?.attributes?.points ?? 0);
-      return sum + (isNaN(p) ? 0 : p);
-    }, 0);
-  }
+  const getProductPoints = (product: any) => {
+    const variants = product?.variants;
 
-  return Number(product?.points ?? product?.pts ?? 0);
-};
+    if (Array.isArray(variants) && variants.length > 0) {
+      return variants.reduce((max: number, v: any) => {
+        const p = Number(v?.attributes?.points ?? 0);
+        return !isNaN(p) && p > max ? p : max;
+      }, 0);
+    }
+
+    return Number(product?.points ?? product?.pts ?? 0);
+  };
 
   return (
     <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
@@ -249,31 +249,45 @@ const getProductPoints = (product: any) => {
           {!selectedCategory ? (
             <>
               <View style={styles.tabsWrap}>
-                <View style={styles.tabs}>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.tabs}
+                >
                   {TABS.map((tab, i) => (
                     <TouchableOpacity
                       key={tab}
                       style={[styles.tabBtn, activeTab === i && styles.tabBtnActive]}
-                      onPress={() => setActiveTab(i)}>
-                      <Text style={[styles.tabText, activeTab === i && styles.tabTextActive]}>{tab}</Text>
+                      onPress={() => setActiveTab(i)}
+                    >
+                      <Text style={[styles.tabText, activeTab === i && styles.tabTextActive]}>
+                        {tab}
+                      </Text>
                     </TouchableOpacity>
                   ))}
-                </View>
+                </ScrollView>
               </View>
             </>
           ) : (
             categoryBrands.length > 1 && (
               <View style={styles.tabsWrap}>
-                <View style={styles.tabs}>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.tabs}
+                >
                   {['All', ...categoryBrands].map((brand) => (
                     <TouchableOpacity
                       key={brand}
                       style={[styles.tabBtn, brandTab === brand && styles.tabBtnActive]}
-                      onPress={() => setBrandTab(brand)}>
-                      <Text style={[styles.tabText, brandTab === brand && styles.tabTextActive]}>{brand}</Text>
+                      onPress={() => setBrandTab(brand)}
+                    >
+                      <Text style={[styles.tabText, brandTab === brand && styles.tabTextActive]}>
+                        {brand}
+                      </Text>
                     </TouchableOpacity>
                   ))}
-                </View>
+                </ScrollView>
               </View>
             )
           )}

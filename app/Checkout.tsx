@@ -13,6 +13,7 @@ import { colors } from '../theme/colors';
 import AlertModal from '@/components/Alert';
 const { width, height } = Dimensions.get('window');
 type CheckoutParams = {
+    id?: string;
     name?: string;
     price?: string;
     image?: string;
@@ -50,6 +51,7 @@ const Checkout = () => {
         }
     } else if (params?.name) {
         cartItems = [{
+            id: params.id || '',
             name: params.name || '',
             image: params.image || '',
             quantity: params.quantity || '1',

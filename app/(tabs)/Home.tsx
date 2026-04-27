@@ -666,8 +666,8 @@ const bestSellerStyles = StyleSheet.create({
     padding: moderateScale(4),
   },
   productImg: {
-    width: "100%",
-    height: verticalScale(130),
+    width: "95%",
+    height: verticalScale(120),
     borderRadius: moderateScale(10),
     resizeMode: 'contain',
     marginTop: verticalScale(10)
@@ -818,8 +818,8 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   categoryImg: {
-    width: "100%",
-    height: verticalScale(80),
+    width: "80%",
+    height: verticalScale(75),
   },
   categoryLabel: {
     color: 'white',
@@ -859,7 +859,7 @@ const styles = StyleSheet.create({
     height: verticalScale(150),
   },
   brandImg: {
-    width: "100%",
+    width: "80%",
     height: verticalScale(100),
   },
   bestSellerRow: {

@@ -73,13 +73,15 @@ const BestSeller = () => {
 
     return data;
   }, [displayList, ads]);
+
+
 const getProductPoints = (product: any) => {
   const variants = product?.variants;
 
   if (Array.isArray(variants) && variants.length > 0) {
-    return variants.reduce((sum: number, v: any) => {
+    return variants.reduce((max: number, v: any) => {
       const p = Number(v?.attributes?.points ?? 0);
-      return sum + (isNaN(p) ? 0 : p);
+      return !isNaN(p) && p > max ? p : max;
     }, 0);
   }
 
