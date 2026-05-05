@@ -14,6 +14,7 @@ import { type BannerItem, fetchBanners } from '../services/banner';
 import { fetchProducts } from '../services/products';
 import { useWishlistStore } from './Wishlist';
 import { useFocusEffect } from '@react-navigation/native';
+import { CategoryItem, fetchCategories } from '@/services/categories';
 const TABS = ['All'];
 
 const screenWidth = Dimensions.get('window').width;
@@ -27,6 +28,7 @@ const Categories = () => {
   const selectedCategory = category;
 
   const [activeTab, setActiveTab] = useState(0);
+  const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [wishlistMessage, setWishlistMessage] = useState<string | null>(null);
   const [currentAdIndex, setCurrentAdIndex] = useState(0);
   const scrollViewRef = useRef<ScrollView>(null);
@@ -43,13 +45,15 @@ const Categories = () => {
       let isActive = true;
 
       const loadData = async () => {
-        const [bannersData, adsData, productsData] = await Promise.all([
+        const [categoryData, bannersData, adsData, productsData] = await Promise.all([
+          fetchCategories(),
           fetchBanners(),
           fetchAds(),
           fetchProducts(),
         ]);
 
         if (isActive) {
+          setCategories(categoryData);
           setBanner(bannersData);
           setAds(adsData);
           setProducts(productsData);
@@ -63,6 +67,17 @@ const Categories = () => {
       };
     }, [])
   );
+  const selectedCategoryObj = useMemo(() => {
+    if (!categories.length || !selectedCategory) return undefined;
+
+    return categories.find(
+      (cat) =>
+        cat.label?.toLowerCase() === String(selectedCategory).toLowerCase()
+    );
+  }, [categories, selectedCategory]);
+
+  const categoryColor = selectedCategoryObj?.bg_color;
+  const isGreenTheme = categoryColor === "Green";
   let filtered = Products.filter(p => p.is_active);
   if (selectedCategory) {
     const cat = String(selectedCategory).toLowerCase();
@@ -151,11 +166,9 @@ const Categories = () => {
     return data;
   }, [displayList, ads, selectedCategory]);
 
-  const isVidaBrand =
-    filtered.length > 0 &&
-    filtered.every((item) => "brand" in item && item.brand === "Vidafem");
 
-  const backgroundImage = isVidaBrand
+
+  const backgroundImage = categoryColor === "Green"
     ? require("../assets/images/ss2.png")
     : require("../assets/images/ss.png");
 
@@ -177,7 +190,58 @@ const Categories = () => {
 
     return Number(product?.points ?? product?.pts ?? 0);
   };
+const getPrice = (product: any) => {
+  // 1. If variants exist
+  const variants = product?.variants;
 
+  if (Array.isArray(variants) && variants.length > 0) {
+    const firstVariant = variants[0];
+
+    if (firstVariant?.attributes) {
+      const attrs = Array.isArray(firstVariant.attributes)
+        ? firstVariant.attributes
+        : [firstVariant.attributes];
+
+      const firstAttr = attrs[0];
+
+      const price =
+        firstAttr?.sale_price != null && firstAttr?.sale_price !== ''
+          ? firstAttr.sale_price
+          : firstAttr?.regular_price ?? firstVariant?.price;
+
+      return Number(price || 0);
+    }
+
+    return Number(
+      firstVariant?.sale_price ??
+        firstVariant?.price ??
+        0
+    );
+  }
+
+  // 2. If no variants → product level
+  return Number(
+    product?.regular_price ??
+      product?.sale_price ??
+      0
+  );
+};
+  const theme = {
+    isGreen: categoryColor === "Green",
+
+    tabBg: categoryColor === "Green" ? "#C3FFFA" : "#FFFFFF",
+    tabActiveBg: categoryColor === "Green" ? "#0B3D0B" : "#E53935",
+    tabText: categoryColor === "Green" ? "#0B3D0B" : "#444",
+    tabActiveText: "#FFFFFF",
+  };
+
+  if (selectedCategory && !selectedCategoryObj) {
+    return (
+      <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text>Loading...</Text>
+      </SafeAreaView>
+    );
+  }
   return (
     <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
       <ImageBackground source={backgroundImage} style={styles.container} resizeMode="cover">
@@ -274,15 +338,34 @@ const Categories = () => {
                 <ScrollView
                   horizontal
                   showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.tabs}
+                  contentContainerStyle={[
+                    styles.tabs,
+                    { backgroundColor: theme.tabBg }
+                  ]}
                 >
                   {['All', ...categoryBrands].map((brand) => (
                     <TouchableOpacity
                       key={brand}
-                      style={[styles.tabBtn, brandTab === brand && styles.tabBtnActive]}
+                      style={[
+                        styles.tabBtn,
+                        brandTab === brand && styles.tabBtnActive,
+                        brandTab === brand && {
+                          borderBottomColor: isGreenTheme ? "#0B3D0B" : "#E53935",
+                        },
+                      ]}
                       onPress={() => setBrandTab(brand)}
                     >
-                      <Text style={[styles.tabText, brandTab === brand && styles.tabTextActive]}>
+                      <Text
+                        style={[
+                          styles.tabText,
+                          brandTab === brand && styles.tabTextActive,
+                          {
+                            color: brandTab === brand
+                              ? (isGreenTheme ? "#0B3D0B" : colors.primaryDark) // active text (both white is fine)
+                              : (isGreenTheme ? "#0B3D0B" : colors.textSecondary), // inactive text
+                          },
+                        ]}
+                      >
                         {brand}
                       </Text>
                     </TouchableOpacity>
@@ -299,6 +382,7 @@ const Categories = () => {
                 if ('id' in p && 'name' in p && 'regular_price' in p && 'img' in p &&
                   p.is_active) {
                   const prod = p as Exclude<Product, { banner: string }>;
+                  const minPrice = getPrice(prod);
                   return (
                     <TouchableOpacity
                       key={prod.id}
@@ -314,14 +398,14 @@ const Categories = () => {
                             id: prod.id,
                             data: JSON.stringify(prod),
                             category: selectedCategory,
-                            backgroundImage: isVidaBrand ? 'ss2' : 'ss',
+                            backgroundImage: isGreenTheme ? 'ss2' : 'ss',
                           },
                         })
                       }
                     >
                       <LinearGradient
                         colors={
-                          isVidaBrand
+                          isGreenTheme
                             ? [vidaColors.card, vidaColors.background]
                             : ["#FFD600", "#FF9800"]
                         }
@@ -331,7 +415,7 @@ const Categories = () => {
                         <TouchableOpacity
                           style={[
                             styles.heartWrap,
-                            isVidaBrand && { backgroundColor: "#0B3D0B" },
+                            isGreenTheme && { backgroundColor: "#0B3D0B" },
                           ]}
                           onPress={async () => {
                             if (!isAuthenticated) {
@@ -414,13 +498,45 @@ const Categories = () => {
                             resizeMode: "contain",
                           }}
                         />
+                        <View
+                          style={[
+                            styles.priceTag,
+                            {
+                              backgroundColor: isGreenTheme ? '#0B3D0B' : '#E53935',
+                            },
+                          ]}
+                        >
+                          <View style={[styles.priceLeft, { backgroundColor: isGreenTheme ? '#0B3D0B' : '#E53935' }]}>
+                            <Text style={styles.priceLeftText}>Starting from</Text>
+                          </View>
+
+                          <View
+                            style={[
+                              styles.priceRight,
+                              {
+                                backgroundColor: 'white',
+                              },
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                styles.priceRightText,
+                                {
+                                  color: isGreenTheme ? '#0B3D0B' : '#E53935',
+                                },
+                              ]}
+                            >
+                              Rs.{Math.round(minPrice || 0)}
+                            </Text>
+                          </View>
+                        </View>
                       </LinearGradient>
 
                       {/* Footer */}
                       <View
                         style={[
                           styles.cardFooter,
-                          isVidaBrand
+                          isGreenTheme
                             ? { backgroundColor: vidaColors.background }
                             : prod.brand === "Josh"
                               ? { backgroundColor: "#FBF4E4" }
@@ -431,7 +547,7 @@ const Categories = () => {
                       >
                         <View style={styles.footerLeft}>
                           <Text
-                            style={[styles.cardTitle, isVidaBrand && { color: vidaColors.text }]} numberOfLines={2}
+                            style={[styles.cardTitle, isGreenTheme && { color: vidaColors.text }]} numberOfLines={2}
                           >
                             {prod.name}
                           </Text>
@@ -443,7 +559,7 @@ const Categories = () => {
                           </Text>
                         </View>
                         <View>
-                          {isVidaBrand ? (
+                          {isGreenTheme ? (
                             <ImageBackground
                               source={require('../assets/images/VectorGreen.png')}
                               style={[styles.ptsBadge, { justifyContent: 'center', alignItems: 'center' }]}
@@ -585,7 +701,42 @@ const styles = StyleSheet.create({
     marginTop: verticalScale(8)
   },
 
+  priceTag: {
+    position: 'absolute',
+    bottom: verticalScale(0),
+    flexDirection: 'row',
+    borderBottomEndRadius: moderateScale(18),
+    borderBottomStartRadius: moderateScale(18),
+    overflow: 'hidden',
+    elevation: 4,
+  },
 
+  priceLeft: {
+    backgroundColor: '#E53935',
+    width: scale(78),
+    paddingVertical: verticalScale(4),
+    justifyContent: 'center',
+  },
+
+  priceLeftText: {
+    color: '#fff',
+    fontSize: scale(10),
+    textAlign: 'center',
+    fontFamily: 'InterBold',
+  },
+
+  priceRight: {
+    backgroundColor: '#fff',
+    width: scale(79),
+    justifyContent: 'center',
+  },
+
+  priceRightText: {
+    color: '#E53935',
+    fontSize: scale(12),
+    textAlign: 'center',
+    fontFamily: 'InterBold',
+  },
   cardFooter: {
     flexDirection: 'row',
     alignItems: 'center',

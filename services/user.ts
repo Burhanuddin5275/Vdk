@@ -43,9 +43,6 @@ export type UserItem = {
   point_value: number;
   addresses?: any[];
 };
-
-const API_URL = `${Api_url}api/app-user/list/`;
-
 function toUser(item: ApiUser): UserItem {
   const id = String(item.id ?? null);
   const name = String(item.name ?? item.title ?? null);
@@ -76,7 +73,7 @@ function toUser(item: ApiUser): UserItem {
 
 export async function fetchUsers(): Promise<UserItem[]> {
   try {
-    const response = await fetch(API_URL);
+    const response = await fetch(`${Api_url}api/app-user/list/`);
     if (!response.ok) throw new Error(`Failed to fetch brands: ${response.status}`);
     const data = await response.json();
     const items: ApiUser[] = Array.isArray(data) ? data : (data?.results ?? data?.data ?? []);
@@ -91,9 +88,8 @@ export const deleteAccountApi = async (userId: string | number) => {
   if (userId === null || userId === undefined) {
     throw new Error("Missing user ID");
   }
-  const url = `${Api_url}/api/deactivate/${userId}/`;
 
-  const response = await fetch(url, {
+  const response = await fetch(`${Api_url}/api/deactivate/${userId}/`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",

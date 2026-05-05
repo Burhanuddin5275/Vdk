@@ -14,6 +14,7 @@ import { fetchProducts } from '../services/products';
 import { useWishlistStore } from './Wishlist';
 import { BannerItem, fetchBanners } from '../services/banner';
 import { type AdsItem, fetchAds } from '@/services/ads';
+import { BrandItem, fetchBrands } from '@/services/brands';
 const screenWidth = Dimensions.get('window').width;
 const COLUMN_GAP = scale(12);
 const CARD_WIDTH = (screenWidth - COLUMN_GAP * 3) / 2;
@@ -23,6 +24,7 @@ const Brands = () => {
   const { brand, category } = useLocalSearchParams();
   const selectedBrand = brand;
   const selectedCategory = category;
+  const [Brands, setBrands] = useState<BrandItem[]>([]);
   const [wishlistMessage, setWishlistMessage] = useState<string | null>(null);
   const [currentAdIndex, setCurrentAdIndex] = useState(0);
   const scrollViewRef = useRef<ScrollView>(null);
@@ -31,6 +33,12 @@ const Brands = () => {
   const [banner, setBanner] = useState<BannerItem[]>([]);
   const [ads, setAds] = useState<AdsItem[]>([]);
   const [allProducts, setAllProducts] = useState<Product[]>([]);
+  useEffect(() => {
+    (async () => {
+      const data = await fetchBrands();
+      setBrands(data);
+    })();
+  }, []);
   useEffect(() => {
     (async () => {
       const banners = await fetchBanners();
@@ -49,9 +57,16 @@ const Brands = () => {
       setAllProducts(data);
     })();
   }, []);
+  const selectedBrandsObj = useMemo(() => {
+    return Brands.find(
+      (brand) =>
+        brand.name?.toLowerCase() === String(selectedBrand).toLowerCase()
+    );
+  }, [Brands, selectedBrand]);
 
+  const isGreen = selectedBrandsObj?.bg_color === "Green";
   // Filter products by brand and category
-  let filtered = allProducts.filter((p:any) => p.is_active);
+  let filtered = allProducts.filter((p: any) => p.is_active);
   if (selectedCategory) {
     const cat = String(selectedCategory).toLowerCase();
     filtered = allProducts.filter(p => {
@@ -65,37 +80,37 @@ const Brands = () => {
     });
   }
 
-const displayList = filtered
-  .filter((p) => {
-    const hasRequiredFields =
-      'brand' in p &&
-      'id' in p &&
-      'name' in p &&
-      'regular_price' in p &&
-      'img' in p &&
-      'rating' in p &&
-      'pts' in p &&
-      (!selectedBrand || p.brand === selectedBrand);
+  const displayList = filtered
+    .filter((p) => {
+      const hasRequiredFields =
+        'brand' in p &&
+        'id' in p &&
+        'name' in p &&
+        'regular_price' in p &&
+        'img' in p &&
+        'rating' in p &&
+        'pts' in p &&
+        (!selectedBrand || p.brand === selectedBrand);
 
-    return hasRequiredFields;
-  })
-  .sort((a: any, b: any) => {
-    const posA = Number(a.position ?? 999);
-    const posB = Number(b.position ?? 999);
+      return hasRequiredFields;
+    })
+    .sort((a: any, b: any) => {
+      const posA = Number(a.position ?? 999);
+      const posB = Number(b.position ?? 999);
 
-    if (posA !== posB) return posA - posB;
+      if (posA !== posB) return posA - posB;
 
-    // fallback (important)
-    return (b.rating || 0) - (a.rating || 0);
-  }) as (Product & {
-  id: string;
-  name: string;
-  brand: string;
-  regular_price: number;
-  img: any;
-  rating: number;
-  pts: number;
-})[];
+      // fallback (important)
+      return (b.rating || 0) - (a.rating || 0);
+    }) as (Product & {
+      id: string;
+      name: string;
+      brand: string;
+      regular_price: number;
+      img: any;
+      rating: number;
+      pts: number;
+    })[];
   const isVidaBrand = displayList.length > 0 && displayList.every(item => item.brand === "Vidafem");
 
   // Auto-slide banner ads
@@ -143,22 +158,69 @@ const displayList = filtered
   }, [displayList]);
 
   const insets = useSafeAreaInsets();
-const getProductPoints = (product: any) => {
+  const getProductPoints = (product: any) => {
+    const variants = product?.variants;
+
+    if (Array.isArray(variants) && variants.length > 0) {
+      return variants.reduce((max: number, v: any) => {
+        const p = Number(v?.attributes?.points ?? 0);
+        return !isNaN(p) && p > max ? p : max;
+      }, 0);
+    }
+
+    return Number(product?.points ?? product?.pts ?? 0);
+  };
+const getPrice = (product: any) => {
+  // 1. If variants exist
   const variants = product?.variants;
 
   if (Array.isArray(variants) && variants.length > 0) {
-    return variants.reduce((max: number, v: any) => {
-      const p = Number(v?.attributes?.points ?? 0);
-      return !isNaN(p) && p > max ? p : max;
-    }, 0);
+    const firstVariant = variants[0];
+
+    if (firstVariant?.attributes) {
+      const attrs = Array.isArray(firstVariant.attributes)
+        ? firstVariant.attributes
+        : [firstVariant.attributes];
+
+      const firstAttr = attrs[0];
+
+      const price =
+        firstAttr?.sale_price != null && firstAttr?.sale_price !== ''
+          ? firstAttr.sale_price
+          : firstAttr?.regular_price ?? firstVariant?.price;
+
+      return Number(price || 0);
+    }
+
+    return Number(
+      firstVariant?.sale_price ??
+        firstVariant?.price ??
+        0
+    );
   }
 
-  return Number(product?.points ?? product?.pts ?? 0);
+  // 2. If no variants → product level
+  return Number(
+    product?.regular_price ??
+      product?.sale_price ??
+      0
+  );
 };
+  if (selectedBrand && !selectedBrandsObj) {
+    return (
+      <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text>Loading...</Text>
+      </SafeAreaView>
+    );
+  }
   return (
     <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
       <ImageBackground
-        source={brand === 'Vidafem' ? require('../assets/images/ss2.png') : require('../assets/images/ss1.png')}
+        source={
+          isGreen
+            ? require('../assets/images/ss2.png')
+            : require('../assets/images/ss1.png')
+        }
         style={styles.container}
         resizeMode="cover"
       >
@@ -207,6 +269,7 @@ const getProductPoints = (product: any) => {
             {mergedData.map((item, idx) => {
               if (item.type === "product") {
                 const prod = item.data;
+                const minPrice = getPrice(prod);
                 return (
                   <TouchableOpacity
                     key={prod.id}
@@ -226,17 +289,17 @@ const getProductPoints = (product: any) => {
                           id: prod.id,
                           data: JSON.stringify(productData),
                           category: prod.Category || '',
-                          backgroundImage: prod.brand === 'Vidafem' ? 'ss2' : 'ss1'
+                          backgroundImage: isGreen ? 'ss2' : 'ss1'
                         }
                       });
                     }}
                   >
                     <LinearGradient
-                      colors={prod.brand === 'Vidafem' ? ['#C3FFFA', '#C3FFFA'] : ['#FFD600', '#FF9800']}
+                      colors={isGreen ? ['#C3FFFA', '#C3FFFA'] : ['#FFD600', '#FF9800']}
                       style={styles.productCard}
                     >
                       <TouchableOpacity
-                        style={[styles.heartWrap, prod.brand === 'Vidafem' && { backgroundColor: '#006400' }]}
+                        style={[styles.heartWrap, isGreen && { backgroundColor: '#006400' }]}
                         onPress={async () => {
                           if (!isAuthenticated) {
                             setWishlistMessage('Please log in to use wishlist.');
@@ -309,22 +372,58 @@ const getProductPoints = (product: any) => {
                         <Ionicons name={wishlistItems.some(w => w.id === prod.id) ? 'heart' : 'heart-outline'} size={20} color="#fff" />
                       </TouchableOpacity>
                       <Image source={prod.img} style={{ width: '100%', height: verticalScale(150), borderRadius: 10, resizeMode: 'contain' }} />
+                      <View
+                        style={[
+                          styles.priceTag,
+                          {
+                            backgroundColor: isGreen ? '#0B3D0B' : '#E53935',
+                          },
+                        ]}
+                      >
+                        <View style={[styles.priceLeft, { backgroundColor: isGreen ? '#0B3D0B' : '#E53935' }]}>
+                          <Text style={styles.priceLeftText}>Starting from</Text>
+                        </View>
+
+                        <View
+                          style={[
+                            styles.priceRight,
+                            {
+                              backgroundColor: 'white',
+                            },
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.priceRightText,
+                              {
+                                color: isGreen ? '#0B3D0B' : '#E53935',
+                              },
+                            ]}
+                          >
+                           Rs.{Math.round(minPrice || 0)}
+                          </Text>
+                        </View>
+                      </View>
                     </LinearGradient>
                     <View style={[
                       styles.cardFooter,
-                      prod.brand === 'Josh' && { backgroundColor: '#FBF4E4' },
-                      prod.brand === 'OK' && { backgroundColor: colors.secondary },
-                      prod.brand === 'Vidafem' && { backgroundColor: '#C3FFFA' }
+                      isGreen
+                        ? { backgroundColor: '#C3FFFA' }
+                        : prod.brand === 'Josh'
+                          ? { backgroundColor: '#FBF4E4' }
+                          : prod.brand === 'OK'
+                            ? { backgroundColor: colors.secondary }
+                            : null
                     ]}>
                       <View style={styles.footerLeft}>
-                        <Text style={[styles.cardTitle, prod.brand === 'Vidafem' && { color: '#006400' }]} numberOfLines={2}>
+                        <Text style={[styles.cardTitle, isGreen && { color: '#006400' }]} numberOfLines={2}>
                           {prod.name}
                         </Text>
                         <Text style={styles.cardRating}>Ratings <Text style={{ color: '#FFD600' }}>{'★'.repeat(prod.rating)}</Text></Text>
                       </View>
                       <ImageBackground
                         source={
-                          prod.brand === 'Vidafem'
+                          isGreen
                             ? require('../assets/images/VectorGreen.png')
                             : require('../assets/images/VectorRed.png')
                         }
@@ -445,6 +544,42 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 1
+  },
+   priceTag: {
+    position: 'absolute',
+    bottom: verticalScale(0),
+    flexDirection: 'row',
+    borderBottomEndRadius: moderateScale(18),
+    borderBottomStartRadius: moderateScale(18),
+    overflow: 'hidden',
+    elevation: 4,
+  },
+
+  priceLeft: {
+    backgroundColor: '#E53935',
+    width: scale(78),
+    paddingVertical: verticalScale(4),
+    justifyContent: 'center',
+  },
+
+  priceLeftText: {
+    color: '#fff',
+    fontSize: scale(10),
+    textAlign: 'center',
+    fontFamily: 'InterBold',
+  },
+
+  priceRight: {
+    backgroundColor: '#fff',
+    width: scale(79),
+    justifyContent: 'center',
+  },
+
+  priceRightText: {
+    color: '#E53935',
+    fontSize: scale(12),
+    textAlign: 'center',
+    fontFamily: 'InterBold',
   },
   cardFooter: {
     flexDirection: 'row',

@@ -53,51 +53,51 @@ export default function OrdersScreen() {
   const [tabLayouts, setTabLayouts] = useState<{ x: number; width: number }[]>([]);
   const { phone } = useAuth();
 
-const loadOrders = useCallback(async () => {
-  try {
-    setLoading(true);
-    const apiData = await fetchOrders(phone || undefined);
+  const loadOrders = useCallback(async () => {
+    try {
+      setLoading(true);
+      const apiData = await fetchOrders(phone || undefined);
 
-    const userOrders: DisplayOrder[] = [];
+      const userOrders: DisplayOrder[] = [];
 
-    apiData.forEach(order => {
-      const userDetail =
-        typeof order.user_detail === 'string'
-          ? order.user_detail
-          : (order.user_detail as UserDetailObject)?.number || '';
+      apiData.forEach(order => {
+        const userDetail =
+          typeof order.user_detail === 'string'
+            ? order.user_detail
+            : (order.user_detail as UserDetailObject)?.number || '';
 
-      if (userDetail === phone) {
-        userOrders.push({
-          id: order.id.toString(),
-          total: (order.items.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0) - (order.points_discount || 0)).toFixed(2),
-          user_detail: userDetail,
-          status: order.status,
-          type: order.type,
-          created_at: order.created_at || new Date().toISOString(),
-          items: order.items || [],
-          points_discount: order.points_discount ?? 0, 
-          discount_amount: order.discount_amount,
-          total_amount: order.total_amount,
-        });
-      }
-    });
+        if (userDetail === phone) {
+          userOrders.push({
+            id: order.id.toString(),
+            total: (order.items.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0) - (order.points_discount || 0)).toFixed(2),
+            user_detail: userDetail,
+            status: order.status,
+            type: order.type,
+            created_at: order.created_at || new Date().toISOString(),
+            items: order.items || [],
+            points_discount: order.points_discount ?? 0,
+            discount_amount: order.discount_amount,
+            total_amount: order.total_amount,
+          });
+        }
+      });
 
-    setOrders(userOrders);
-  } catch (e) {
-    console.log(e);
-  } finally {
-    setLoading(false);
-  }
-}, [phone]);
+      setOrders(userOrders);
+    } catch (e) {
+      console.log(e);
+    } finally {
+      setLoading(false);
+    }
+  }, [phone]);
 
-useFocusEffect(
-  useCallback(() => {
-    loadOrders();
-  }, [loadOrders])
-);
+  useFocusEffect(
+    useCallback(() => {
+      loadOrders();
+    }, [loadOrders])
+  );
   const filterOrdersByTab = (orders: DisplayOrder[]) => {
     if (activeTab === 'All') return orders;
-    if (activeTab === 'Active') return orders.filter(o => o.status === 'process');
+    if (activeTab === 'Active') return orders.filter(o => o.status === 'pending' || o.status === 'process' || o.status === 'on_the_way');
     if (activeTab === 'Completed') return orders.filter(o => o.status === 'delivered');
     if (activeTab === 'Cancelled') return orders.filter(o => o.status === 'cancelled' && o.type !== 'redeem');
     return orders;
@@ -105,17 +105,17 @@ useFocusEffect(
 
   const filterOrdersByDate = (orders: DisplayOrder[]) => {
     if (!startDate && !endDate) return orders;
-    
+
     return orders.filter(order => {
       const orderDate = new Date(order.created_at);
       orderDate.setHours(0, 0, 0, 0); // Reset time part for date comparison
-      
+
       const start = startDate ? new Date(startDate) : null;
       const end = endDate ? new Date(endDate) : null;
-      
+
       if (start) start.setHours(0, 0, 0, 0);
       if (end) end.setHours(23, 59, 59, 999); // End of the day
-      
+
       if (start && end) {
         return orderDate >= start && orderDate <= end;
       } else if (start) {
@@ -123,7 +123,7 @@ useFocusEffect(
       } else if (end) {
         return orderDate <= end;
       }
-      
+
       return true;
     });
   };
@@ -141,7 +141,7 @@ useFocusEffect(
   }
 
   return (
-    <SafeAreaView style={{flex:1,paddingBottom: Math.max(insets.bottom, verticalScale(4))}}>
+    <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
       <ImageBackground
         source={require('../../assets/images/ss1.png')}
         style={styles.container}
@@ -151,7 +151,7 @@ useFocusEffect(
         <View style={styles.header}>
           <TouchableOpacity style={styles.backBtn} onPress={router.back}>
             <Ionicons name="arrow-back" size={moderateScale(28)} color="white" />
-          </TouchableOpacity> 
+          </TouchableOpacity>
           <Text style={styles.headerTitle}>Orders</Text>
         </View>
         {/* Tabs */}
@@ -194,8 +194,8 @@ useFocusEffect(
         <View style={styles.dateRow}>
           <View style={styles.dateContainer}>
             <Text style={styles.dateLabel}>Date</Text>
-            <TouchableOpacity 
-              style={styles.dateInput} 
+            <TouchableOpacity
+              style={styles.dateInput}
               onPress={() => {
                 setSelectingStartDate(true);
                 setShowDatePicker(true);
@@ -206,13 +206,13 @@ useFocusEffect(
               </Text>
             </TouchableOpacity>
           </View>
-          
+
           <View style={styles.dateSpacing} />
-          
+
           <View style={styles.dateContainer}>
             <Text style={styles.dateLabel}>To</Text>
-            <TouchableOpacity 
-              style={styles.dateInput} 
+            <TouchableOpacity
+              style={styles.dateInput}
               onPress={() => {
                 setSelectingStartDate(false);
                 setShowDatePicker(true);
@@ -235,7 +235,7 @@ useFocusEffect(
           <View style={styles.modalOverlay}>
             <View style={styles.calendarContainer}>
               <View style={styles.calendarHeader}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   onPress={() => {
                     const newDate = new Date(currentViewDate);
                     newDate.setMonth(newDate.getMonth() - 1);
@@ -244,7 +244,7 @@ useFocusEffect(
                 >
                   <Ionicons name="chevron-back" size={24} color={colors.primary} />
                 </TouchableOpacity>
-                
+
                 <View style={styles.calendarTitleContainer}>
                   <Text style={styles.calendarTitle}>
                     {currentViewDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
@@ -253,8 +253,8 @@ useFocusEffect(
                     {selectingStartDate ? 'Select start date' : 'Select end date'}
                   </Text>
                 </View>
-                
-                <TouchableOpacity 
+
+                <TouchableOpacity
                   onPress={() => {
                     const newDate = new Date(currentViewDate);
                     newDate.setMonth(newDate.getMonth() + 1);
@@ -271,26 +271,26 @@ useFocusEffect(
                   const currentDate = new Date(currentViewDate);
                   const year = currentDate.getFullYear();
                   const month = currentDate.getMonth();
-                  
+
                   // Get first day of month and number of days
                   const firstDay = new Date(year, month, 1);
                   const lastDay = new Date(year, month + 1, 0);
                   const startCalendarDate = new Date(firstDay);
                   startCalendarDate.setDate(startCalendarDate.getDate() - firstDay.getDay());
-                  
+
                   const days = [];
                   const today = new Date();
-                  
+
                   for (let i = 0; i < 42; i++) { // 6 weeks * 7 days
                     const currentDay = new Date(startCalendarDate);
                     currentDay.setDate(startCalendarDate.getDate() + i);
-                    
+
                     const isCurrentMonth = currentDay.getMonth() === month;
                     const isToday = currentDay.toDateString() === today.toDateString();
                     const isStartDate = startDate && currentDay.toDateString() === startDate.toDateString();
                     const isEndDate = endDate && currentDay.toDateString() === endDate.toDateString();
                     const isInRange = startDate && endDate && currentDay >= startDate && currentDay <= endDate;
-                    
+
                     days.push(
                       <TouchableOpacity
                         key={i}
@@ -330,13 +330,13 @@ useFocusEffect(
                       </TouchableOpacity>
                     );
                   }
-                  
+
                   return days;
                 })()}
               </View>
-              
+
               <View style={styles.calendarActions}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.clearButton}
                   onPress={() => {
                     setStartDate(null);
@@ -346,8 +346,8 @@ useFocusEffect(
                 >
                   <Text style={styles.clearButtonText}>Clear</Text>
                 </TouchableOpacity>
-                
-                <TouchableOpacity 
+
+                <TouchableOpacity
                   style={styles.todayButton}
                   onPress={() => {
                     const today = new Date();
@@ -358,8 +358,8 @@ useFocusEffect(
                 >
                   <Text style={styles.todayButtonText}>Today</Text>
                 </TouchableOpacity>
-                
-                <TouchableOpacity 
+
+                <TouchableOpacity
                   style={styles.closeCalendar}
                   onPress={() => setShowDatePicker(false)}
                 >
@@ -375,14 +375,14 @@ useFocusEffect(
             filteredOrders.map((order) => {
               // Get button configuration based on order status
               const getButtonConfig = () => {
-                switch(order.status) {
+                switch (order.status) {
                   case 'delivered':
                     return {
                       text: 'Review Order',
                       onPress: () => {
-                        router.push({ 
-                          pathname: '/OrderReview', 
-                          params: { order: JSON.stringify(order) } 
+                        router.push({
+                          pathname: '/OrderReview',
+                          params: { order: JSON.stringify(order) }
                         });
                       },
                       style: styles.reviewBtn
@@ -396,14 +396,14 @@ useFocusEffect(
                           name: item.name,
                           price: item.price,
                           quantity: item.quantity.toString(),
-                          image: item.image 
-                            ? item.image.startsWith('http') 
-                              ? item.image 
+                          image: item.image
+                            ? item.image.startsWith('http')
+                              ? item.image
                               : `${img_url}${item.image}`
                             : '',
                           points: item.pts?.toString() || '0'
                         }));
-                        
+
                         router.push({
                           pathname: '/Checkout',
                           params: {
@@ -418,9 +418,9 @@ useFocusEffect(
                     return {
                       text: 'Track Order',
                       onPress: () => {
-                        router.push({ 
-                          pathname: '/OrderTracker', 
-                          params: { order: JSON.stringify(order) } 
+                        router.push({
+                          pathname: '/OrderTracker',
+                          params: { order: JSON.stringify(order) }
                         });
                       },
                       style: styles.trackBtn
@@ -429,9 +429,9 @@ useFocusEffect(
                     return {
                       text: 'Track Order',
                       onPress: () => {
-                        router.push({ 
-                          pathname: '/OrderTracker', 
-                          params: { order: JSON.stringify(order) } 
+                        router.push({
+                          pathname: '/OrderTracker',
+                          params: { order: JSON.stringify(order) }
                         });
                       },
                       style: styles.trackBtn
@@ -440,9 +440,9 @@ useFocusEffect(
                     return {
                       text: 'Track Order',
                       onPress: () => {
-                        router.push({ 
-                          pathname: '/OrderTracker', 
-                          params: { order: JSON.stringify(order) } 
+                        router.push({
+                          pathname: '/OrderTracker',
+                          params: { order: JSON.stringify(order) }
                         });
                       },
                       style: styles.trackBtn
@@ -455,11 +455,11 @@ useFocusEffect(
               return (
                 <View key={order.id} style={styles.orderCard}>
                   <View style={styles.imgPlaceholder}>
-                    <Image 
-                      source={require('../../assets/images/order.png')} 
-                      style={styles.img} 
+                    <Image
+                      source={require('../../assets/images/order.png')}
+                      style={styles.img}
                       resizeMode="contain"
-                    /> 
+                    />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.orderNum}>Order #{order.id}</Text>
@@ -468,7 +468,7 @@ useFocusEffect(
                       {new Date(order.created_at).toLocaleDateString()}
                     </Text>
                   </View>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={[styles.actionBtn, buttonConfig.style]}
                     onPress={buttonConfig.onPress}
                   >
@@ -484,7 +484,7 @@ useFocusEffect(
               <Ionicons name="receipt-outline" size={60} color="#CCCCCC" />
               <Text style={styles.emptyText}>No orders found</Text>
               <Text style={styles.emptySubtext}>
-                {activeTab === 'All' 
+                {activeTab === 'All'
                   ? "You haven't placed any orders yet."
                   : `No ${activeTab.toLowerCase()} orders found.`}
               </Text>
@@ -499,7 +499,7 @@ useFocusEffect(
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1, 
+    flex: 1,
   },
   header: {
     flexDirection: 'row',

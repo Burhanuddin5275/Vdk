@@ -416,7 +416,7 @@ const Products = () => {
                                     onPress={() => setSelectedImg(img)}
                                     style={[
                                         styles.thumbnailWrap,
-                                        selectedImg === img && styles.thumbnailSelected
+                                        selectedImg === img && { borderColor: mainColor }
                                     ]}
                                     activeOpacity={0.7}
                                 >
@@ -609,7 +609,7 @@ const Products = () => {
                                     </Text>
                                     {product.sale_price ? (
                                         <Text style={[styles.price, {
-                                            color: '#E53935',
+                                            color: mainColor,
                                             fontSize: moderateScale(20),
                                             fontFamily: 'PoppinsBold'
                                         }]}>
@@ -746,7 +746,7 @@ const Products = () => {
                                                                         <Text style={{ color: '#000', fontFamily: 'PoppinsBold' }}>
                                                                             {key}{' '}
                                                                         </Text>
-                                                                        <Text style={{ color: '#E53935', fontFamily: 'PoppinsBold' }}>
+                                                                        <Text style={{ color: mainColor, fontFamily: 'PoppinsBold' }}>
                                                                             {displayValue}
                                                                         </Text>
                                                                     </Text>
@@ -757,7 +757,7 @@ const Products = () => {
                                                         {s.sale_price ? (
                                                             <Text
                                                                 style={{
-                                                                    color: '#E53935',
+                                                                    color: mainColor,
                                                                     fontFamily: 'PoppinsBold',
                                                                     fontSize: moderateScale(12),
                                                                     marginTop: 4,
@@ -889,7 +889,7 @@ const Products = () => {
                                                                     Pkr {Math.round(product.regular_price || 0 * qty)}
                                                                 </Text>
                                                                 <Text style={[{
-                                                                    color: '#E53935',
+                                                                    color: mainColor,
                                                                     fontSize: moderateScale(25),
                                                                     fontFamily: 'PoppinsBold'
                                                                 }]}>
@@ -1050,9 +1050,6 @@ const styles = StyleSheet.create({
         borderColor: 'transparent',
         backgroundColor: '#fff',
         marginHorizontal: 2,
-    },
-    thumbnailSelected: {
-        borderColor: colors.primaryDark,
     },
     thumbnailImg: {
         width: scale(38),

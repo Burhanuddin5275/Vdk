@@ -8,7 +8,6 @@ export type AboutItem = {
 
 };
 
-const API_URL = `${Api_url}/api/about/`;
 
 function toAbout(item: ApiAbout): AboutItem {
   const id = String(item.id ?? null);
@@ -23,7 +22,7 @@ function toAbout(item: ApiAbout): AboutItem {
 
 export async function fetchAbout(): Promise<AboutItem[]> {
   try {
-    const response = await fetch(API_URL);
+    const response = await fetch(`${Api_url}/api/about/`);
     if (!response.ok) throw new Error(`Failed to fetch about: ${response.status}`);
     const data = await response.json();
     const items: ApiAbout[] = Array.isArray(data) ? data : (data?.results ?? data?.data ?? []);

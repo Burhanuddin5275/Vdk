@@ -45,13 +45,16 @@ const Login = () => {
       });
 
       const data = await response.json();
-
+      console.log(data)
       const token = data.api_token;
 
       if (!token) {
         throw new Error('No token received');
       }
-
+      if (data.is_active === false) {
+        Alert.alert('Account Disabled', 'Your account has been disabled. Please contact support.');
+        return;
+      }
       login({ phone: formattedPhone, token, password });
       router.replace('/(tabs)/Home');
     } catch (err: any) {

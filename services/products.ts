@@ -38,8 +38,6 @@ export type Product =
   
   | { banner: string };
 
-const API_URL = `${Api_url}api/products/`;
-
 type ApiProduct = any;
 
 function toProduct(item: ApiProduct): Product {
@@ -93,7 +91,7 @@ function toProduct(item: ApiProduct): Product {
 
 export async function fetchProducts(): Promise<Product[]> {
   try {
-    const response = await fetch(API_URL);
+    const response = await fetch(`${Api_url}api/products/`);
     if (!response.ok) {
       throw new Error(`Failed to fetch products: ${response.status}`);
     }

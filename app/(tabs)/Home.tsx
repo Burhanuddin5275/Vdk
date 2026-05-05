@@ -8,7 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { ActivityIndicator, Dimensions, Image, ImageBackground, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Dimensions, Image, ImageBackground, Modal, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { useWishlistStore } from '../../app/Wishlist';
@@ -17,82 +17,95 @@ import { fetchBrands, type BrandItem } from '../../services/brands';
 import { fetchCategories, type CategoryItem } from '../../services/categories';
 import { fetchProducts } from '../../services/products';
 import { useFocusEffect } from '@react-navigation/native';
+import { Api_url } from '@/url/url';
+import { DiscountPopupItem, fetchDiscountPopup } from '@/services/popup';
+import { Animated, Easing } from 'react-native';
 
 
 type SalePopupProps = {
   visible: boolean;
   onClose: () => void;
+  data?: DiscountPopupItem | null;
+  onNavigate?: (data: DiscountPopupItem) => void;
 };
-
 const screenWidth = Dimensions.get('window').width;
 
-// const SalePopup = ({ visible, onClose }: SalePopupProps) => {
-//   const [showGiftAnimation, setShowGiftAnimation] = useState(true);
-//   const scaleAnim = useRef(new Animated.Value(0)).current;
+const SalePopup = ({ visible, onClose, data, onNavigate }: SalePopupProps) => {
+  const [showGiftAnimation, setShowGiftAnimation] = useState(true);
+  const scaleAnim = useRef(new Animated.Value(0)).current;
 
-//   useEffect(() => {
-//     if (visible) {
-//       setShowGiftAnimation(true);
+  useEffect(() => {
+    if (visible) {
+      setShowGiftAnimation(true);
 
-//       // Start zoom-in animation
-//       Animated.timing(scaleAnim, {
-//         toValue: 1,
-//         duration: 500,
-//         useNativeDriver: true,
-//         easing: Easing.out(Easing.exp),
-//       }).start();
+      // Start zoom-in animation
+      Animated.timing(scaleAnim, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+        easing: Easing.out(Easing.exp),
+      }).start();
 
-//       const timer = setTimeout(() => {
-//         setShowGiftAnimation(false);
-//       }, 5000);
+      const timer = setTimeout(() => {
+        setShowGiftAnimation(false);
+      }, 5000);
 
-//       return () => clearTimeout(timer);
-//     } else {
-//       scaleAnim.setValue(0);
-//     }
-//   }, [visible]);
+      return () => clearTimeout(timer);
+    } else {
+      scaleAnim.setValue(0);
+    }
+  }, [visible]);
 
-//   return (
-//     <Modal visible={visible} transparent animationType="fade">
-//       <View style={popupStyles.overlay}>
-//         {visible && showGiftAnimation && (
-//           <Image
-//             source={require('../../assets/animations/confetti.gif')}
-//             style={popupStyles.giftBackground}
-//             resizeMode="cover"
-//           />
-//         )}
-//         <Animated.View
-//           style={[
-//             popupStyles.popupBox,
-//             {
-//               transform: [
-//                 {
-//                   scale: scaleAnim.interpolate({
-//                     inputRange: [0, 1],
-//                     outputRange: [0.4, 1],
-//                   }),
-//                 },
-//               ],
-//             },
-//           ]}
-//         >
-//           <Text style={popupStyles.saleText}>Sale</Text>
-//           <TouchableOpacity style={popupStyles.closeBtn} onPress={onClose}>
-//             <Text style={popupStyles.closeText}>×</Text>
-//           </TouchableOpacity>
-
-//           <Image
-//             source={require('../../assets/images/Lubricants.png')}
-//             style={popupStyles.productImg}
-//             resizeMode="contain"
-//           />
-//           <Text style={popupStyles.discountText}>Get upto 50% Off</Text>
-//         </Animated.View>
-//       </View>
-//     </Modal>
-//   );
-// };
+  return (
+    <Modal visible={visible} transparent animationType="fade">
+      <View style={popupStyles.overlay}>
+        {visible && showGiftAnimation && (
+          <Image
+            source={require('../../assets/animations/confetti.gif')}
+            style={popupStyles.giftBackground}
+            resizeMode="cover"
+          />
+        )}
+        <Animated.View
+          style={[
+            popupStyles.popupBox,
+            {
+              transform: [
+                {
+                  scale: scaleAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.4, 1],
+                  }),
+                },
+              ],
+            },
+          ]}
+        >
+          <Text style={popupStyles.saleText}>Sale</Text>
+          <TouchableOpacity style={popupStyles.closeBtn} onPress={onClose}>
+            <Text style={popupStyles.closeText}>×</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            activeOpacity={0.9}
+            onPress={() => {
+              if (data) onNavigate?.(data);
+            }}
+          >
+            <Image
+              source={
+                data?.banner
+                  ? { uri: `${Api_url}${data.banner}` }
+                  : require('../../assets/images/Lubricants.png')
+              }
+              style={popupStyles.productImg}
+              resizeMode="contain"
+            />
+          </TouchableOpacity>
+        </Animated.View>
+      </View>
+    </Modal>
+  );
+};
 
 export default function HomeScreen() {
   const [showPopup, setShowPopup] = useState(false);
@@ -105,6 +118,7 @@ export default function HomeScreen() {
   const scrollViewRef = useRef<ScrollView>(null);
   const wishlistItems = useWishlistStore((state) => state.items);
   const { phone, token } = useAuth();
+  const [popupData, setPopupData] = useState<DiscountPopupItem | null>(null);
   const loadWishlist = useWishlistStore(state => state.loadWishlist);
   const [user, setUser] = useState<UserItem | string | null | undefined>(undefined);
   const { logout } = useAuth();
@@ -114,6 +128,17 @@ export default function HomeScreen() {
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const [loading, setLoading] = useState(true);
   const insets = useSafeAreaInsets();
+  // useEffect(() => {
+  //   const loadPopup = async () => {
+  //     const data = await fetchDiscountPopup();
+  //     if (data.length > 0) {
+  //       setPopupData(data[0]);
+  //     }
+  //     console.log('pop', data[0].banner);
+  //   };
+
+  //   loadPopup();
+  // }, []);
   useFocusEffect(
     useCallback(() => {
       let isActive = true;
@@ -128,6 +153,7 @@ export default function HomeScreen() {
             fetchBrands(),
             fetchAds(),
           ]);
+          console.log("API URL", Api_url);
 
           if (!isActive) return;
 
@@ -262,7 +288,11 @@ export default function HomeScreen() {
   return (
     <>
       <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
-        {/* <SalePopup visible={showPopup} onClose={() => setShowPopup(false)} /> */}
+        {/* <SalePopup
+          visible={showPopup}
+          onClose={() => setShowPopup(false)}
+          data={popupData}
+        /> */}
         <ImageBackground
           source={require('../../assets/images/home.jpg')}
           style={styles.background}
@@ -339,7 +369,7 @@ export default function HomeScreen() {
                 .map((category, idx) => (
                   <TouchableOpacity
                     key={idx}
-                    onPress={() => router.push({ pathname: '/Categories', params: { category: category.label } })}
+                    onPress={() => router.push({ pathname: '/Categories', params: { category: category.label, bgColorType: 'Green' } })}
                     style={styles.categoryCard}
                   >
                     <LinearGradient colors={['#FFFFFF', '#E82A2F']} style={styles.categoryCard}>

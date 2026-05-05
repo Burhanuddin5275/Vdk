@@ -11,8 +11,6 @@ export type RedeemItem = {
   imageKey?: string; // Add imageKey to the type
 };
 
-const API_URL = `${Api_url}api/redeems/`;
-
 function toRedeem(item: ApiRedeem): RedeemItem {
   const subtitle = String(item.subtitle ?? item.title ?? item.label);
   const title = String(item.title ?? item.title ?? item.label);
@@ -35,7 +33,7 @@ function toRedeem(item: ApiRedeem): RedeemItem {
 
 export async function fetchRedeems(): Promise<RedeemItem[]> {
   try {
-    const response = await fetch(API_URL);
+    const response = await fetch(`${Api_url}api/redeems/`);
     if (!response.ok) throw new Error(`Failed to fetch brands: ${response.status}`);
     const data = await response.json();
     const items: ApiRedeem[] = Array.isArray(data) ? data : (data?.results ?? data?.data ?? []);

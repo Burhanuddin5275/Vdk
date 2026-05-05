@@ -7,8 +7,6 @@ export type AdsItem = {
   image: any;
 };
 
-const API_URL = `${Api_url}api/ads/`;
-
 function toAds(item: ApiAds): AdsItem {
   const brand = String(item.brand ?? "Ads");
   const category = String(item.category ?? "Ads");
@@ -19,7 +17,7 @@ function toAds(item: ApiAds): AdsItem {
 
 export async function fetchAds(): Promise<AdsItem[]> {
   try {
-    const response = await fetch(API_URL);
+    const response = await fetch(`${Api_url}api/ads/`);
     if (!response.ok) throw new Error(`Failed to fetch banners: ${response.status}`);
     const data = await response.json();
     const items: ApiAds[] = Array.isArray(data) ? data : (data?.results ?? data?.data ?? []);

@@ -6,9 +6,6 @@ export type BannerItem = {
   category: string;
   image: any;
 };
-
-const API_URL = `${Api_url}api/banners/`;
-
 function toBanner(item: ApiBanner): BannerItem {
   const brand = String(item.brand ?? "Banner");
   const category = String(item.category ?? "Banner");
@@ -19,7 +16,7 @@ function toBanner(item: ApiBanner): BannerItem {
 
 export async function fetchBanners(): Promise<BannerItem[]> {
   try {
-    const response = await fetch(API_URL);
+    const response = await fetch(`${Api_url}api/banners/`);
     if (!response.ok) throw new Error(`Failed to fetch banners: ${response.status}`);
     const data = await response.json();
     const items: ApiBanner[] = Array.isArray(data) ? data : (data?.results ?? data?.data ?? []);

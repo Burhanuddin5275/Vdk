@@ -12,7 +12,6 @@ export type ContactData = {
   drop_us_line_text: string;
 };
 
-const API_URL = `${Api_url}api/contact/`; // Adjust the endpoint as per your API
 
 function toContact(item: ApiContact): ContactData {
   const title = (item.title);
@@ -40,7 +39,7 @@ function toContact(item: ApiContact): ContactData {
 
 export async function fetchContact(): Promise<ContactData[]> {
   try {
-    const response = await fetch(API_URL);
+    const response = await fetch(`${Api_url}api/contact/`);
     if (!response.ok) throw new Error(`Failed to fetch categories: ${response.status}`);
     const data = await response.json();
     const items: ApiContact[] = Array.isArray(data) ? data : (data?.results ?? data?.data ?? []);

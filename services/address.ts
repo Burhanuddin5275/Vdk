@@ -20,7 +20,6 @@ export const saveUserAddress = async ({
   token,
 }: SaveAddressParams): Promise<{ success: boolean; data?: any; error?: string }> => {
   try {
-    const url = `${Api_url}api/app-user-address/${userId}/`;
     const formData = new FormData();
 
     const address = {
@@ -37,7 +36,7 @@ export const saveUserAddress = async ({
       addresses: [address]
     });
 
-    const response = await fetch(url, {
+    const response = await fetch(`${Api_url}api/app-user-address/${userId}/`, {
       method: 'POST',
       headers: {
         Accept: 'application/json',

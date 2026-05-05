@@ -109,24 +109,23 @@ const Payment = () => {
             setPoints(user.total_points.toString());
         }
     }, [user]);
-    useEffect(() => {
-        if (splitEnabled) {
-            // ON → restore max points
-            const maxPoints =
-                typeof user === 'object' ? Number(user?.total_points) || 0 : 0;
-
-            setPoints(maxPoints.toString());
-            setIsRedeemChecked(true);
-        } else {
-            // OFF → clear everything
-            setPoints('');
-            setIsRedeemChecked(false);
-        }
-    }, [splitEnabled, user]);
+useEffect(() => {
+    if (splitEnabled) {
+        setPoints('');              // ✅ empty initially
+        setIsRedeemChecked(true);   // checkbox still checked
+    } else {
+        setPoints('');
+        setIsRedeemChecked(false);
+    }
+}, [splitEnabled]);
     const createOrder = async () => {
         if (!selected) return Alert.alert("Error", "Select payment method");
         if (!shippingAddress) return Alert.alert("Error", "Missing shipping");
-
+    if (splitEnabled) {
+        if (!points || Number(points) <= 0) {
+            return Alert.alert("Error", "Please input redeem points value");
+        }
+    }
         setIsLoading(true);
 
         try {

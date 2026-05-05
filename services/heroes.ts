@@ -8,8 +8,6 @@ export type HeroItem = {
   image: any;
 };
 
-const API_URL = `${Api_url}api/heros/`;
-
 function toHero(item: ApiHero): HeroItem {
   const title = String(item.title ?? item.name ?? item.label ?? "Hero");
   const subtext = String(item.subtext ?? "Subtext");
@@ -20,7 +18,7 @@ function toHero(item: ApiHero): HeroItem {
 
 export async function fetchHeroes(): Promise<HeroItem[]> {
   try {
-    const response = await fetch(API_URL);
+    const response = await fetch(`${Api_url}api/heros/`);
     if (!response.ok) throw new Error(`Failed to fetch heroes: ${response.status}`);
     const data = await response.json();
     const items: ApiHero[] = Array.isArray(data) ? data : (data?.results ?? data?.data ?? []);

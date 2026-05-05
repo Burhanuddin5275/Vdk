@@ -9,7 +9,6 @@ t_title:string;
 t_text:string;
 };
 
-const API_URL = `${Api_url}/api/privacy/`;
 
 function toTerms(item: ApiTerms): TermsItem {
   const id = String(item.id ?? null);
@@ -28,7 +27,7 @@ function toTerms(item: ApiTerms): TermsItem {
 
 export async function fetchTerms(): Promise<TermsItem[]> {
   try {
-    const response = await fetch(API_URL);
+    const response = await fetch(`${Api_url}/api/privacy/`);
     if (!response.ok) throw new Error(`Failed to fetch terms: ${response.status}`);
     const data = await response.json();
     const items: ApiTerms[] = Array.isArray(data) ? data : (data?.results ?? data?.data ?? []);

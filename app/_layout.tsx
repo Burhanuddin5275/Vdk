@@ -4,13 +4,17 @@ import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
-
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { persistor, store } from '@/store/store';
 import { useFonts } from 'expo-font';
+import { useEffect, useState } from 'react';
+import { getBaseUrl as fetchFirebaseBaseUrl } from '../firebase/apiConfig';
+import { setBaseUrl } from '../url/url';
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
+  const [appReady, setAppReady] = useState(false); // ✅ blocks everything
+
   const [fontsLoaded] = useFonts({
     Sigmar: require('../assets/fonts/Sigmar-Regular.ttf'),
     PoppinsMedium: require('../assets/fonts/Poppins-Medium.ttf'),
@@ -21,11 +25,26 @@ export default function RootLayout() {
     Sacramento: require('../assets/fonts/Sacramento-Regular.ttf'),
     RussoOne: require('../assets/fonts/RussoOne-Regular.ttf'),
     Montserrat: require('../assets/fonts/Montserrat-SemiBold.ttf'),
-
   });
 
-  if (!fontsLoaded) {
-    return null;
+  useEffect(() => {
+    const init = async () => {
+      try {
+        const baseUrl = await fetchFirebaseBaseUrl();
+        setBaseUrl(baseUrl);
+        console.log('baseUrl loaded:', baseUrl);
+      } catch (error) {
+        console.warn('Failed to fetch Firebase baseUrl:', error);
+      } finally {
+        setAppReady(true); // ✅ always unblock, even on error
+      }
+    };
+    init();
+  }, []);
+
+  // ✅ Block render until BOTH fonts and Firebase URL are ready
+  if (!fontsLoaded || !appReady) {
+    return null; // native splash screen stays visible during this
   }
 
   return (
