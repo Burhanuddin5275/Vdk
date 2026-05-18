@@ -4,7 +4,7 @@
     "slug": "dkt",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/logo.jpeg",
+    "icon": "./assets/images/logo.png",
     "scheme": "DKT",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -13,12 +13,12 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/logo.jpeg",
+        "foregroundImage": "./assets/images/logo.png",
         "backgroundColor": "#ffffff",
         "resizeMode": "contain"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.burhanuddin4747.dkt",
+      "package": "com.dktapp",
       "usesCleartextTraffic": true
     },
     "web": {
@@ -47,9 +47,8 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "cbc9d906-1c67-4ec3-9fbe-4284287f6dcb"
+        "projectId": "05320011-cec8-47ed-ad1e-28fa4e7cdc1d"
       }
-    },
-    "owner": "hamza5275-2-2"
+    }
   }
 }

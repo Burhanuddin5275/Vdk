@@ -23,8 +23,9 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
-import { moderateScale, scale } from 'react-native-size-matters';
+import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { createOrderApi } from '../services/orders';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
 
@@ -77,6 +78,7 @@ const Payment = () => {
     const [userId, setUserId] = useState<string | number | null>(null);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [orderSuccess, setOrderSuccess] = useState(false);
+      const insets = useSafeAreaInsets();
     useEffect(() => {
         const loadUsers = async () => {
             try {
@@ -217,7 +219,7 @@ useEffect(() => {
         </View>
     ), []);
     return (
-        <SafeAreaView style={{ flex: 1 }}>
+        <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
             <ImageBackground source={require('../assets/images/ss1.png')} style={styles.background}>
 
                 <View style={styles.container}>

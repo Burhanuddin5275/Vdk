@@ -97,7 +97,7 @@ const Address = () => {
     const countryName = 'Pakistan'; 
     const stateName = states.find(s => s.isoCode === selectedState)?.name || selectedState;
     
-    if (!street || !selectedCity || !selectedState || !postalCode || !selectedCountry) {
+    if (!street || !selectedCity || !selectedState || !selectedCountry) {
       Alert.alert('Error', 'Please fill in all required fields');
       return;
     }
@@ -237,13 +237,13 @@ const Address = () => {
                 </View>
                 {/* Postal Code - Full width */}
                 <View style={[styles.pickerWrapper, { width: '100%' }]}>
-                  <Text style={styles.label}>Postal Code*</Text>
+                  <Text style={styles.label}>Postal Code</Text>
                   <TextInput
                     style={[styles.input, { textAlign: 'left' }]}
                     value={postalCode}
                     onChangeText={setPostalCode}
-                    placeholder=""
-                    placeholderTextColor="#999"
+                    placeholder="Postal Code"
+                    maxLength={5}
                     keyboardType="numeric"
                   />
                 </View>
@@ -470,7 +470,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(12),
     paddingVertical: verticalScale(10),
     color: '#fff',
-    fontSize: moderateScale(16),
+    fontSize: moderateScale(12),
     fontFamily: 'PoppinsMedium',
     marginBottom: verticalScale(10),
     backgroundColor: 'transparent',

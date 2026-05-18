@@ -190,42 +190,87 @@ const Categories = () => {
 
     return Number(product?.points ?? product?.pts ?? 0);
   };
-const getPrice = (product: any) => {
-  // 1. If variants exist
-  const variants = product?.variants;
+  const getDiscountPercent = (product: any) => {
+    const variants = product?.variants;
 
-  if (Array.isArray(variants) && variants.length > 0) {
-    const firstVariant = variants[0];
+    let maxDiscount = 0;
 
-    if (firstVariant?.attributes) {
-      const attrs = Array.isArray(firstVariant.attributes)
-        ? firstVariant.attributes
-        : [firstVariant.attributes];
+    // CASE 1: Variants exist
+    if (Array.isArray(variants) && variants.length > 0) {
+      variants.forEach((v: any) => {
+        const attrs = Array.isArray(v?.attributes)
+          ? v.attributes
+          : [v?.attributes];
 
-      const firstAttr = attrs[0];
+        attrs.forEach((attr: any) => {
+          const regular = Number(
+            attr?.regular_price ?? v?.price ?? product?.regular_price ?? 0
+          );
 
-      const price =
-        firstAttr?.sale_price != null && firstAttr?.sale_price !== ''
-          ? firstAttr.sale_price
-          : firstAttr?.regular_price ?? firstVariant?.price;
+          const saleRaw =
+            attr?.sale_price ?? v?.sale_price ?? product?.sale_price;
 
-      return Number(price || 0);
+          const sale = saleRaw !== "" && saleRaw != null ? Number(saleRaw) : 0;
+
+          if (regular > 0 && sale > 0 && sale < regular) {
+            const discount = Math.round(((regular - sale) / regular) * 100);
+            if (discount > maxDiscount) {
+              maxDiscount = discount;
+            }
+          }
+        });
+      });
+
+      return maxDiscount;
     }
 
-    return Number(
-      firstVariant?.sale_price ??
+    // CASE 2: No variants
+    const regular = Number(product?.regular_price ?? 0);
+    const saleRaw = product?.sale_price;
+    const sale = saleRaw !== "" && saleRaw != null ? Number(saleRaw) : 0;
+
+    if (regular > 0 && sale > 0 && sale < regular) {
+      return Math.round(((regular - sale) / regular) * 100);
+    }
+
+    return 0;
+  };
+  const getPrice = (product: any) => {
+    // 1. If variants exist
+    const variants = product?.variants;
+
+    if (Array.isArray(variants) && variants.length > 0) {
+      const firstVariant = variants[0];
+
+      if (firstVariant?.attributes) {
+        const attrs = Array.isArray(firstVariant.attributes)
+          ? firstVariant.attributes
+          : [firstVariant.attributes];
+
+        const firstAttr = attrs[0];
+
+        const price =
+          firstAttr?.sale_price != null && firstAttr?.sale_price !== ''
+            ? firstAttr.sale_price
+            : firstAttr?.regular_price ?? firstVariant?.price;
+
+        return Number(price || 0);
+      }
+
+      return Number(
+        firstVariant?.sale_price ??
         firstVariant?.price ??
         0
-    );
-  }
+      );
+    }
 
-  // 2. If no variants → product level
-  return Number(
-    product?.regular_price ??
+    // 2. If no variants → product level
+    return Number(
+      product?.regular_price ??
       product?.sale_price ??
       0
-  );
-};
+    );
+  };
   const theme = {
     isGreen: categoryColor === "Green",
 
@@ -383,6 +428,7 @@ const getPrice = (product: any) => {
                   p.is_active) {
                   const prod = p as Exclude<Product, { banner: string }>;
                   const minPrice = getPrice(prod);
+                  const discount = getDiscountPercent(prod);
                   return (
                     <TouchableOpacity
                       key={prod.id}
@@ -411,6 +457,13 @@ const getPrice = (product: any) => {
                         }
                         style={styles.productCard}
                       >
+                        {/* {discount > 0 && (
+                          <View style={styles.discountTag}>
+                            <Text style={styles.discountText}>
+                              {discount}% OFF
+                            </Text>
+                          </View>
+                        )} */}
                         {/* Wishlist Button */}
                         <TouchableOpacity
                           style={[
@@ -700,7 +753,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(12),
     marginTop: verticalScale(8)
   },
+ discountTag: {
+    position: 'absolute',
+    top: verticalScale(10),
+    left: scale(10),
+    backgroundColor: '#E53935',
+    paddingHorizontal: scale(6),
+    paddingVertical: verticalScale(3),
+    borderRadius: moderateScale(6),
+    zIndex: 3,
+  },
 
+  discountText: {
+    color: '#fff',
+    fontSize: scale(10),
+    fontFamily: 'InterBold',
+  },
   priceTag: {
     position: 'absolute',
     bottom: verticalScale(0),

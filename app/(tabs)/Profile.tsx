@@ -81,7 +81,6 @@ const handleDeleteAccount = async () => {
     ? allMenuItems
     : allMenuItems.filter(item => [
       'Contact us',
-      'Chat',
       'About us',
       'Terms & conditions',
       'Redeemed',

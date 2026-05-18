@@ -24,6 +24,7 @@ interface Product {
     img1?: string;
     img2?: string;
     brand?: string;
+    offer?: string;
     pts?: number;
     stock_status?: string;
     regular_price?: number;
@@ -183,12 +184,6 @@ const Products = () => {
 
     const { width } = useWindowDimensions();
     const cleanedHTML = product?.description
-        ?.replace(/!important/g, "")
-        .replace(/background-[^;]+;/g, "")
-        .replace(/font-variant-[^;]+;/g, "")
-        .replace(/font-family:[^;]+;/g, "") || "";
-
-
 
     const handleAddToCart = async () => {
         if (!isAuthenticated || !phone) {
@@ -198,18 +193,7 @@ const Products = () => {
             return;
         }
 
-        if (selectedVariant?.stock !== undefined) {
-            if (selectedVariant.stock <= 0) {
-                setCartMessage('This variant is out of stock.');
-                setTimeout(() => setCartMessage(null), 2000);
-                return;
-            } else if (qty > selectedVariant.stock) {
-                const available = selectedVariant.stock;
-                setCartMessage(`Only ${available} item${available === 1 ? '' : 's'} available in stock.`);
-                setTimeout(() => setCartMessage(null), 2000);
-                return;
-            }
-        } else if (product?.stock_status === 'outofstock') {
+        if (product?.stock_status === 'outofstock') {
             setCartMessage('Product is out of stock.');
             setTimeout(() => setCartMessage(null), 2000);
             return;
@@ -229,7 +213,6 @@ const Products = () => {
             price: variantSalePrice || variantPrice || product.sale_price || product.regular_price || 0,
             sale_price: variantSalePrice || product.sale_price || undefined,
             points: selectedVariant?.points !== undefined ? selectedVariant.points : product.pts,
-            stock: selectedVariant?.stock !== undefined ? selectedVariant.stock : product.quantity,
             image: imageForCart,
             user: phone,
             variant: selectedVariant ? {
@@ -453,23 +436,26 @@ const Products = () => {
                                 )}
                             </>
                         )}
-                        <Text style={styles.sectionTitle}>Product Details</Text>
-                        <RenderHtml html={cleanedHTML} style={styles.details} />
+                        {product.offer && (
+                            <>
+                                <Text style={[styles.sectionTitle, { fontWeight: 'bold' }]}>Deals</Text>
+                                <Text style={styles.details}>{product.offer}</Text>
+                            </>
+                        )}
+                        <Text style={[styles.sectionTitle, { fontWeight: 'bold' }]}>Product Details</Text>
+                        <RenderHtml html={product.description || ''} style={styles.details} />
                         <View style={styles.divider} />
                         <Text style={styles.sectionTitle}>Reviews</Text>
 
                         {/* Top Summary */}
                         <View style={{ flexDirection: 'row', marginBottom: 16 }}>
-
                             {/* LEFT: Breakdown */}
                             <View style={{ flex: 1 }}>
                                 {[5, 4, 3, 2, 1].map((star, index) => {
                                     const count = ratingCounts[star - 1];
                                     const percentage = totalReviews ? (count / totalReviews) * 100 : 0;
-
                                     return (
                                         <View key={star} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-
                                             <Text style={{ color: '#d6b627ff', width: 30 }}>
                                                 {star}★
                                             </Text>
@@ -854,7 +840,7 @@ const Products = () => {
                                                                     fontFamily: 'PoppinsBold',
                                                                     marginRight: 8
                                                                 }]}>
-                                                                    Pkr {Math.round(selectedVariant.price * qty)}
+                                                                    Rs {Math.round(selectedVariant.price * qty)}
                                                                 </Text>
                                                             )}
                                                             <Text style={[{
@@ -1100,7 +1086,6 @@ const styles = StyleSheet.create({
         fontSize: moderateScale(18),
         fontFamily: 'PoppinsSemi',
         marginTop: 16,
-        marginBottom: 4,
     },
     details: {
         color: '#fff',

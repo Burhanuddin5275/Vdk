@@ -7,12 +7,14 @@ export type Product =
     Category: string;
     img: any;
     pts: number;
+    offer:string;
     position: number;
     rating: number;
     regular_price: number;
     quantity: number;
     is_active: boolean;
     stock: number;
+    total_sold:number;
     sale_price: number;
     cost_price?: number;
     description?: string;
@@ -44,6 +46,7 @@ function toProduct(item: ApiProduct): Product {
   const id = String(item.id ?? item._id ?? Math.random().toString(36).slice(2));
   const name = item.name ?? item.title ?? "Product";
   const brand = item.brand ?? item.vendor ?? item.manufacturer ?? "Unknown";
+  const offer = item.offer ?? "";
   const Category = item.category ?? item.Category ?? item.type ?? "General";
   const imageUrl = item.image?.url ?? item.image ?? item.thumbnail ?? item.img ?? null;
   const img = imageUrl ? { uri: String(imageUrl) } : null;
@@ -52,6 +55,7 @@ function toProduct(item: ApiProduct): Product {
   const stock = Number(item.stock ?? item.quantity ?? 0);
   const pts = Number(item.pts ?? item.points);
   const position = Number(item.position);
+  const total_sold = Number(item.total_sold ?? 0);
   const regular_price = Number(item.regular_price ?? item.amount ?? 0);
   const cost_price = Number(item.cost_price ?? item.cost ?? 0);
   const sale_price = Number(item.sale_price ?? item.discounted_price ?? 0);
@@ -68,10 +72,12 @@ function toProduct(item: ApiProduct): Product {
     id,
     name,
     brand,
+    offer,
     Category,
     img,
     pts,
     position,
+    total_sold,
     stock,
     cost_price,
     rating,

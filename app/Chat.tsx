@@ -1,534 +1,629 @@
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, FlatList, Image, KeyboardAvoidingView, Platform, StatusBar, FlatListProps, Alert, Modal, TouchableWithoutFeedback } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRef, useState, useEffect } from 'react';
-import { useRouter } from 'expo-router';
-import { colors } from '@/theme/colors';
-import { db } from '../firebase/firebase';
-import { collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, Timestamp, doc, deleteDoc, updateDoc } from 'firebase/firestore';
-import { useAppSelector } from '@/store/hooks';
-import { selectIsAuthenticated, selectPhone } from '@/store/authSlice';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  SafeAreaView,
+  FlatList,
+  Alert,
+  StatusBar,
+  KeyboardAvoidingView,
+  Platform,
+  Image,
+} from 'react-native';
 
-interface Message {
-  id: string;
-  text: string;
-  sent: boolean;
-  phone: string;
-  delete:boolean;
-  reply?: boolean;
-  time: string;
-  createdAt?: Timestamp;
-};
+import { Ionicons } from '@expo/vector-icons';
+import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'expo-router';
+import * as ImagePicker from 'expo-image-picker';
+
+import { colors } from '@/theme/colors';
+import { useAppSelector } from '@/store/hooks';
+
+import {
+  selectIsAuthenticated,
+  selectToken,
+} from '@/store/authSlice';
+
+import {
+  getChatMessage,
+  sendChatMessage,
+} from '@/services/chat';
+
+import { Api_url } from '@/url/url';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { verticalScale } from 'react-native-size-matters';
 
 const Chat = () => {
-  const [messages, setMessages] = useState<Message[]>([]);
   const [message, setMessage] = useState('');
-  const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const flatListRef = useRef<FlatList>(null);
-  const insets = useSafeAreaInsets();
-  const router = useRouter();
-  const isAuthenticated = useAppSelector(selectIsAuthenticated);
-  const userPhone = useAppSelector(selectPhone);
+  const [chats, setChats] = useState<any[]>([]);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
+  const insets = useSafeAreaInsets();
+  const flatListRef = useRef<FlatList>(null);
+  const router = useRouter();
+
+  const isAuthenticated = useAppSelector(selectIsAuthenticated);
+  const token = useAppSelector(selectToken);
+
+  // =========================
+  // LOAD MESSAGES
+  // =========================
+  const loadMessages = async () => {
+    if (!token) return;
+
+    try {
+      const data = await getChatMessage(token);
+
+      console.log('API RAW:', data);
+
+      setChats(
+        Array.isArray(data?.messages)
+          ? data.messages
+          : []
+      );
+    } catch (e) {
+      console.log(e);
+      setChats([]);
+    }
+  };
+
+  useEffect(() => {
+    loadMessages();
+  }, [token]);
+
+  // =========================
+  // AUTO SCROLL
+  // =========================
+  useEffect(() => {
+    setTimeout(() => {
+      flatListRef.current?.scrollToEnd({
+        animated: true,
+      });
+    }, 200);
+  }, [chats]);
+
+  // =========================
+  // PICK IMAGE
+  // =========================
+  const pickImage = async () => {
+    try {
+      const permission =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (!permission.granted) {
+        Alert.alert(
+          'Permission Required',
+          'Gallery permission is needed'
+        );
+        return;
+      }
+
+      const result =
+        await ImagePicker.launchImageLibraryAsync({
+          mediaTypes:
+            ImagePicker.MediaTypeOptions.Images,
+          quality: 0.7,
+          allowsEditing: true,
+        });
+
+      if (!result.canceled) {
+        setSelectedImage(result.assets[0].uri);
+      }
+    } catch (e) {
+      console.log(e);
+    }
+  };
+
+  // =========================
+  // SEND MESSAGE
+  // =========================
   const sendMessage = async () => {
     if (!isAuthenticated) {
-      Alert.alert('Authentication Required', 'Please log in to send messages');
+      Alert.alert(
+        'Login Required',
+        'Please login first'
+      );
+
       router.push('./Login');
       return;
     }
 
-    if (message.trim() === '') return;
-
-    const currentTime = new Date();
-    const timeString = currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-    if (!userPhone) {
-      console.error('User phone number not found');
+    if (!message.trim() && !selectedImage)
       return;
-    }
 
-    const sent = {
-      text: message,
-      sent: true,
-      phone: userPhone, 
-      reply: false,
-      time: timeString,
-      timestamp: currentTime.getTime(),
-      createdAt: serverTimestamp()
-    };
-    const reply = {
-      text: '',
-      sent: false,
-      phone: userPhone, 
-      delete: false,
-      reply: true,
-      time: timeString,
-      timestamp: currentTime.getTime(),
-      createdAt: serverTimestamp()
+    if (!token) return;
+
+    // optimistic message
+    const tempMsg = {
+      id: Date.now().toString(),
+      message: message.trim(),
+      sender: 'user',
+      timestamp: Date.now(),
+      url: selectedImage,
     };
 
     try {
-      await addDoc(collection(db, 'dkt'), sent);
-      setMessage('');
+      // show immediately in UI
+      setChats(prev => {
+        const safe = Array.isArray(prev)
+          ? prev
+          : [];
 
-      await addDoc(collection(db, 'dkt'), reply);
-    } catch (error) {
-      console.error('Error sending message:', error);
-      Alert.alert('Error', 'Failed to send message. Please try again.');
-    }
-  };
+        return [...safe, tempMsg];
+      });
 
-  useEffect(() => {
-    if (!isAuthenticated || !userPhone) {
-      setMessages([]); 
-      return;
-    }
+      // =========================
+      // IMAGE MESSAGE
+      // =========================
+      if (selectedImage) {
+        const formData = new FormData();
 
-    
-    const messagesQuery = query(
-      collection(db, 'dkt'),
-      orderBy('createdAt', 'asc')
-    );
+        formData.append(
+          'file_type',
+          'image'
+        );
 
-    const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
-      const messagesData = snapshot.docs
-        .filter(doc => {
-          const data = doc.data();
-          return data.text && 
-                 data.text.trim() !== '' && 
-                 (data.phone === userPhone || (data.reply && data.phone === userPhone)) &&
-                 !data.delete; 
-        })
-        .map(doc => {
-          const data = doc.data();
-          const messageTime = data.timestamp 
-            ? new Date(data.timestamp)
-            : data.createdAt?.toDate?.() || new Date();
-            
-          return {
-            id: doc.id,
-            text: data.text,
-            sent: data.phone === userPhone,
-            phone: data.phone,
-            reply: data.reply || false,
-            delete: data.delete || false,
-            time: messageTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            timestamp: messageTime.getTime(),
-            ...data
-          } as Message;
-        });
-      
-      setMessages(messagesData);
-    });
+        const fileName =
+          selectedImage.split('/').pop() ||
+          `image_${Date.now()}.jpg`;
 
-    return () => unsubscribe();
-  }, [isAuthenticated, userPhone]); // Re-run when auth status or phone number changes
+        formData.append('file', {
+          uri:
+            Platform.OS === 'ios'
+              ? selectedImage.replace(
+                'file://',
+                ''
+              )
+              : selectedImage,
+          name: fileName,
+          type: 'image/jpeg',
+        } as any);
 
-  useEffect(() => {
-    if (flatListRef.current) {
-      setTimeout(() => {
-        flatListRef.current?.scrollToEnd({ animated: true });
-      }, 100);
-    }
-  }, [messages]);
-
-  const handleDeleteMessage = async (msg: Message, permanent: boolean = false) => {
-    if (!msg.id) return;
-    
-    try {
-      if (permanent) {
-        // Permanent delete
-        await deleteDoc(doc(db, 'dkt', msg.id));
-      } else {
-        // Soft delete - mark as deleted
-        await updateDoc(doc(db, 'dkt', msg.id), {
-          delete: true,
-          deletedAt: serverTimestamp()
-        });
-      }
-      
-      setShowDeleteModal(false);
-    } catch (error) {
-      console.error('Error deleting message:', error);
-      Alert.alert('Error', 'Failed to delete message. Please try again.');
-    }
-  };
-
-  const renderMessage = ({ item }: { item: Message }) => (
-    <TouchableWithoutFeedback 
-      onLongPress={() => {
-        // Allow deleting both sent messages and replies
-        if (item.sent || item.reply) {
-          setSelectedMessage(item);
-          setShowDeleteModal(true);
+        if (message.trim()) {
+          formData.append(
+            'message',
+            message.trim()
+          );
         }
-      }}
-    >
-      <View style={[
-        styles.messageContainer,
-        item.sent ? styles.sentMessage : styles.receivedMessage
-      ]}>
-        <View style={[
-          styles.messageBubble,
-          item.sent ? styles.sentBubble : styles.receivedBubble
-        ]}>
-          <Text style={[
-            styles.messageText,
-            item.sent ? styles.sentText : styles.receivedText
-          ]}>
-            {item.text}
-          </Text>
-          <Text style={[
-            styles.timeText,
-            item.sent ? styles.sentTime : styles.receivedTime
-          ]}>
-            {item.time}
+
+        const response = await fetch(
+          `${Api_url}/chat/api/send/`,
+          {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            body: formData,
+          }
+        );
+
+        const data = await response.json();
+
+        console.log(
+          'SEND RESPONSE:',
+          JSON.stringify(data, null, 2)
+        );
+      }
+
+      // =========================
+      // TEXT MESSAGE
+      // =========================
+      else {
+        const response =
+          await sendChatMessage(
+            message.trim(),
+            token
+          );
+
+        console.log(
+          'TEXT RESPONSE:',
+          response
+        );
+      }
+
+      // clear input
+      setMessage('');
+      setSelectedImage(null);
+
+      // refresh chats from backend
+      await loadMessages();
+
+    } catch (e) {
+      console.log('SEND ERROR:', e);
+
+      // remove failed optimistic message
+      setChats(prev =>
+        prev.filter(
+          msg => msg.id !== tempMsg.id
+        )
+      );
+
+      Alert.alert(
+        'Error',
+        'Message not sent'
+      );
+    }
+  };
+
+  // =========================
+  // RENDER MESSAGE
+  // =========================
+  const renderItem = ({ item }: any) => {
+    const isUser =
+      item.sender?.toLowerCase() === 'user';
+
+    const time = item.timestamp
+      ? new Date(
+        item.timestamp
+      ).toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+      : '';
+
+    const imageUrl =
+      item.url ||
+      item.image ||
+      item.file;
+
+    return (
+      <View
+        style={[
+          styles.msgContainer,
+          isUser
+            ? styles.right
+            : styles.left,
+        ]}
+      >
+        <View
+          style={[
+            styles.bubble,
+            isUser
+              ? styles.myBubble
+              : styles.otherBubble,
+          ]}
+        >
+          {/* TEXT */}
+          {!!item.message && (
+            <Text
+              style={[
+                styles.msgText,
+                isUser
+                  ? styles.myText
+                  : styles.otherText,
+              ]}
+            >
+              {item.message}
+            </Text>
+          )}
+
+          {/* IMAGE */}
+          {!!imageUrl && (
+            <Image
+              source={{
+                uri:
+                  imageUrl.startsWith(
+                    'http'
+                  )
+                    ? imageUrl
+                    : `${Api_url}${imageUrl}`,
+              }}
+              style={styles.chatImage}
+              resizeMode="cover"
+            />
+          )}
+
+          {/* TIME */}
+          <Text
+            style={[
+              styles.timeText,
+              isUser
+                ? styles.myTime
+                : styles.otherTime,
+            ]}
+          >
+            {time}
           </Text>
         </View>
       </View>
-    </TouchableWithoutFeedback>
-  );
+    );
+  };
 
   return (
-    <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
-      <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
+    <SafeAreaView
+      style={[
+        styles.container,
+        {
+          paddingTop: insets.top,
+          paddingBottom: Math.max(
+            insets.bottom,
+            verticalScale(4)
+          ),
+        },
+      ]}
+    >
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor={colors.primary}
+      />
 
-      {/* Header */}
+      {/* HEADER */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color={colors.white} />
-          </TouchableOpacity>
-          <View style={styles.userInfo}>
-            <Image
-              source={{ uri: 'https://randomuser.me/api/portraits/women/44.jpg' }}
-              style={styles.avatar}
+          <View style={styles.profileIcon}>
+            <Ionicons
+              name="person"
+              size={22}
+              color="#fff"
             />
-            <View>
-              <Text style={styles.userName}>Support Team</Text>
-              <Text style={styles.status}>Online</Text>
-            </View>
           </View>
-          <View style={styles.headerIcons}>
-            <TouchableOpacity style={styles.iconButton}>
-              <Ionicons name="call" size={20} color={colors.white} />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.iconButton}>
-              <Ionicons name="ellipsis-vertical" size={20} color={colors.white} />
-            </TouchableOpacity>
+
+          <View>
+            <Text style={styles.headerText}>
+              Support Chat
+            </Text>
+
+            <Text style={styles.onlineText}>
+              Online
+            </Text>
           </View>
         </View>
       </View>
 
-      {/* Messages */}
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardAvoidingView}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
+        style={{ flex: 1 }}
+        behavior={
+          Platform.OS === 'ios'
+            ? 'padding'
+            : undefined
+        }
       >
+        {/* CHAT LIST */}
         <FlatList
           ref={flatListRef}
-          data={messages}
-          keyExtractor={(item) => item.id}
-          renderItem={renderMessage}
-          contentContainerStyle={styles.messagesContainer}
-          showsVerticalScrollIndicator={false}
-          onContentSizeChange={() => {
-            flatListRef.current?.scrollToEnd({ animated: true });
-          }}
+          data={
+            Array.isArray(chats)
+              ? chats
+              : []
+          }
+          keyExtractor={(item, index) =>
+            item.id?.toString() ||
+            index.toString()
+          }
+          renderItem={renderItem}
+          contentContainerStyle={
+            styles.chatList
+          }
         />
 
-        {/* Message Input */}
-        <View style={[styles.inputContainer, { paddingBottom: insets.bottom > 0 ? insets.bottom : 16 }]}>
-          <View style={styles.inputWrapper}>
-            <TouchableOpacity style={styles.attachmentButton}>
-              <Ionicons name="attach" size={24} color={colors.primary} />
-            </TouchableOpacity>
-            <TextInput
-              style={styles.input}
-              value={message}
-              onChangeText={setMessage}
-              placeholder="Type a message..."
-              placeholderTextColor="#999"
-              multiline
+        {/* IMAGE PREVIEW */}
+        {selectedImage && (
+          <View
+            style={styles.previewContainer}
+          >
+            <Image
+              source={{
+                uri: selectedImage,
+              }}
+              style={styles.previewImage}
             />
+
             <TouchableOpacity
-              style={[
-                styles.sendButton, 
-                (!message || !isAuthenticated) && styles.sendButtonDisabled
-              ]}
-              onPress={sendMessage}
-              disabled={!message || !isAuthenticated}
+              style={styles.removeImage}
+              onPress={() =>
+                setSelectedImage(null)
+              }
             >
               <Ionicons
-                name="send"
-                size={20}
-                color={message ? colors.white : '#ccc'}
+                name="close"
+                size={18}
+                color="#fff"
               />
             </TouchableOpacity>
           </View>
+        )}
+
+        {/* INPUT */}
+        <View style={styles.inputBox}>
+          {/* ATTACH */}
+          <TouchableOpacity
+            onPress={pickImage}
+            style={styles.attachBtn}
+          >
+            <Ionicons
+              name="attach"
+              size={24}
+              color={colors.primary}
+            />
+          </TouchableOpacity>
+
+          {/* INPUT */}
+          <TextInput
+            value={message}
+            onChangeText={setMessage}
+            placeholder="Type a message..."
+            placeholderTextColor="#999"
+            style={styles.input}
+            multiline
+          />
+
+          {/* SEND */}
+          <TouchableOpacity
+            onPress={sendMessage}
+            style={styles.sendBtn}
+          >
+            <Ionicons
+              name="send"
+              size={20}
+              color="#fff"
+            />
+          </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
-
-      <Modal
-        visible={showDeleteModal}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setShowDeleteModal(false)}
-      >
-        <TouchableWithoutFeedback onPress={() => setShowDeleteModal(false)}>
-          <View style={styles.modalOverlay}>
-            <TouchableWithoutFeedback>
-              <View style={styles.modalContent}>
-                <Text style={styles.modalTitle}>Delete Message</Text>
-                <Text style={styles.modalText}>Are you sure you want to delete this message?</Text>
-                <View style={styles.modalButtons}>
-                  <TouchableOpacity 
-                    style={[styles.modalButton, styles.cancelButton]}
-                    onPress={() => setShowDeleteModal(false)}
-                  >
-                    <Text style={styles.cancelButtonText}>Cancel</Text>
-                  </TouchableOpacity>
-                  {selectedMessage?.reply ? (
-                        <TouchableOpacity 
-                        style={[styles.modalButton, styles.softDeleteButton]}
-                        onPress={() => selectedMessage && handleDeleteMessage(selectedMessage, false)}
-                      >
-                        <Text style={styles.deleteButtonText}>Delete</Text>
-                      </TouchableOpacity>
-                  ) : (
-                    <>
-                      <TouchableOpacity 
-                        style={[styles.modalButton, styles.softDeleteButton]}
-                        onPress={() => selectedMessage && handleDeleteMessage(selectedMessage, false)}
-                      >
-                        <Text style={styles.deleteButtonText}>Delete</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity 
-                        style={[styles.modalButton, styles.deleteButton]}
-                        onPress={() => selectedMessage && handleDeleteMessage(selectedMessage, true)}
-                      >
-                        <Text style={styles.deleteButtonText}>Delete Permanently</Text>
-                      </TouchableOpacity>
-                    </>
-                  )}
-                </View>
-              </View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
     </SafeAreaView>
   );
 };
 
+export default Chat;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#e5ddd5',
   },
-  keyboardAvoidingView: {
-    flex: 1,
-  },
+
   header: {
     backgroundColor: colors.primary,
+    paddingHorizontal: 15,
     paddingBottom: 12,
   },
+
   headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    marginTop: 8,
   },
-  backButton: {
-    padding: 8,
-    marginRight: 8,
-  },
-  userInfo: {
-    flexDirection: 'row',
+
+  profileIcon: {
+    width: 45,
+    height: 45,
+    borderRadius: 22.5,
+    backgroundColor:
+      'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
     alignItems: 'center',
-    flex: 1,
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
     marginRight: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
   },
-  userName: {
-    color: colors.white,
-    fontSize: 16,
+
+  headerText: {
+    color: '#fff',
+    fontSize: 18,
     fontWeight: '600',
   },
-  status: {
-    color: 'rgba(255, 255, 255, 0.8)',
+
+  onlineText: {
+    color: '#d9fdd3',
     fontSize: 12,
     marginTop: 2,
   },
-  headerIcons: {
+
+  chatList: {
+    padding: 10,
+  },
+
+  msgContainer: {
+    marginVertical: 5,
     flexDirection: 'row',
   },
-  iconButton: {
-    padding: 8,
-    marginLeft: 8,
+
+  left: {
+    justifyContent: 'flex-start',
   },
-  messagesContainer: {
-    flexGrow: 1,
-    padding: 16,
-    paddingBottom: 16,
+
+  right: {
+    justifyContent: 'flex-end',
   },
-  messageContainer: {
-    marginVertical: 4,
-    maxWidth: '80%',
+
+  bubble: {
+    padding: 10,
+    borderRadius: 10,
+    maxWidth: '70%',
   },
-  sentMessage: {
-    alignSelf: 'flex-end',
-    alignItems: 'flex-end',
+
+  myBubble: {
+    backgroundColor: '#DCF8C6',
+    borderTopRightRadius: 0,
   },
-  receivedMessage: {
-    alignSelf: 'flex-start',
-    alignItems: 'flex-start',
+
+  otherBubble: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 0,
   },
-  messageBubble: {
-    padding: 12,
-    borderRadius: 18,
-    maxWidth: '100%',
+
+  msgText: {
+    fontSize: 14,
+    lineHeight: 20,
   },
-  sentBubble: {
-    backgroundColor: colors.primary,
-    borderBottomRightRadius: 4,
+
+  myText: {
+    color: '#000',
   },
-  receivedBubble: {
-    backgroundColor: '#f0f0f0',
-    borderBottomLeftRadius: 4,
+
+  otherText: {
+    color: '#000',
   },
-  messageText: {
-    fontSize: 16,
-    lineHeight: 22,
+
+  chatImage: {
+    width: 180,
+    height: 180,
+    borderRadius: 10,
+    marginTop: 5,
   },
-  sentText: {
-    color: colors.white,
-  },
-  receivedText: {
-    color: '#333',
-  },
+
   timeText: {
     fontSize: 10,
-    marginTop: 4,
+    marginTop: 5,
+  },
+
+  myTime: {
+    color: '#555',
     textAlign: 'right',
   },
-  sentTime: {
-    color: 'rgba(255, 255, 255, 0.7)',
+
+  otherTime: {
+    color: '#777',
+    textAlign: 'left',
   },
-  receivedTime: {
-    color: '#999',
-  },
-  inputContainer: {
-    backgroundColor: colors.white,
-    paddingHorizontal: 16,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-  },
-  inputWrapper: {
+
+  inputBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
-    borderRadius: 24,
-    paddingHorizontal: 12,
-    minHeight: 48,
-    marginBottom: 8,
-  },
-  attachmentButton: {
     padding: 8,
-  },
-  input: {
-    flex: 1,
-    maxHeight: 120,
-    paddingVertical: 8,
-    paddingHorizontal: 8,
-    fontSize: 16,
-    color: '#333',
-  },
-  sendButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 8,
-  },
-  sendButtonDisabled: {
-    backgroundColor: '#e0e0e0',
-  },
-  // Modal styles
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  modalContent: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 20,
-    width: '100%',
-    maxWidth: 300,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    color: '#333',
-  },
-  modalText: {
-    fontSize: 16,
-    marginBottom: 20,
-    color: '#666',
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    flexWrap: 'wrap',
-    marginTop: 10,
-  },
-  modalButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    marginLeft: 10,
-    marginBottom: 10,
-    minWidth: 100,
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 40,
-  },
-  cancelButton: {
-    borderWidth: 1,
-    borderColor: '#ccc',
     backgroundColor: '#fff',
   },
-  softDeleteButton: {
-    backgroundColor: '#ff9800',
-    marginLeft: 10,
+
+  attachBtn: {
+    paddingHorizontal: 8,
   },
-  deleteButton: {
-    backgroundColor: '#ff4444',
-    marginLeft: 10,
+
+  input: {
+    flex: 1,
+    backgroundColor: '#f2f2f2',
+    borderRadius: 10,
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    maxHeight: 100,
   },
-  cancelButtonText: {
-    color: '#333',
-    fontWeight: '500',
+
+  sendBtn: {
+    marginLeft: 8,
+    backgroundColor: colors.primary,
+    padding: 10,
+    borderRadius: 20,
   },
-  deleteButtonText: {
-    fontWeight: '500',
-    color: 'white',
+
+  previewContainer: {
+    backgroundColor: '#fff',
+    padding: 10,
+    position: 'relative',
+  },
+
+  previewImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 10,
+  },
+
+  removeImage: {
+    position: 'absolute',
+    top: 15,
+    left: 85,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: 'red',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
-
-export default Chat;

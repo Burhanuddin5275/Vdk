@@ -2,6 +2,7 @@ import { Api_url } from "../url/url";
 type ApiBrand = any;
 
 export type BrandItem = {
+  id: string;
   name: string;
   image: any;
   bg_color: string;
@@ -10,13 +11,14 @@ export type BrandItem = {
 };
 
 function toBrand(item: ApiBrand): BrandItem {
+  const id = item.id;
   const name = String(item.name ?? item.title ?? item.label ?? "Brand");
   const imageUrl = item.image?.url ?? item.image ?? null;
   const image = imageUrl ? { uri: String(imageUrl) } : null;
   const position = Number(item.position);
   const is_active = item.is_active;
   const bg_color = item.bg_color;
-  return { name, image, position, bg_color, is_active };
+  return {id, name, image, position, bg_color, is_active };
 }
 
 export async function fetchBrands(): Promise<BrandItem[]> {

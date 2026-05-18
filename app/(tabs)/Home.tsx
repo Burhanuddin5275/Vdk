@@ -17,7 +17,7 @@ import { fetchBrands, type BrandItem } from '../../services/brands';
 import { fetchCategories, type CategoryItem } from '../../services/categories';
 import { fetchProducts } from '../../services/products';
 import { useFocusEffect } from '@react-navigation/native';
-import { Api_url } from '@/url/url';
+import { Api_url, img_url } from '@/url/url';
 import { DiscountPopupItem, fetchDiscountPopup } from '@/services/popup';
 import { Animated, Easing } from 'react-native';
 
@@ -38,7 +38,6 @@ const SalePopup = ({ visible, onClose, data, onNavigate }: SalePopupProps) => {
     if (visible) {
       setShowGiftAnimation(true);
 
-      // Start zoom-in animation
       Animated.timing(scaleAnim, {
         toValue: 1,
         duration: 500,
@@ -56,8 +55,15 @@ const SalePopup = ({ visible, onClose, data, onNavigate }: SalePopupProps) => {
     }
   }, [visible]);
 
+  // ✅ SAFE IMAGE HANDLING
+  const imageUri = data?.banner
+    ? data.banner.startsWith("http")
+      ? data.banner
+      : `${img_url}${data.banner}`
+    : null;
+
   return (
-    <Modal visible={visible} transparent animationType="fade">
+    <Modal visible={visible && !!data} transparent animationType="fade">
       <View style={popupStyles.overlay}>
         {visible && showGiftAnimation && (
           <Image
@@ -66,6 +72,7 @@ const SalePopup = ({ visible, onClose, data, onNavigate }: SalePopupProps) => {
             resizeMode="cover"
           />
         )}
+
         <Animated.View
           style={[
             popupStyles.popupBox,
@@ -82,14 +89,19 @@ const SalePopup = ({ visible, onClose, data, onNavigate }: SalePopupProps) => {
           ]}
         >
           <Text style={popupStyles.saleText}>Sale</Text>
+
           <TouchableOpacity style={popupStyles.closeBtn} onPress={onClose}>
             <Text style={popupStyles.closeText}>×</Text>
           </TouchableOpacity>
           <TouchableOpacity
             activeOpacity={0.9}
             onPress={() => {
-              if (data) onNavigate?.(data);
+              if (data) {
+                console.log("Popup clicked:", data);
+                onNavigate?.(data);
+              }
             }}
+            style={{ width: "100%" }}
           >
             <Image
               source={
@@ -128,17 +140,30 @@ export default function HomeScreen() {
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const [loading, setLoading] = useState(true);
   const insets = useSafeAreaInsets();
-  // useEffect(() => {
-  //   const loadPopup = async () => {
-  //     const data = await fetchDiscountPopup();
-  //     if (data.length > 0) {
-  //       setPopupData(data[0]);
-  //     }
-  //     console.log('pop', data[0].banner);
-  //   };
+  useEffect(() => {
+    const loadPopup = async () => {
+      try {
+        const data = await fetchDiscountPopup();
+        console.log("API popup response:", data);
 
-  //   loadPopup();
-  // }, []);
+        // ✅ Handle BOTH array and object response
+        const popupItem = Array.isArray(data) ? data[0] : data;
+
+        if (popupItem && popupItem.is_active) {
+          setPopupData(popupItem);
+
+          // ✅ SHOW popup AFTER data is ready
+          setTimeout(() => {
+            setShowPopup(true);
+          }, 1500);
+        }
+      } catch (error) {
+        console.log("Popup error:", error);
+      }
+    };
+
+    loadPopup();
+  }, []);
   useFocusEffect(
     useCallback(() => {
       let isActive = true;
@@ -277,6 +302,148 @@ export default function HomeScreen() {
 
     return () => clearInterval(interval);
   }, [ads]);
+  const handlePopupNavigate = (data: DiscountPopupItem) => {
+    const matchedCategory = apiCategories.find(
+      (c: any) => Number(c.id) === Number(data.category)
+    );
+    console.log("popup category:", data.category);
+    console.log("categories:", apiCategories.map((c: any) => c.id));
+    console.log('match', matchedCategory)
+    if (matchedCategory) {
+      router.push({
+        pathname: '/Categories',
+        params: {
+          category: matchedCategory.label,
+        },
+      });
+      return;
+    }
+
+    // 🔁 fallback to brand
+    const matchedBrand = apiBrands.find(
+      (b: any) => b.id === data.brand
+    );
+
+    if (matchedBrand) {
+      router.push({
+        pathname: '/Brands',
+        params: {
+          brand: matchedBrand.name,
+        },
+      });
+      return;
+    }
+    // 3️⃣ PRODUCT FALLBACK (NEW LOGIC) ⭐
+    const matchedProduct = apiProducts.find(
+      (p: any) => Number(p.id) === Number(data.products)
+    );
+
+    console.log("matched product:", matchedProduct);
+
+    if (matchedProduct) {
+      router.push({
+        pathname: '/Products',
+        params: {
+          id: matchedProduct.id,
+          data: JSON.stringify(matchedProduct),
+        },
+      });
+      return;
+    }
+  };
+  const getProductPoints = (product: any) => {
+    const variants = product?.variants;
+
+    if (Array.isArray(variants) && variants.length > 0) {
+      return variants.reduce((max: number, v: any) => {
+        const p = Number(v?.attributes?.points ?? 0);
+        return !isNaN(p) && p > max ? p : max;
+      }, 0);
+    }
+
+    return Number(product?.points ?? product?.pts ?? 0);
+  };
+  const getPrice = (product: any) => {
+    // 1. If variants exist
+    const variants = product?.variants;
+
+    if (Array.isArray(variants) && variants.length > 0) {
+      const firstVariant = variants[0];
+
+      if (firstVariant?.attributes) {
+        const attrs = Array.isArray(firstVariant.attributes)
+          ? firstVariant.attributes
+          : [firstVariant.attributes];
+
+        const firstAttr = attrs[0];
+
+        const price =
+          firstAttr?.sale_price != null && firstAttr?.sale_price !== ''
+            ? firstAttr.sale_price
+            : firstAttr?.regular_price ?? firstVariant?.price;
+
+        return Number(price || 0);
+      }
+
+      return Number(
+        firstVariant?.sale_price ??
+        firstVariant?.price ??
+        0
+      );
+    }
+
+    // 2. If no variants → product level
+    return Number(
+      product?.regular_price ??
+      product?.sale_price ??
+      0
+    );
+  };
+  // const getDiscountPercent = (product: any) => {
+  //   const variants = product?.variants;
+
+  //   let maxDiscount = 0;
+
+  //   // CASE 1: Variants exist
+  //   if (Array.isArray(variants) && variants.length > 0) {
+  //     variants.forEach((v: any) => {
+  //       const attrs = Array.isArray(v?.attributes)
+  //         ? v.attributes
+  //         : [v?.attributes];
+
+  //       attrs.forEach((attr: any) => {
+  //         const regular = Number(
+  //           attr?.regular_price ?? v?.price ?? product?.regular_price ?? 0
+  //         );
+
+  //         const saleRaw =
+  //           attr?.sale_price ?? v?.sale_price ?? product?.sale_price;
+
+  //         const sale = saleRaw !== "" && saleRaw != null ? Number(saleRaw) : 0;
+
+  //         if (regular > 0 && sale > 0 && sale < regular) {
+  //           const discount = Math.round(((regular - sale) / regular) * 100);
+  //           if (discount > maxDiscount) {
+  //             maxDiscount = discount;
+  //           }
+  //         }
+  //       });
+  //     });
+
+  //     return maxDiscount;
+  //   }
+
+  //   // CASE 2: No variants
+  //   const regular = Number(product?.regular_price ?? 0);
+  //   const saleRaw = product?.sale_price;
+  //   const sale = saleRaw !== "" && saleRaw != null ? Number(saleRaw) : 0;
+
+  //   if (regular > 0 && sale > 0 && sale < regular) {
+  //     return Math.round(((regular - sale) / regular) * 100);
+  //   }
+
+  //   return 0;
+  // };
   if (loading) {
     return (
       <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'white' }}>
@@ -288,11 +455,12 @@ export default function HomeScreen() {
   return (
     <>
       <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
-        {/* <SalePopup
+        <SalePopup
           visible={showPopup}
           onClose={() => setShowPopup(false)}
           data={popupData}
-        /> */}
+          onNavigate={handlePopupNavigate}
+        />
         <ImageBackground
           source={require('../../assets/images/home.jpg')}
           style={styles.background}
@@ -472,18 +640,18 @@ export default function HomeScreen() {
               style={{ marginTop: 10, marginBottom: 24, height: verticalScale(260) }}
               contentContainerStyle={{ paddingHorizontal: 16 }}
             >
-              {apiProducts.filter(p => 'rating' in p)
-                .filter(p => p.is_active)
-                .sort((a, b) => (b.rating || 0) - (a.rating || 0))
-                .slice(0, 4)
+              {apiProducts.filter(p => p.is_active)
+                .sort((a, b) => (b.total_sold || 0) - (a.total_sold || 0))
+                .slice(0, 5)
                 .map((product, idx) => {
                   const firstVariant = (product.variants && product.variants.length > 0) ? product.variants[0] : null;
                   const variantLabel = firstVariant?.label || firstVariant?.name;
-
+                  const minPrice = getPrice(product);
+                  // const discount = getDiscountPercent(product);
                   return (
                     <TouchableOpacity
                       key={product.id}
-                      style={[bestSellerStyles.productCard, idx === 3 && { marginRight: 0 }]}
+                      style={bestSellerStyles.productCard}
                       activeOpacity={0.8}
                       onPress={() => router.push({ pathname: '/Products', params: { id: product.id, data: JSON.stringify(product) } })}
                     >
@@ -491,6 +659,13 @@ export default function HomeScreen() {
                         colors={["#FFD600", "#FF9800"]}
                         style={bestSellerStyles.gradient}
                       >
+                        {/* {discount > 0 && (
+                          <View style={bestSellerStyles.discountTag}>
+                            <Text style={bestSellerStyles.discountText}>
+                              {discount}% OFF
+                            </Text>
+                          </View>
+                        )} */}
                         <TouchableOpacity
                           style={bestSellerStyles.wishlistBtn}
                           onPress={async () => {
@@ -565,6 +740,25 @@ export default function HomeScreen() {
                           source={product.img}
                           style={bestSellerStyles.productImg}
                         />
+                        <View
+                          style={bestSellerStyles.priceTag}>
+                          <View style={[bestSellerStyles.priceLeft]}>
+                            <Text style={bestSellerStyles.priceLeftText}>Starting from</Text>
+                          </View>
+
+                          <View
+                            style={[
+                              bestSellerStyles.priceRight,
+                              {
+                                backgroundColor: 'white',
+                              },
+                            ]}
+                          >
+                            <Text style={bestSellerStyles.priceRightText}>
+                              Rs.{Math.round(minPrice || 0)}
+                            </Text>
+                          </View>
+                        </View>
                       </LinearGradient>
                       {/* Footer */}
                       <View style={bestSellerStyles.cardFooter}>
@@ -584,8 +778,7 @@ export default function HomeScreen() {
                               { color: 'white' },
                             ]}
                           >
-                            {product.pts}
-                            {'\n'}PTS
+                            {getProductPoints(product)}{'\n'}PTS
                           </Text>
                         </ImageBackground>
                       </View>
@@ -701,6 +894,58 @@ const bestSellerStyles = StyleSheet.create({
     borderRadius: moderateScale(10),
     resizeMode: 'contain',
     marginTop: verticalScale(10)
+  },
+  discountTag: {
+    position: 'absolute',
+    top: verticalScale(10),
+    left: scale(10),
+    backgroundColor: '#E53935',
+    paddingHorizontal: scale(6),
+    paddingVertical: verticalScale(3),
+    borderRadius: moderateScale(6),
+    zIndex: 3,
+  },
+
+  discountText: {
+    color: '#fff',
+    fontSize: scale(10),
+    fontFamily: 'InterBold',
+  },
+  priceTag: {
+    position: 'absolute',
+    bottom: verticalScale(0),
+    flexDirection: 'row',
+    borderBottomEndRadius: moderateScale(18),
+    borderBottomStartRadius: moderateScale(18),
+    overflow: 'hidden',
+    elevation: 4,
+  },
+
+  priceLeft: {
+    backgroundColor: '#E53935',
+    width: scale(97),
+    paddingVertical: verticalScale(4),
+    justifyContent: 'center',
+  },
+
+  priceLeftText: {
+    color: '#fff',
+    fontSize: scale(10),
+    textAlign: 'center',
+    fontFamily: 'InterBold',
+  },
+
+  priceRight: {
+    backgroundColor: '#fff',
+    width: scale(97),
+    justifyContent: 'center',
+  },
+
+  priceRightText: {
+    color: '#E53935',
+    fontSize: scale(12),
+    textAlign: 'center',
+    fontFamily: 'InterBold',
   },
   cardFooter: {
     flexDirection: 'row',

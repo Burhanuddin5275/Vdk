@@ -244,7 +244,7 @@ const OrderReview = () => {
                   <View style={styles.priceContainer}>
                     <Text style={styles.productPrice}>Rs. {parseFloat(item.price || '0').toFixed(2)}</Text>
                     {!reviewedProductIds.has(item.id) && (
-                      <TouchableOpacity onPress={() => handleRateProduct(item)} style={{backgroundColor: '#facc15', padding: scale(5), borderRadius: scale(5)}}>
+                      <TouchableOpacity onPress={() => handleRateProduct(item)} style={{ backgroundColor: '#facc15', padding: scale(5), borderRadius: scale(5) }}>
                         <Text style={styles.rateLink}>Review Product</Text>
                       </TouchableOpacity>
                     )}
@@ -273,18 +273,17 @@ const OrderReview = () => {
                   </Text>
                 </View>
               )}
-              {
-                order?.discount_amount && Number(order?.discount_amount) > 0 && (
-                  <View style={styles.totalRow}>
-                    <Text style={styles.totalLabel}>
-                      Discount:
-                    </Text>
-                    <Text style={{ fontSize: scale(15), color: 'white' }}>
-                      Rs. {order.discount_amount}
-                    </Text>
-                  </View>
-                )
-              }
+              {Number(order?.discount_amount) > 0 && (
+                <View style={styles.totalRow}>
+                  <Text style={styles.totalLabel}>
+                    Discount:
+                  </Text>
+
+                  <Text style={{ fontSize: scale(15), color: 'white' }}>
+                    Rs. {order.discount_amount}
+                  </Text>
+                </View>
+              )}
               <View style={styles.totalRow}>
                 <Text style={styles.totalLabel}>
                   {order.type === 'redeem' ? 'Redeem' : 'Order Total:'}

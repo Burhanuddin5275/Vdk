@@ -21,9 +21,11 @@ import {
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 
 const ShippingAddress = () => {
+    const insets = useSafeAreaInsets();
   const [user, setUser] = useState<UserItem | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selected, setSelected] = useState<number>(-1);
@@ -135,7 +137,7 @@ const ShippingAddress = () => {
       Keyboard.dismiss();
       setExpandedAddress(null);
     }}>
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
         <ImageBackground
           source={require('../assets/images/ss1.png')}
           style={styles.background}
