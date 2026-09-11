@@ -22,14 +22,15 @@ import { numberVerify, registerUser } from '@/services/user';
 import * as SecureStore from 'expo-secure-store';
 const Signup = () => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const { phone: phoneParam, temp_token } = useLocalSearchParams<{
+  const { phone: phoneParam, temp_token, email: emailParam } = useLocalSearchParams<{
     phone: string;
     temp_token: string;
+    email?: string;
   }>();
   const [phone, setPhone] = useState(phoneParam?.replace(/^\+92/, '') || '');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(emailParam || '');
   const [name, setName] = useState('');
   const [isAgreed, setIsAgreed] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -60,16 +61,17 @@ const Signup = () => {
 
         const data = await numberVerify({
           number: e164Phone,
+          email: email,
         });
 
         console.log('number registered:', data);
         if (data.message === 'OTP sent') {
           router.push({
             pathname: '/VerifyNumber',
-            params: { phone: e164Phone, source: 'signup' }
+            params: { phone: e164Phone, email: email, source: 'signup' }
           });
         } else {
-          Alert.alert('Number already exists');
+          Alert.alert(data.error || 'Failed to send OTP.');
         }
 
       } catch (error: any) {
@@ -124,14 +126,14 @@ const Signup = () => {
       console.log('temp_token:', temp_token);
       const data = await registerUser({
         number: phoneParam,
+        email: email,
         temp_token: temp_token,
         name,
-        email,
         password,
       });
 
       console.log('User registered:', data);
-      await SecureStore.setItemAsync('userPhone',  phoneParam);
+      await SecureStore.setItemAsync('userPhone', phoneParam);
       await SecureStore.setItemAsync('userPassword', password);
       setShowSuccessModal(true);
 
@@ -176,10 +178,23 @@ const Signup = () => {
                 editable={!phoneParam}
               />
             </View>
+            <View style={[styles.inputWrap, { marginBottom: 8 }]}>
+              <TextInput
+                style={[styles.input, { paddingRight: 40 }]}
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                placeholder="Enter Email"
+                placeholderTextColor="#1A1A1A"
+                autoCapitalize="none"
+                autoCorrect={false}
+                editable={!emailParam}
+              />
+            </View>
 
             {isFromVerification && (
-              <View style={{ marginTop: 16 }}>
-                <View style={[styles.inputWrap, { marginBottom: 15 }]}>
+              <View style={{ marginTop: 2 }}>
+                <View style={[styles.inputWrap, { marginBottom: 10 }]}>
                   <TextInput
                     style={[styles.input, { paddingRight: 40 }]}
                     value={name}
@@ -190,19 +205,7 @@ const Signup = () => {
                     autoCorrect={false}
                   />
                 </View>
-                <View style={[styles.inputWrap, { marginBottom: 15 }]}>
-                  <TextInput
-                    style={[styles.input, { paddingRight: 40 }]}
-                    value={email}
-                    onChangeText={setEmail}
-                    keyboardType="email-address"
-                    placeholder="Enter Email"
-                    placeholderTextColor="#1A1A1A"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                  />
-                </View>
-                <View style={[styles.inputWrap, { marginBottom: 15 }]}>
+                <View style={[styles.inputWrap, { marginBottom: 10 }]}>
                   <TextInput
                     style={[styles.input, { paddingRight: 40 }]}
                     value={password}
@@ -278,7 +281,7 @@ const Signup = () => {
               disabled={
                 isSubmitting ||
                 (isFromVerification &&
-                  (!password || !email || !isAgreed))
+                  (!password || !email ))
               }
             >
               {isSubmitting ? (
@@ -322,7 +325,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, alignItems: 'center', justifyContent: 'flex-start', paddingTop: 70, paddingHorizontal: 24 },
   logo: { width: '100%' },
   welcome: { color: colors.white, fontSize: 26, fontFamily: 'Sigmar', textAlign: 'center', marginBottom: 32 },
-  inputWrap: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 16, paddingHorizontal: 12, paddingVertical: 5, marginBottom: 5, width: '100%', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 4, elevation: 2, position: 'relative' },
+  inputWrap: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 16, paddingHorizontal: 12, paddingVertical: 5, marginBottom: 10, width: '100%', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 4, elevation: 2, position: 'relative' },
   passwordToggle: { position: 'absolute', right: 16, padding: 8 },
   checkboxContainer: {
     flexDirection: 'row',

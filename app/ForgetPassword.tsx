@@ -107,10 +107,14 @@ const ForgetPassword = () => {
         });
 
         console.log('PASSWORD RESET:', data);
-        await SecureStore.setItemAsync('userPhone', e164Phone);
-        await SecureStore.setItemAsync('userPassword', password);
-        setShowSuccessModal(true);
-
+        if (data.message === 'Password reset successfully') {
+          await SecureStore.setItemAsync('userPhone', e164Phone);
+          await SecureStore.setItemAsync('userPassword', password);
+          setShowSuccessModal(true);
+        }
+       else {
+        Alert.alert('Error', data.error || 'Invalid otp or password reset failed');
+       }
       } catch (error: any) {
         Alert.alert(
           'Error',
@@ -124,7 +128,7 @@ const ForgetPassword = () => {
 
   const handleSuccessModalClose = () => {
     setShowSuccessModal(false);
-    router.replace('/Login');
+    router.back();
   };
 
   return (

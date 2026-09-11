@@ -73,9 +73,9 @@ export const useWishlistStore = create<WishlistState>((set, get) => ({
     const updated = current.filter(i => {
       if (i.id !== id) return true; // Keep items with different IDs
       // If no variant label is provided, we assume the intention is to remove the non-variant item or first match.
-      if (!variantLabel) return false; 
+      if (!variantLabel) return false;
       // If the item in wishlist has no variant, it can't match a specific variant removal.
-      if (!i.variant) return true; 
+      if (!i.variant) return true;
       // Keep the item if its variant label does not match the one to be removed.
       return i.variant.label !== variantLabel;
     });
@@ -102,7 +102,7 @@ const Wishlist: React.FC = () => {
   const renderItem = ({ item }: { item: WishlistItem }) => {
     // Create a unique key for the item including variant info
     const displayPrice = item.variant?.sale_price || item.variant?.price || item.sale_price || item.regular_price;
-    
+
     return (
       <View style={styles.card}>
         <Image source={item.image} style={styles.productImg} resizeMode="contain" />
@@ -117,8 +117,8 @@ const Wishlist: React.FC = () => {
 
           <Text style={styles.productPrice}>Pkr {displayPrice.toLocaleString()}</Text>
         </View>
-        <TouchableOpacity 
-          style={styles.removeBtn} 
+        <TouchableOpacity
+          style={styles.removeBtn}
           onPress={async () => await removeFromWishlist(item.id, item.variant?.label)}
         >
           <Text style={styles.removeText}>Remove</Text>
@@ -129,8 +129,8 @@ const Wishlist: React.FC = () => {
   const insets = useSafeAreaInsets();
 
   return (
-          <SafeAreaView style={[styles.container, { paddingBottom: Math.max(insets.bottom, verticalScale(4)) }]}>
-    <ImageBackground source={require('../assets/images/wishlist.jpg')} style={{ flex: 1 }} resizeMode="cover">
+    <SafeAreaView style={[styles.container, { paddingBottom: Math.max(insets.bottom, verticalScale(4)) }]}>
+      <ImageBackground source={require('../assets/images/wishlist.jpg')} style={{ flex: 1 }} resizeMode="cover">
         <View style={styles.header}>
           <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={28} color="#fff" />
@@ -145,9 +145,9 @@ const Wishlist: React.FC = () => {
           ItemSeparatorComponent={() => <View style={styles.separator} />}
           showsVerticalScrollIndicator={false}
         />
-        </ImageBackground>
-      </SafeAreaView>
-    
+      </ImageBackground>
+    </SafeAreaView>
+
   );
 };
 
@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-         flexDirection: 'row',
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-start',
     height: verticalScale(80),
@@ -165,13 +165,13 @@ const styles = StyleSheet.create({
     marginTop: verticalScale(20),
   },
   backBtn: {
-      width: scale(40),
+    width: scale(40),
     height: scale(40),
     justifyContent: 'center',
     zIndex: 1,
   },
   headerTitle: {
-   position: 'absolute',
+    position: 'absolute',
     left: 0,
     right: 0,
     top: 0,
@@ -272,4 +272,3 @@ const styles = StyleSheet.create({
 });
 
 export default Wishlist;
-   

@@ -7,7 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Dimensions, Image, ImageBackground, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Dimensions, Image, ImageBackground, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { type BannerItem, fetchBanners } from '../services/banner';
@@ -282,9 +282,9 @@ const Categories = () => {
 
   if (selectedCategory && !selectedCategoryObj) {
     return (
-      <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <Text>Loading...</Text>
-      </SafeAreaView>
+      <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center',backgroundColor:  '#ffff' }}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </SafeAreaView> 
     );
   }
   return (

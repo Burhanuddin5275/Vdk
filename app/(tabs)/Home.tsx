@@ -448,7 +448,6 @@ export default function HomeScreen() {
     return (
       <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'white' }}>
         <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={{ marginTop: 10, color: '#000' }}>Loading...</Text>
       </SafeAreaView>
     );
   }

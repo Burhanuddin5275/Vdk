@@ -40,11 +40,11 @@ export default function TabLayout() {
         tabBarInactiveTintColor: colors.tabRedInactive,
         headerShown: false,
         tabBarStyle: {
-          marginBottom:verticalScale(10),
+          marginBottom: verticalScale(10),
           backgroundColor: 'transparent',
           paddingTop: verticalScale(8),
           position: 'absolute',
-          bottom: 0,      
+          bottom: 0,
           paddingBottom: Math.max(insets.bottom, verticalScale(4)),
           paddingHorizontal: scale(8),
           height: getTabBarHeight() + (Platform.OS === 'android' ? insets.bottom : 0),

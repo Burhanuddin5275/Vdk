@@ -23,6 +23,7 @@
     "country-state-city": "^3.2.1",
     "expo": "~53.0.20",
     "expo-blur": "~14.1.5",
+    "expo-build-properties": "~0.14.8",
     "expo-constants": "~17.1.7",
     "expo-datepicker": "^1.0.23",
     "expo-dev-client": "~5.2.4",

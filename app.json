@@ -18,7 +18,7 @@
         "resizeMode": "contain"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.dktapp",
+      "package": "store.dktpakistan.org",
       "usesCleartextTraffic": true
     },
     "web": {
@@ -39,7 +39,16 @@
         }
       ],
       "expo-secure-store",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "compileSdkVersion": 36,
+            "targetSdkVersion": 36
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
@@ -47,8 +56,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "05320011-cec8-47ed-ad1e-28fa4e7cdc1d"
+        "projectId": "e24047ed-6cac-4579-b458-06cebc59c9c3"
       }
-    }
+    },
+    "owner": "burhanuddin4747"
   }
 }

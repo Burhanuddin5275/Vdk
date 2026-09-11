@@ -47,19 +47,18 @@ const Login = () => {
       const data = await response.json();
       console.log(data)
       const token = data.api_token;
-
-      if (!token) {
-        throw new Error('No token received');
-      }
-      if (data.is_active === false) {
+      if (data.detail) {
         Alert.alert('Account Disabled', 'Your account has been disabled. Please contact support.');
         return;
+      }
+      if (!token) {
+        throw new Error('No token received');
       }
       login({ phone: formattedPhone, token, password });
       router.replace('/(tabs)/Home');
     } catch (err: any) {
       console.log(err);
-      setError(err.message);
+      setError(err.detail || 'Failed to connect to server. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -222,7 +221,7 @@ const Login = () => {
             </View>
 
             {/* Password Input */}
-            <View style={[styles.inputWrap, { marginTop: 16 }]}>
+            <View style={[styles.inputWrap, { marginTop: 5 }]}>
               <TextInput
                 style={[styles.input, { flex: 1, paddingRight: 40 }]}
                 value={password}
@@ -374,8 +373,8 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
     paddingVertical: 16,
-    marginBottom: 18,
-    marginTop: 8,
+    marginBottom: 15,
+    marginTop: 18,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,

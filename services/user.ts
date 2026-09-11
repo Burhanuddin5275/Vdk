@@ -189,7 +189,8 @@ export const otpVerify = async ({
 };
 export const numberVerify = async ({
   number,
-}:{number:string}) => {
+  email
+}:{number:string, email?:string}) => {
   try {
     const res = await fetch(`${Api_url}/api/app-users/`, {
       method: 'POST',
@@ -197,7 +198,7 @@ export const numberVerify = async ({
         'Content-Type': 'application/json',
         Accept: 'application/json',
       },
-      body: JSON.stringify({ number }),
+      body: JSON.stringify({ number, email }),
     });
     const response= await res.json().catch(() => ({}));
     return response;

@@ -32,7 +32,6 @@ export default function Splash() {
       >
         <View style={styles.container}>
         <View style={styles.mandalaBackground} />
-
         <View style={styles.illustrationContainer}>
           <Image
             source={require('../assets/images/family.png')}
@@ -40,7 +39,6 @@ export default function Splash() {
             resizeMode="contain"
           />
         </View>
-
         <View style={styles.textContainer}>
           <Text style={styles.welcome}>Welcome!</Text>
           <Text style={styles.startJourney}>Start Your Journey</Text>

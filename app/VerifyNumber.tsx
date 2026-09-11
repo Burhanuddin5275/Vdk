@@ -11,7 +11,7 @@ const OTP_LENGTH = 4;
 const RESEND_TIME = 30; // seconds
 
 const VerifyNumber = () => {
-  const { phone } = useLocalSearchParams<{ phone: string }>();
+  const { phone, email } = useLocalSearchParams<{ phone: string; email?: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [otp, setOtp] = useState(Array(OTP_LENGTH).fill(''));
@@ -83,19 +83,14 @@ const VerifyNumber = () => {
           pathname: '/Signup',
           params: {
             phone: phone,
+            email: email,
             temp_token: data.temp_token,
             verified: 'true',
 
           },
         });
       } else {
-        router.replace({
-          pathname: '/ForgetPassword',
-          params: {
-            phone: phone,
-            verified: 'true',
-          },
-        });
+        Alert.alert('Error', data.error || 'Invalid otp');
       }
 
     } catch (error:any) {
