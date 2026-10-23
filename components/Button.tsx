@@ -5,7 +5,7 @@ import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 
 type ButtonProps = {
   variant?: 'primary' | 'secondary';
-  children: React.ReactNode;  // Changed from string to ReactNode
+  children: React.ReactNode;
   onPress?: () => void;
   style?: object;
   disabled?: boolean;
@@ -37,7 +37,7 @@ const styles = StyleSheet.create({
   secondaryText: {
     color: colors.white,
     fontSize: moderateScale(17),
-    fontFamily: 'Medium',
+    fontFamily: 'Medium',  
   },
 });
 

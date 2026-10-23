@@ -14,7 +14,7 @@ export const registerUser = async ({
   password?: string;
 }) => {
   try {
-    const response = await fetch(`${Api_url}/api/complete_profile/`, {
+    const response = await fetch(`${Api_url}api/complete_profile/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -89,7 +89,7 @@ export const deleteAccountApi = async (userId: string | number) => {
     throw new Error("Missing user ID");
   }
 
-  const response = await fetch(`${Api_url}/api/deactivate/${userId}/`, {
+  const response = await fetch(`${Api_url}api/deactivate/${userId}/`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -111,34 +111,38 @@ export const updateUserProfile = async (
   data: { name?: string; image?: any; password?: string }
 ) => {
   if (data.password) {
-    // Update password using JSON
     const response = await fetch(`${Api_url}api/update-user/${userId}/`, {
-      method: 'PATCH',
+      method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Token ${token}`,
+        Authorization: `Token ${token}`,
       },
       body: JSON.stringify({ password: data.password }),
     });
     return response;
   }
 
-  // Update profile (name + image) using FormData
   const formData = new FormData();
   if (data.name) formData.append('name', data.name);
+
   if (data.image) {
-    formData.append('image', {
-      uri: data.image,
-      name: 'profile.jpg',
-      type: 'image/jpeg',
-    } as any);
+    // 1. Fetch the local image file URI to get a real Blob
+    const imageResponse = await fetch(data.image);
+    const blob = await imageResponse.blob();
+
+    // 2. Extract filename
+    const filename = data.image.split('/').pop() || 'profile.jpg';
+
+    // 3. Append the real Blob (Hermes fetch supports this)
+    formData.append('image', blob, filename);
   }
 
+  // Now fetch won't crash on FormDataPart
   const response = await fetch(`${Api_url}api/update-user/${userId}/`, {
-    method: 'PATCH',
+    method: 'PUT',
     headers: {
-      'Accept': 'application/json',
-      'Authorization': `Token ${token}`,
+      Accept: 'application/json',
+      Authorization: `Token ${token}`,
     },
     body: formData,
   });
@@ -152,7 +156,7 @@ export const ResetPassword = async ({
   new_password
 }:{number:string, otp:string, new_password:string}) => {
   try {
-    const res = await fetch(`${Api_url}/api/reset-password/`, {
+    const res = await fetch(`${Api_url}api/reset-password/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -173,7 +177,7 @@ export const otpVerify = async ({
   otp,
 }:{number:string, otp:string}) => {
   try {
-    const res = await fetch(`${Api_url}/api/app-users/verify-otp/`, {
+    const res = await fetch(`${Api_url}api/app-users/verify-otp/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -192,7 +196,8 @@ export const numberVerify = async ({
   email
 }:{number:string, email?:string}) => {
   try {
-    const res = await fetch(`${Api_url}/api/app-users/`, {
+    console.log("numberVerify called with:", { number, email });
+    const res = await fetch(`${Api_url}api/app-users/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -210,7 +215,7 @@ export const Forgetpassword = async ({
   number,
 }:{number:string}) => {
   try {
-    const res = await fetch(`${Api_url}/api/forgot-password/`, {
+    const res = await fetch(`${Api_url}api/forgot-password/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

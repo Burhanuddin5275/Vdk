@@ -3,7 +3,7 @@ import app from "./firebase";
 import { setBaseUrl } from "../url/url";
 
 const db = getFirestore(app);
-const FALLBACK_URL = "http://15.135.166.93:8000";
+const FALLBACK_URL = "http://15.135.166.93:8000/";
 
 export const getBaseUrl = async () => {
   try {

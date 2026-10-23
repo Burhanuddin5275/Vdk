@@ -1,4 +1,4 @@
-const FALLBACK_URL = "http://15.135.166.93:8000";
+const FALLBACK_URL = "http://15.135.166.93:8000/";
 
 let runtimeBaseUrl = FALLBACK_URL;
 

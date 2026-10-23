@@ -5,7 +5,7 @@ import { useAppSelector } from '@/store/hooks';
 import { colors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Dimensions, Image, ImageBackground, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -13,7 +13,6 @@ import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { type BannerItem, fetchBanners } from '../services/banner';
 import { fetchProducts } from '../services/products';
 import { useWishlistStore } from './Wishlist';
-import { useFocusEffect } from '@react-navigation/native';
 import { CategoryItem, fetchCategories } from '@/services/categories';
 const TABS = ['All'];
 

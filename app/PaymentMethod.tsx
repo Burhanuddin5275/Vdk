@@ -78,9 +78,11 @@ const Payment = () => {
     const [userId, setUserId] = useState<string | number | null>(null);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [orderSuccess, setOrderSuccess] = useState(false);
-      const insets = useSafeAreaInsets();
-    useEffect(() => {
+    const [isUserLoading, setIsUserLoading] = useState(true);
+    const insets = useSafeAreaInsets();
+  useEffect(() => {
         const loadUsers = async () => {
+            setIsUserLoading(true);
             try {
                 const users = await fetchUsers();
                 const matchedUser = users.find((u) => u.number === phone);
@@ -97,12 +99,15 @@ const Payment = () => {
             } catch (error) {
                 console.error('Error loading users:', error);
                 setUser(token);
+            } finally {
+                setIsUserLoading(false); // ✅ Mark user loading as finished
             }
         };
         if (phone) {
             loadUsers();
         } else {
             setUser(token); // Fallback to token if no phone
+            setIsUserLoading(false);
         }
 
     }, [phone, token]);
@@ -113,8 +118,8 @@ const Payment = () => {
     }, [user]);
 useEffect(() => {
     if (splitEnabled) {
-        setPoints('');              // ✅ empty initially
-        setIsRedeemChecked(true);   // checkbox still checked
+        setPoints('');              
+        setIsRedeemChecked(true);   
     } else {
         setPoints('');
         setIsRedeemChecked(false);
@@ -123,21 +128,29 @@ useEffect(() => {
     const createOrder = async () => {
         if (!selected) return Alert.alert("Error", "Select payment method");
         if (!shippingAddress) return Alert.alert("Error", "Missing shipping");
-    if (splitEnabled) {
-        if (!points || Number(points) <= 0) {
-            return Alert.alert("Error", "Please input redeem points value");
+        if (splitEnabled) {
+            if (!points || Number(points) <= 0) {
+                return Alert.alert("Error", "Please input redeem points value");
+            }
         }
-    }
+        let currentUserId = userId;
+        if (!currentUserId && typeof user === 'object' && user !== null && 'id' in user) {
+            currentUserId = (user as UserItem).id;
+        }
+
+        if (!currentUserId) {
+            return Alert.alert("Error", "User session not fully loaded. Please wait a moment and try again.");
+        }
         setIsLoading(true);
 
         try {
             const orderData = {
                 user_id: userId,
-                applied_points: points || 0,
+                applied_points: splitEnabled ? (points || 0) : 0,
                 user_detail: { number: phone },
                 address: shippingAddress,
                 shipping: 'Standard',
-                status: 'pending', 
+                status: 'pending',
                 discount_code: discount.code || '',
                 discount_type: discount.type || 0,
                 discount_amount: discount.amount,
@@ -157,7 +170,8 @@ useEffect(() => {
                 created_at: new Date().toISOString(),
             };
             console.log('Order data:', orderData);
-            await createOrderApi(orderData, token || '');
+            const responseData = await createOrderApi(orderData, token || '');
+            console.log('Order created successfully:', responseData);
             await clearCart();
 
             setOrderSuccess(true);
@@ -434,10 +448,20 @@ useEffect(() => {
                         </View>
                     </ScrollView>
 
-                    {/* FOOTER */}
-                    <View style={styles.footer}>
-                        <Button onPress={createOrder} disabled={isLoading} style={styles.confirmBtn}>
-                            <Text style={{ color: colors.white, textAlign: 'center' }}>Confirm Payment</Text>
+                   <View style={styles.footer}>
+                        <Button 
+                            onPress={createOrder} 
+                            disabled={isLoading || isUserLoading || !userId} 
+                            style={[
+                                styles.confirmBtn, 
+                                (isUserLoading || !userId) && styles.disabledBtn
+                            ]}
+                        >
+                            {isUserLoading ? (
+                                <ActivityIndicator color={colors.white} />
+                            ) : (
+                                <Text style={{ color: colors.white, textAlign: 'center' }}>Confirm Payment</Text>
+                            )}
                         </Button>
                     </View>
 
@@ -729,7 +753,7 @@ const styles = StyleSheet.create({
         paddingVertical: 12,
         backgroundColor: colors.primary,
     },
-    disabledBtn: { backgroundColor: 'gray' },
+    disabledBtn: { backgroundColor: colors.primaryDark, justifyContent: 'center', alignItems: 'center' },
 });
 
 export default Payment;

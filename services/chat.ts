@@ -2,7 +2,7 @@ import { Api_url } from "@/url/url";
 
 export const sendChatMessage = async (message: string, token: string) => {
   try {
-    const res = await fetch(`${Api_url}/chat/api/send/`, {
+    const res = await fetch(`${Api_url}chat/api/send/`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

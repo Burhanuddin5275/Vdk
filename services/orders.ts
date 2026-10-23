@@ -60,6 +60,7 @@ export async function fetchOrders(phone?: string): Promise<orders[]> {
       throw new Error(`Failed to fetch orders: ${response.status}`);
     }
     const data = await response.json();
+    console.log("fetchOrders data:", data);
     const items: ApiOrders[] = Array.isArray(data) ? data : (data?.results ?? data?.data ?? []);
     return items.map(toProduct).filter(Boolean);
   } catch (error) {
@@ -79,26 +80,7 @@ export const createOrderApi = async (orderData: any, token: string) => {
     body: JSON.stringify(orderData),
   });
 
-  const responseText = await response.text();
-  console.log("Raw response text:", responseText);
-
-  let responseData;
-
-  try {
-    responseData = responseText ? JSON.parse(responseText) : {};
-  } catch (jsonError) {
-    throw new Error(
-      `Invalid response from server: ${responseText.substring(0, 200)}`
-    );
-  }
-
-  if (!response.ok) {
-    throw new Error(
-      responseData.message ||
-      `Server error: ${response.status} ${response.statusText}`
-    );
-  }
-
+  const responseData = await response.json();
   return responseData;
 };
 
@@ -148,7 +130,7 @@ export const createReview = async (reviewData: {
   comment: string;
 }) => {
   try {
-    const res = await fetch(`${Api_url}/api/create-review/`, {
+    const res = await fetch(`${Api_url}api/create-review/`, {
       method: "POST",
       headers: {
         'Content-Type': 'application/json',

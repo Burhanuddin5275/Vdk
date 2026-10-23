@@ -102,6 +102,7 @@ export async function fetchProducts(): Promise<Product[]> {
       throw new Error(`Failed to fetch products: ${response.status}`);
     }
     const data = await response.json();
+    console.log("Fetched products data:", JSON.stringify(data));
     const items: ApiProduct[] = Array.isArray(data) ? data : (data?.results ?? data?.data ?? []);
     return items.map(toProduct).filter(Boolean);
   } catch (error) {

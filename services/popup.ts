@@ -11,7 +11,7 @@ export type DiscountPopupItem = {
 
 export const fetchDiscountPopup = async (): Promise<DiscountPopupItem[]> => {
   try {
-    const res = await fetch(`${Api_url}/api/discount-popup/`, {
+    const res = await fetch(`${Api_url}api/discount-popup/`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",

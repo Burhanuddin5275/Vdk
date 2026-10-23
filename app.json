@@ -2,24 +2,20 @@
   "expo": {
     "name": "DKT",
     "slug": "dkt",
-    "version": "1.0.0",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/images/logo.png",
-    "scheme": "DKT",
+    "scheme": "dkt",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "ios": {
       "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/logo.png",
-        "backgroundColor": "#ffffff",
-        "resizeMode": "contain"
+        "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true,
-      "package": "store.dktpakistan.org",
-      "usesCleartextTraffic": true
+      "package": "store.dktpakistan.org"
     },
     "web": {
       "bundler": "metro",

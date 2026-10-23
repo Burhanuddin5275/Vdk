@@ -6,8 +6,8 @@ import { Api_url, img_url } from '@/url/url';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Dimensions, Image, ImageBackground, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Dimensions, Image, ImageBackground,  ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { useAddressStore } from '@/store/addressStore';
 const { width } = Dimensions.get('window');
@@ -51,7 +51,6 @@ export default function Profile() {
     setSelectedAddress(null);
     logout();
     router.push('/(tabs)/Home');
-    router.replace('/(tabs)/Home');
   };
 const handleDeleteAccount = async () => {
   try {
@@ -142,11 +141,11 @@ const handleDeleteAccount = async () => {
               <View style={styles.profileSection}>
                 <Image
                   source={typeof user === 'object' && user?.image?.uri !== 'null'
-                    ? { uri: `${img_url}${user?.image.uri}` }
+                    ? { uri: `${user?.image.uri}` }
                     : require('../../assets/images/blank-profile-picture-973460_1280.webp')
                   }
                   style={styles.profileImg}
-                />
+                /> 
                 <Text style={styles.profileName}>
                   {typeof user === 'object' && user?.name && user.name !== '' && user.name !== 'null' ? user?.name : phone}
                 </Text>

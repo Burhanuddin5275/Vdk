@@ -10,28 +10,44 @@ export type BrandItem = {
   is_active: boolean;
 };
 
+// Clean base URL (removes trailing slash if present to avoid double slashes)
+const BASE_URL = Api_url.endsWith('/') ? Api_url.slice(0, -1) : Api_url;
+
 function toBrand(item: ApiBrand): BrandItem {
-  const id = item.id;
+  const id = String(item.id ?? "");
   const name = String(item.name ?? item.title ?? item.label ?? "Brand");
-  const imageUrl = item.image?.url ?? item.image ?? null;
-  const image = imageUrl ? { uri: String(imageUrl) } : null;
-  const position = Number(item.position);
-  const is_active = item.is_active;
-  const bg_color = item.bg_color;
-  return {id, name, image, position, bg_color, is_active };
+  
+  // Handle image: Check if it's a relative path and prepend base URL if needed
+  let rawImageUrl = item.image?.url ?? item.image ?? null;
+  let imageUrl = null;
+  
+  if (rawImageUrl) {
+    if (rawImageUrl.startsWith("http://") || rawImageUrl.startsWith("https://")) {
+      imageUrl = rawImageUrl;
+    } else {
+      // Prepend Django server base URL for relative paths like "/media/..."
+      imageUrl = `${BASE_URL}${rawImageUrl.startsWith("/") ? "" : "/"}${rawImageUrl}`;
+    }
+  }
+
+  const image = imageUrl ? { uri: imageUrl } : null;
+  const position = Number(item.position ?? 0);
+  const is_active = Boolean(item.is_active);
+  const bg_color = String(item.bg_color ?? "#FFFFFF");
+
+  return { id, name, image, position, bg_color, is_active };
 }
 
 export async function fetchBrands(): Promise<BrandItem[]> {
   try {
+    console.log("Attempting to fetch from:", `${Api_url}api/brands/`);
     const response = await fetch(`${Api_url}api/brands/`);
-    if (!response.ok) throw new Error(`Failed to fetch brands: ${response.status}`);
     const data = await response.json();
+    console.log("Fetched brands data:", data);
     const items: ApiBrand[] = Array.isArray(data) ? data : (data?.results ?? data?.data ?? []);
     return items.map(toBrand).filter(Boolean);
   } catch (error) {
-    console.warn("fetchBrands error:", error);
+    console.error("CRITICAL fetchBrands error details:", error);
     return [];
   }
 }
-
-

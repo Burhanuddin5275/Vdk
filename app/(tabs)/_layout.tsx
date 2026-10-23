@@ -10,7 +10,7 @@ import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'light'];
+  const colors = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
   const { width: screenWidth } = Dimensions.get('window');
   const insets = useSafeAreaInsets();
 
