@@ -9,8 +9,8 @@ import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Alert, Dimensions, ImageBackground, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Alert, Dimensions, ImageBackground, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { Api_url } from '../url/url';
 
@@ -30,7 +30,6 @@ const Mall = () => {
   const params = useLocalSearchParams<MallParams>();
   const insets = useSafeAreaInsets();
   const { selectedAddress } = useAddressStore();
-  const { selectedShipping } = useShippingStore();
   const userpoint = params?.userPoints ? Number(params.userPoints) : 0;
   const name = params?.name;
   const subtitle = params?.subtitle;
@@ -42,16 +41,11 @@ const Mall = () => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
   const [AddressModal, setAddressModal] = useState(false);
-  const [ShippingModal, setShippingModal] = useState(false);
 const handleAddressModalClose = () => {
   setAddressModal(false);
   router.push('/ShippingAddress'); 
 };
 
-const handleShippingModalClose = () => {
-  setShippingModal(false);
-  router.push('/ChooseShipping'); 
-};
     const handleSuccessModalClose = () => {
     setShowSuccessModal(false);
     router.replace({ 
@@ -100,11 +94,6 @@ const CreateRedeem = async () => {
     return;
   }
 
-  if (!selectedShipping) {
-    setShippingModal(true);
-    return;
-  }
-
 
   try {
     if (!token) {
@@ -116,7 +105,6 @@ const CreateRedeem = async () => {
       applied_points: points,
       user_detail: { number: phone },
       address: selectedAddress,
-      shipping: selectedShipping,
       status: "pending",
       product: [
         {
@@ -150,13 +138,7 @@ const CreateRedeem = async () => {
         autoCloseDelay={1000}
         onClose={handleAddressModalClose}
       />
-          <AlertModal
-        visible={ShippingModal}
-        message="Shipping Required"
-        subtitle="Please add a shipping method before redeeming."
-        autoCloseDelay={1000}
-        onClose={handleShippingModalClose}
-      />
+    
       <ImageBackground
         source={require('../assets/images/ss1.png')}
         style={styles.background}

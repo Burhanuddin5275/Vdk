@@ -6,12 +6,11 @@ import {
     Dimensions,
     Image,
     ImageBackground,
-    SafeAreaView,
     StyleSheet,
     Text,
     View,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import {
     moderateScale,
     verticalScale
@@ -95,7 +94,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Sacramento',
     textAlign: 'center',
     marginBottom: 0, // Remove any margin below welcome
-    lineHeight: moderateScale(53), // Set lineHeight to match fontSize
     padding: 0, // Remove any padding
   },
   startJourney: {
@@ -105,7 +103,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 0, // Remove margin below startJourney
     marginTop: 0, // Remove margin above startJourney
-    lineHeight: moderateScale(34), // Set lineHeight to match fontSize
+    lineHeight: moderateScale(40), // Set lineHeight to match fontSize
     padding: 0, // Remove any padding
   },
 });

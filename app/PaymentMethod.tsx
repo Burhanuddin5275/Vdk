@@ -80,7 +80,7 @@ const Payment = () => {
     const [orderSuccess, setOrderSuccess] = useState(false);
     const [isUserLoading, setIsUserLoading] = useState(true);
     const insets = useSafeAreaInsets();
-  useEffect(() => {
+    useEffect(() => {
         const loadUsers = async () => {
             setIsUserLoading(true);
             try {
@@ -116,15 +116,15 @@ const Payment = () => {
             setPoints(user.total_points.toString());
         }
     }, [user]);
-useEffect(() => {
-    if (splitEnabled) {
-        setPoints('');              
-        setIsRedeemChecked(true);   
-    } else {
-        setPoints('');
-        setIsRedeemChecked(false);
-    }
-}, [splitEnabled]);
+    useEffect(() => {
+        if (splitEnabled) {
+            setPoints('');
+            setIsRedeemChecked(true);
+        } else {
+            setPoints('');
+            setIsRedeemChecked(false);
+        }
+    }, [splitEnabled]);
     const createOrder = async () => {
         if (!selected) return Alert.alert("Error", "Select payment method");
         if (!shippingAddress) return Alert.alert("Error", "Missing shipping");
@@ -406,6 +406,18 @@ useEffect(() => {
                             scrollEnabled={false}
                         />
                         <View style={{ marginTop: 15 }}>
+                            <Text style={styles.sectionTitle}>Payment</Text>
+                            <View style={styles.summaryBox}>
+
+                                {/* PAYMENT MODE / DELIVERY TYPE */}
+                                <View style={styles.calcRow}>
+                                    <Text style={styles.calcLabel}>Payment Mode</Text>
+                                    <Text style={styles.calcValue}>Cash on Delivery</Text>
+                                </View>
+
+                            </View>
+                        </View>
+                        <View style={{ marginTop: 15 }}>
                             <Text style={styles.sectionTitle}>Summary</Text>
                             <View style={styles.summaryBox}>
 
@@ -448,12 +460,12 @@ useEffect(() => {
                         </View>
                     </ScrollView>
 
-                   <View style={styles.footer}>
-                        <Button 
-                            onPress={createOrder} 
-                            disabled={isLoading || isUserLoading || !userId} 
+                    <View style={styles.footer}>
+                        <Button
+                            onPress={createOrder}
+                            disabled={isLoading || isUserLoading || !userId}
                             style={[
-                                styles.confirmBtn, 
+                                styles.confirmBtn,
                                 (isUserLoading || !userId) && styles.disabledBtn
                             ]}
                         >

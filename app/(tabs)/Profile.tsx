@@ -29,6 +29,7 @@ export default function Profile() {
 
         if (matchedUser) {
           setUser(matchedUser);
+          console.log('Matched user:', matchedUser);
           setUserId(matchedUser.id);
         } else {
           console.log('No user found with phone:', phone);
@@ -141,7 +142,7 @@ const handleDeleteAccount = async () => {
               <View style={styles.profileSection}>
                 <Image
                   source={typeof user === 'object' && user?.image?.uri !== 'null'
-                    ? { uri: `${user?.image.uri}` }
+                    ? { uri: `${Api_url}${user?.image.uri}` }
                     : require('../../assets/images/blank-profile-picture-973460_1280.webp')
                   }
                   style={styles.profileImg}

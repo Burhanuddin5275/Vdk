@@ -3,10 +3,10 @@ import { fetchOrders, type OrderStatus } from '@/services/orders';
 import { colors } from '@/theme/colors';
 import { img_url } from '@/url/url';
 import { Ionicons } from '@expo/vector-icons';
-import { router, useFocusEffect } from 'expo-router';
+import { router } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Image, ImageBackground, Modal, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ActivityIndicator, Image, ImageBackground, Modal, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets, SafeAreaView} from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 
 const TABS = ['All', 'Active', 'Completed', 'Cancelled'];
@@ -22,7 +22,6 @@ interface OrderItem {
 
 interface UserDetailObject {
   number: string;
-  // Add other user detail properties here if they exist
 }
 
 type UserDetail = string | UserDetailObject;
@@ -43,6 +42,7 @@ interface DisplayOrder {
 export default function OrdersScreen() {
   const [orders, setOrders] = useState<DisplayOrder[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState('All');
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
@@ -53,9 +53,9 @@ export default function OrdersScreen() {
   const [tabLayouts, setTabLayouts] = useState<{ x: number; width: number }[]>([]);
   const { phone } = useAuth();
 
-  const loadOrders = useCallback(async () => {
+  const loadOrders = useCallback(async (isRefreshing = false) => {
     try {
-      setLoading(true);
+      if (!isRefreshing) setLoading(true);
       const apiData = await fetchOrders(phone || undefined);
 
       const userOrders: DisplayOrder[] = [];
@@ -87,14 +87,19 @@ export default function OrdersScreen() {
       console.log(e);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, [phone]);
 
-  useFocusEffect(
-    useCallback(() => {
-      loadOrders();
-    }, [loadOrders])
-  );
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    loadOrders(true);
+  }, [loadOrders]);
+
+  useEffect(() => {
+    loadOrders();
+  }, [loadOrders]);
+
   const filterOrdersByTab = (orders: DisplayOrder[]) => {
     if (activeTab === 'All') return orders;
     if (activeTab === 'Active') return orders.filter(o => o.status === 'pending' || o.status === 'process' || o.status === 'on_the_way');
@@ -108,13 +113,13 @@ export default function OrdersScreen() {
 
     return orders.filter(order => {
       const orderDate = new Date(order.created_at);
-      orderDate.setHours(0, 0, 0, 0); // Reset time part for date comparison
+      orderDate.setHours(0, 0, 0, 0);
 
       const start = startDate ? new Date(startDate) : null;
       const end = endDate ? new Date(endDate) : null;
 
       if (start) start.setHours(0, 0, 0, 0);
-      if (end) end.setHours(23, 59, 59, 999); // End of the day
+      if (end) end.setHours(23, 59, 59, 999);
 
       if (start && end) {
         return orderDate >= start && orderDate <= end;
@@ -128,10 +133,8 @@ export default function OrdersScreen() {
     });
   };
 
-  // Apply both tab and date filters
   const filteredOrders = filterOrdersByDate(filterOrdersByTab(orders));
 
-  // Loading state
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -154,6 +157,7 @@ export default function OrdersScreen() {
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Orders</Text>
         </View>
+
         {/* Tabs */}
         <View style={styles.tabs}>
           {TABS.map((tab, i) => (
@@ -272,16 +276,14 @@ export default function OrdersScreen() {
                   const year = currentDate.getFullYear();
                   const month = currentDate.getMonth();
 
-                  // Get first day of month and number of days
                   const firstDay = new Date(year, month, 1);
-                  const lastDay = new Date(year, month + 1, 0);
                   const startCalendarDate = new Date(firstDay);
                   startCalendarDate.setDate(startCalendarDate.getDate() - firstDay.getDay());
 
                   const days = [];
                   const today = new Date();
 
-                  for (let i = 0; i < 42; i++) { // 6 weeks * 7 days
+                  for (let i = 0; i < 42; i++) {
                     const currentDay = new Date(startCalendarDate);
                     currentDay.setDate(startCalendarDate.getDate() + i);
 
@@ -369,11 +371,22 @@ export default function OrdersScreen() {
             </View>
           </View>
         </Modal>
-        {/* Orders List */}
-        <ScrollView contentContainerStyle={styles.ordersList} showsVerticalScrollIndicator={false}>
+
+        {/* Orders List with RefreshControl */}
+        <ScrollView
+          contentContainerStyle={styles.ordersList}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor="#fff"
+              colors={[colors.primary]}
+            />
+          }
+        >
           {filteredOrders.length > 0 ? (
             filteredOrders.map((order) => {
-              // Get button configuration based on order status
               const getButtonConfig = () => {
                 switch (order.status) {
                   case 'delivered':
@@ -415,27 +428,7 @@ export default function OrdersScreen() {
                       style: styles.reorderBtn
                     };
                   case 'process':
-                    return {
-                      text: 'Track Order',
-                      onPress: () => {
-                        router.push({
-                          pathname: '/OrderTracker',
-                          params: { order: JSON.stringify(order) }
-                        });
-                      },
-                      style: styles.trackBtn
-                    };
                   case 'on_the_way':
-                    return {
-                      text: 'Track Order',
-                      onPress: () => {
-                        router.push({
-                          pathname: '/OrderTracker',
-                          params: { order: JSON.stringify(order) }
-                        });
-                      },
-                      style: styles.trackBtn
-                    };
                   default:
                     return {
                       text: 'Track Order',
@@ -495,7 +488,6 @@ export default function OrdersScreen() {
     </SafeAreaView>
   );
 }
-
 
 const styles = StyleSheet.create({
   container: {
@@ -667,7 +659,6 @@ const styles = StyleSheet.create({
   trackBtn: {
     backgroundColor: 'white',
   },
-
   actionBtnText: {
     color: colors.primary,
     fontFamily: 'PoppinsMedium',
@@ -710,16 +701,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: verticalScale(2),
   },
-  daysHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: verticalScale(8),
-  },
-  dayHeaderText: {
-    fontSize: moderateScale(14),
-    fontFamily: 'PoppinsRegular',
-    color: colors.textSecondary,
-  },
   calendarGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -741,7 +722,7 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(20),
   },
   rangeDay: {
-    backgroundColor: colors.primary + '30', // 30% opacity
+    backgroundColor: colors.primary + '30',
     borderRadius: 0,
   },
   otherMonthDay: {

@@ -7,16 +7,16 @@ import { colors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { ActivityIndicator, Dimensions, Image, ImageBackground, Modal, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import React, { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Dimensions, Image, ImageBackground, Modal,  ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets, SafeAreaView, } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { useWishlistStore } from '../../app/Wishlist';
 import { fetchAds, type AdsItem } from '../../services/ads';
 import { fetchBrands, type BrandItem } from '../../services/brands';
 import { fetchCategories, type CategoryItem } from '../../services/categories';
 import { fetchProducts } from '../../services/products';
-import { useFocusEffect } from '@react-navigation/native';
+
 import { Api_url, img_url } from '@/url/url';
 import { DiscountPopupItem, fetchDiscountPopup } from '@/services/popup';
 import { Animated, Easing } from 'react-native';
@@ -140,19 +140,18 @@ export default function HomeScreen() {
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const [loading, setLoading] = useState(true);
   const insets = useSafeAreaInsets();
+  
   useEffect(() => {
     const loadPopup = async () => {
       try {
         const data = await fetchDiscountPopup();
         console.log("API popup response:", data);
 
-        // ✅ Handle BOTH array and object response
         const popupItem = Array.isArray(data) ? data[0] : data;
 
         if (popupItem && popupItem.is_active) {
           setPopupData(popupItem);
 
-          // ✅ SHOW popup AFTER data is ready
           setTimeout(() => {
             setShowPopup(true);
           }, 1500);
@@ -164,42 +163,45 @@ export default function HomeScreen() {
 
     loadPopup();
   }, []);
-  useFocusEffect(
-    useCallback(() => {
-      let isActive = true;
 
-      const loadData = async () => {
-        setLoading(true); // 👈 start loader
+  // Replaced useFocusEffect with standard useEffect to load data only once on mount
+  useEffect(() => {
+    let isActive = true;
 
-        try {
-          const [products, categories, brands, adsData] = await Promise.all([
-            fetchProducts(),
-            fetchCategories(),
-            fetchBrands(),
-            fetchAds(),
-          ]);
-          console.log("API URL", Api_url);
+    const loadData = async () => {
+      setLoading(true);
 
-          if (!isActive) return;
+      try {
+        const [products, categories, brands, adsData, heroes] = await Promise.all([
+          fetchProducts(),
+          fetchCategories(),
+          fetchBrands(),
+          fetchAds(),
+          fetchHeroes(),
+        ]);
+        console.log("API URL", Api_url);
 
-          setApiProducts(products);
-          setApiCategories(categories);
-          setApiBrands(brands);
-          setAds(adsData);
-        } catch (e) {
-          console.log('refresh error:', e);
-        } finally {
-          if (isActive) setLoading(false); // 👈 stop loader
-        }
-      };
+        if (!isActive) return;
 
-      loadData();
+        setApiProducts(products);
+        setApiCategories(categories);
+        setApiBrands(brands);
+        setAds(adsData);
+        setHeroContent(heroes);
+      } catch (e) {
+        console.log('load error:', e);
+      } finally {
+        if (isActive) setLoading(false);
+      }
+    };
 
-      return () => {
-        isActive = false;
-      };
-    }, [])
-  );
+    loadData();
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
   useEffect(() => {
     const loadUsers = async () => {
       try {
@@ -211,18 +213,15 @@ export default function HomeScreen() {
 
         } else {
           console.log('No user found with phone:', phone);
-          // If no matching user found, log them out
           if (phone) {
             console.log('Logging out user due to phone number mismatch');
             logout();
-            // Optionally redirect to login screen
             router.replace('/(tabs)/Home');
           }
           setUser(token);
         }
       } catch (error) {
         console.error('Error loading users:', error);
-        // On error, we'll keep the user logged in but log the error
         setUser(token);
       }
     };
@@ -230,7 +229,6 @@ export default function HomeScreen() {
     if (phone) {
       loadUsers();
     } else {
-      // If no phone number is available, log out the user
       if (token) {
         console.log('No phone number available, logging out user');
         logout();
@@ -244,7 +242,6 @@ export default function HomeScreen() {
     const initWishlistAndUser = async () => {
       try {
         if (phone) {
-          // 2. Use the setPhone from useWishlistStore
           const { setPhone } = useWishlistStore.getState();
           setPhone(phone);
           await loadWishlist();
@@ -258,16 +255,6 @@ export default function HomeScreen() {
 
     initWishlistAndUser();
   }, [phone, token, loadWishlist]);
-  useFocusEffect(
-    useCallback(() => {
-      const loadHeroContent = async () => {
-        const heroes = await fetchHeroes();
-        setHeroContent(heroes);
-      };
-
-      loadHeroContent();
-    }, [])
-  );
 
   const isInWishlist = (productId: string, variantLabel?: string) => {
     return wishlistItems.some(item => {
@@ -276,13 +263,13 @@ export default function HomeScreen() {
       return item.variant?.label === variantLabel;
     });
   };
+
   useEffect(() => {
     if (true) {
       const timer = setTimeout(() => setShowPopup(true), 1500);
       return () => clearTimeout(timer);
     }
   }, []);
-
 
   useEffect(() => {
     if (!ads.length) return;
@@ -298,10 +285,11 @@ export default function HomeScreen() {
 
         return nextIndex;
       });
-    }, 6000); // ⏱ 6 seconds
+    }, 6000);
 
     return () => clearInterval(interval);
   }, [ads]);
+
   const handlePopupNavigate = (data: DiscountPopupItem) => {
     const matchedCategory = apiCategories.find(
       (c: any) => Number(c.id) === Number(data.category)
@@ -319,7 +307,6 @@ export default function HomeScreen() {
       return;
     }
 
-    // 🔁 fallback to brand
     const matchedBrand = apiBrands.find(
       (b: any) => b.id === data.brand
     );
@@ -333,7 +320,7 @@ export default function HomeScreen() {
       });
       return;
     }
-    // 3️⃣ PRODUCT FALLBACK (NEW LOGIC) ⭐
+    
     const matchedProduct = apiProducts.find(
       (p: any) => Number(p.id) === Number(data.products)
     );
@@ -351,6 +338,7 @@ export default function HomeScreen() {
       return;
     }
   };
+
   const getProductPoints = (product: any) => {
     const variants = product?.variants;
 
@@ -363,8 +351,8 @@ export default function HomeScreen() {
 
     return Number(product?.points ?? product?.pts ?? 0);
   };
+
   const getPrice = (product: any) => {
-    // 1. If variants exist
     const variants = product?.variants;
 
     if (Array.isArray(variants) && variants.length > 0) {
@@ -392,58 +380,13 @@ export default function HomeScreen() {
       );
     }
 
-    // 2. If no variants → product level
     return Number(
       product?.regular_price ??
       product?.sale_price ??
       0
     );
   };
-  // const getDiscountPercent = (product: any) => {
-  //   const variants = product?.variants;
 
-  //   let maxDiscount = 0;
-
-  //   // CASE 1: Variants exist
-  //   if (Array.isArray(variants) && variants.length > 0) {
-  //     variants.forEach((v: any) => {
-  //       const attrs = Array.isArray(v?.attributes)
-  //         ? v.attributes
-  //         : [v?.attributes];
-
-  //       attrs.forEach((attr: any) => {
-  //         const regular = Number(
-  //           attr?.regular_price ?? v?.price ?? product?.regular_price ?? 0
-  //         );
-
-  //         const saleRaw =
-  //           attr?.sale_price ?? v?.sale_price ?? product?.sale_price;
-
-  //         const sale = saleRaw !== "" && saleRaw != null ? Number(saleRaw) : 0;
-
-  //         if (regular > 0 && sale > 0 && sale < regular) {
-  //           const discount = Math.round(((regular - sale) / regular) * 100);
-  //           if (discount > maxDiscount) {
-  //             maxDiscount = discount;
-  //           }
-  //         }
-  //       });
-  //     });
-
-  //     return maxDiscount;
-  //   }
-
-  //   // CASE 2: No variants
-  //   const regular = Number(product?.regular_price ?? 0);
-  //   const saleRaw = product?.sale_price;
-  //   const sale = saleRaw !== "" && saleRaw != null ? Number(saleRaw) : 0;
-
-  //   if (regular > 0 && sale > 0 && sale < regular) {
-  //     return Math.round(((regular - sale) / regular) * 100);
-  //   }
-
-  //   return 0;
-  // };
   if (loading) {
     return (
       <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'white' }}>
@@ -451,6 +394,7 @@ export default function HomeScreen() {
       </SafeAreaView>
     );
   }
+
   return (
     <>
       <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
@@ -624,6 +568,7 @@ export default function HomeScreen() {
               <Text style={styles.seeAll} onPress={() => { router.push('/BestSeller') }}>See All</Text>
             </View>
             <Text style={styles.bestSellerSubtext}>Find the top most popular items in DKT best sellers.</Text>
+            
             {/* Wishlist Snackbar */}
             {wishlistMessage && (
               <View style={{ position: 'absolute', top: verticalScale(800), left: 0, right: 0, alignItems: 'center', zIndex: 20 }}>
@@ -632,6 +577,7 @@ export default function HomeScreen() {
                 </View>
               </View>
             )}
+
             {/* Best Seller Product Slider */}
             <ScrollView
               horizontal
@@ -642,11 +588,10 @@ export default function HomeScreen() {
               {apiProducts.filter(p => p.is_active)
                 .sort((a, b) => (b.total_sold || 0) - (a.total_sold || 0))
                 .slice(0, 5)
-                .map((product, idx) => {
+                .map((product) => {
                   const firstVariant = (product.variants && product.variants.length > 0) ? product.variants[0] : null;
                   const variantLabel = firstVariant?.label || firstVariant?.name;
                   const minPrice = getPrice(product);
-                  // const discount = getDiscountPercent(product);
                   return (
                     <TouchableOpacity
                       key={product.id}
@@ -658,13 +603,6 @@ export default function HomeScreen() {
                         colors={["#FFD600", "#FF9800"]}
                         style={bestSellerStyles.gradient}
                       >
-                        {/* {discount > 0 && (
-                          <View style={bestSellerStyles.discountTag}>
-                            <Text style={bestSellerStyles.discountText}>
-                              {discount}% OFF
-                            </Text>
-                          </View>
-                        )} */}
                         <TouchableOpacity
                           style={bestSellerStyles.wishlistBtn}
                           onPress={async () => {
@@ -708,20 +646,20 @@ export default function HomeScreen() {
                               };
 
                               const variants = processVariants();
-                              const firstVariant = variants[0];
+                              const firstVariantItem = variants[0];
 
                               await addToWishlist({
                                 id: product.id,
                                 name: product.name,
-                                regular_price: firstVariant?.price ?? product.regular_price,
-                                sale_price: firstVariant?.sale_price ?? product.sale_price,
+                                regular_price: firstVariantItem?.price ?? product.regular_price,
+                                sale_price: firstVariantItem?.sale_price ?? product.sale_price,
                                 image: product.img,
-                                pack: firstVariant?.label || '',
+                                pack: firstVariantItem?.label || '',
                                 category: product.category,
-                                variant: firstVariant ? {
-                                  label: firstVariant.label,
-                                  price: firstVariant.price,
-                                  sale_price: firstVariant.sale_price
+                                variant: firstVariantItem ? {
+                                  label: firstVariantItem.label,
+                                  price: firstVariantItem.price,
+                                  sale_price: firstVariantItem.sale_price
                                 } : undefined
                               });
                               setWishlistMessage('Added to wishlist');
@@ -790,7 +728,6 @@ export default function HomeScreen() {
       </SafeAreaView>
     </>
   );
-
 }
 
 const popupStyles = StyleSheet.create({
@@ -808,7 +745,6 @@ const popupStyles = StyleSheet.create({
     zIndex: -1,
     opacity: 0.6,
   },
-
   popupBox: {
     width: "90%",
     height: "auto",
@@ -845,7 +781,7 @@ const popupStyles = StyleSheet.create({
   },
   saleText: {
     fontSize: moderateScale(46),
-    lineHeight: moderateScale(40),
+    lineHeight: moderateScale(55),
     color: '#E53935',
     fontFamily: 'Sigmar',
   },
@@ -894,22 +830,6 @@ const bestSellerStyles = StyleSheet.create({
     resizeMode: 'contain',
     marginTop: verticalScale(10)
   },
-  discountTag: {
-    position: 'absolute',
-    top: verticalScale(10),
-    left: scale(10),
-    backgroundColor: '#E53935',
-    paddingHorizontal: scale(6),
-    paddingVertical: verticalScale(3),
-    borderRadius: moderateScale(6),
-    zIndex: 3,
-  },
-
-  discountText: {
-    color: '#fff',
-    fontSize: scale(10),
-    fontFamily: 'InterBold',
-  },
   priceTag: {
     position: 'absolute',
     bottom: verticalScale(0),
@@ -919,27 +839,23 @@ const bestSellerStyles = StyleSheet.create({
     overflow: 'hidden',
     elevation: 4,
   },
-
   priceLeft: {
     backgroundColor: '#E53935',
     width: scale(97),
     paddingVertical: verticalScale(4),
     justifyContent: 'center',
   },
-
   priceLeftText: {
     color: '#fff',
     fontSize: scale(10),
     textAlign: 'center',
     fontFamily: 'InterBold',
   },
-
   priceRight: {
     backgroundColor: '#fff',
     width: scale(97),
     justifyContent: 'center',
   },
-
   priceRightText: {
     color: '#E53935',
     fontSize: scale(12),
@@ -984,7 +900,6 @@ const bestSellerStyles = StyleSheet.create({
   },
 });
 
-
 const styles = StyleSheet.create({
   background: {
     flex: 1,
@@ -1009,7 +924,6 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontSize: moderateScale(22),
     fontFamily: "RussoOne",
-
   },
   subtext: {
     color: '#fff',
@@ -1026,7 +940,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(10),
     paddingVertical: verticalScale(12),
     alignSelf: 'flex-start',
-    marginTop: verticalScale(14),
+    marginTop: verticalScale(14),    
     alignItems: 'center',
   },
   rewardLabel: {
@@ -1041,10 +955,10 @@ const styles = StyleSheet.create({
     lineHeight: moderateScale(28),
     textAlign: 'center',
   },
-  rewardPts: {
+  rewardPts: {  
     fontSize: moderateScale(16),
-    lineHeight: moderateScale(12),
-    color: "red",
+    lineHeight: moderateScale(18),
+    color: "red", 
     fontFamily: 'PoppinsBold',
   },
   loginButton: {
@@ -1098,8 +1012,8 @@ const styles = StyleSheet.create({
   categoryLabel: {
     color: 'white',
     fontSize: moderateScale(12),
-    fontFamily: "Sigmar",
-    lineHeight: moderateScale(12),
+    fontFamily: "Sigmar", 
+    lineHeight: moderateScale(15),
     textAlign: 'center',
   },
   adSliderContainer: {
@@ -1114,9 +1028,6 @@ const styles = StyleSheet.create({
   adSlideImage: {
     width: '100%',
     height: verticalScale(140),
-  },
-  adIndicatorActive: {
-    backgroundColor: 'white',
   },
   brandCard: {
     backgroundColor: '#FBF4E4',
@@ -1157,5 +1068,3 @@ const styles = StyleSheet.create({
     marginBottom: verticalScale(16),
   },
 });
-
-

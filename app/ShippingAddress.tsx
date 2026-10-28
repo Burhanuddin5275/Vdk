@@ -13,7 +13,6 @@ import {
   ImageBackground,
   Keyboard,
   Modal,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -21,7 +20,7 @@ import {
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 
 const ShippingAddress = () => {
@@ -54,6 +53,7 @@ const ShippingAddress = () => {
       if (users?.length > 0) {
         const currentUser = users.find(u => u.number === phone) || users[0];
         setUser(currentUser);
+        console.log('Loaded user addresses:', currentUser.addresses);
       }
     } catch (error) {
       console.error('Error loading addresses:', error);
@@ -67,7 +67,7 @@ const ShippingAddress = () => {
   const addresses = user?.addresses || [];
 
   const deleteAddress = async (addressId: string) => {
-    const API_URL = `${Api_url}/api/delete-user-address/${addressId}/`;
+    const API_URL = `${Api_url}api/delete-user-address/${addressId}/`;
 
     const response = await fetch(API_URL, {
       method: 'DELETE',
@@ -545,7 +545,7 @@ const styles = StyleSheet.create({
   addressText: {
     fontSize: 14,
     color: '#333',
-    lineHeight: 20,
+    lineHeight: verticalScale(20),
     marginBottom: 16,
   },
   addressActions: {

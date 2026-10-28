@@ -1,17 +1,20 @@
 import { useAuth } from '@/hooks/useAuth';
 import { useAddressStore } from '@/store/addressStore';
 import { useShippingStore } from '@/store/shippingStore';
+import { fetchUsers } from '@/services/user';
 import { Ionicons } from '@expo/vector-icons';
-import { router, useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useState } from 'react';
-import { Alert, Dimensions, FlatList, Image, ImageBackground, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { router, useLocalSearchParams, useFocusEffect } from 'expo-router'; // 👈 Imported useFocusEffect
+import React, { useCallback, useState } from 'react'; // 👈 Imported useCallback
+import { Alert, Dimensions, FlatList, Image, ImageBackground, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { Button } from '../components/Button';
 import { IconSymbol } from '../components/ui/IconSymbol';
 import { colors } from '../theme/colors';
 import AlertModal from '@/components/Alert';
+
 const { width, height } = Dimensions.get('window');
+
 type CheckoutParams = {
     id?: string;
     name?: string;
@@ -22,23 +25,64 @@ type CheckoutParams = {
     variant?: string;
     points?: string;
 } & Record<string, string | string[]>;
+
 const Checkout = () => {
     const insets = useSafeAreaInsets();
     const params = useLocalSearchParams<CheckoutParams>();
-    const { selectedAddress } = useAddressStore();
+    const addressStore = useAddressStore() as any;
+    const selectedAddress = addressStore.selectedAddress;
     const { selectedShipping } = useShippingStore();
-    const { isAuthenticated } = useAuth();
+    const { isAuthenticated, phone } = useAuth();
     const [AddressModal, setAddressModal] = useState(false);
     const [ShippingModal, setShippingModal] = useState(false);
+
+    // 👇 Replaced standard useEffect with useFocusEffect so it checks/refreshes every time screen gains focus
+    useFocusEffect(
+        useCallback(() => {
+            let isActive = true;
+
+            const checkAndRefreshAddress = async () => {
+                if (isAuthenticated) {
+                    try {
+                        const users = await fetchUsers();
+                        if (!isActive) return;
+
+                        if (users?.length > 0) {
+                            const currentUser = users.find((u: any) => u.number === phone) || users[0];
+
+                            if (currentUser?.addresses && currentUser.addresses.length > 0) {
+                                // If no address is selected OR if the currently selected address no longer exists in the user's profile, fallback to the first one
+                                const addressExists = selectedAddress
+                                    ? currentUser.addresses.some((addr: any) => String(addr.id) === String(selectedAddress.id))
+                                    : false;
+
+                                if (!selectedAddress || !addressExists) {
+                                    useAddressStore.setState({ selectedAddress: currentUser.addresses[0] });
+                                    console.log('Refreshed/Auto-selected first address:', currentUser.addresses[0]);
+                                }
+                            } else {
+                                // Clear address if user has none
+                                useAddressStore.setState({ selectedAddress: null });
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error refreshing address/user data:', error);
+                    }
+                }
+            };
+
+            checkAndRefreshAddress();
+
+            return () => {
+                isActive = false;
+            };
+        }, [isAuthenticated, phone, selectedAddress])
+    );
+
     const handleAddressModalClose = () => {
         setAddressModal(false);
         router.push('/ShippingAddress');
     };
-
-    // const handleShippingModalClose = () => {
-    //     setShippingModal(false);
-    //     router.push('/ChooseShipping');
-    // };
 
     let cartItems: CheckoutParams[] = [];
 
@@ -64,10 +108,7 @@ const Checkout = () => {
         }];
     }
 
-
-
     const renderCartItem = ({ item }: { item: CheckoutParams }) => {
-        console.log('Rendering item:', JSON.stringify(item, null, 2));
         return (
             <View style={styles.cartItem}>
                 <Image
@@ -123,7 +164,6 @@ const Checkout = () => {
                                             <Text style={styles.addressDetails}>
                                                 {selectedAddress.city}{selectedAddress.block ? `, ${selectedAddress.block}` : ''}
                                             </Text>
-
                                         </View>
                                     ) : (
                                         <Text style={styles.addressDetails}>No Address Selected</Text>
@@ -144,45 +184,6 @@ const Checkout = () => {
                                 autoCloseDelay={1000}
                                 onClose={handleAddressModalClose}
                             />
-{/*                         
-                            <Text style={styles.sectionTitle}>Shipping Method</Text>
-                            <View style={styles.sectionRow}>
-                                {selectedShipping ? (
-                                    <Image
-                                        source={selectedShipping.image}
-                                        resizeMode='contain'
-                                        style={{ width: scale(30), height: scale(40), tintColor: colors.white }}
-                                    />
-                                ) : (
-                                    <Image
-                                        source={require('../assets/images/Box.png')}
-                                        resizeMode='contain'
-                                        style={{ width: scale(30), height: scale(40), tintColor: colors.white }}
-                                    />
-                                )}
-                                <View style={{ flex: 1, marginLeft: 10 }}>
-                                    <Text style={styles.shippingLabel}>
-                                        {selectedShipping ? selectedShipping.label : 'Select Shipping'}
-                                    </Text>
-                                    <Text style={styles.shippingEstimate}>
-                                        {selectedShipping ? selectedShipping.desc : 'No Shipping Method Selected'}
-                                    </Text>
-                                </View>
-                                <Button
-                                    onPress={() => router.push('/ChooseShipping')}
-                                    variant="secondary"
-                                    style={styles.changeBtn}
-                                >
-                                    {selectedShipping ? 'Change' : 'Select'}
-                                </Button>
-                            </View> */}
-                            {/* <AlertModal
-                                visible={ShippingModal}
-                                message="Shipping Required"
-                                subtitle="Please add a shipping method before redeeming."
-                                autoCloseDelay={1000}
-                                onClose={handleShippingModalClose}
-                            /> */}
                         </>
                     ) : (
                         <View style={styles.loginPrompt}>
@@ -227,14 +228,9 @@ const Checkout = () => {
                                 }
 
                                 if (!selectedAddress) {
-                                   setAddressModal(true)
+                                    setAddressModal(true)
                                     return;
                                 }
-
-                                // if (!selectedShipping) {
-                                //   setShippingModal(true)
-                                //     return;
-                                // }
 
                                 router.push({
                                     pathname: '/PaymentMethod',
@@ -327,23 +323,6 @@ const styles = StyleSheet.create({
         borderColor: colors.white,
         borderWidth: 1,
     },
-    changeBtnText: {
-        color: colors.primary,
-        fontFamily: "PoppinsMedium",
-        fontSize: moderateScale(10),
-    },
-    shippingLabel: {
-        color: colors.white,
-        fontFamily: 'PoppinsMedium',
-        fontSize: moderateScale(18),
-        lineHeight: verticalScale(18),
-    },
-    shippingEstimate: {
-        color: colors.white,
-        fontSize: moderateScale(12),
-        fontFamily: 'PoppinsRegular',
-        opacity: 0.7,
-    },
     cartItem: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -406,7 +385,7 @@ const styles = StyleSheet.create({
     },
     payBtn: {
         width: '100%',
-        borderRadius: 16,
+        borderRadius: scale(12),
         paddingVertical: 16,
         backgroundColor: colors.primary,
         alignItems: 'center',
