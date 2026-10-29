@@ -3,13 +3,11 @@ import { fetchRedeems, RedeemItem } from '@/services/redeem';
 import { fetchUsers, UserItem } from '@/services/user';
 import { colors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import { useRouter, useFocusEffect } from 'expo-router'; // 👈 Imported useFocusEffect
+import React, { useCallback, useEffect, useState } from 'react'; // 👈 Imported useCallback
 import { Dimensions, Image, ImageBackground, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
-
-
 
 export default function RewardsScreen() {
   const insets = useSafeAreaInsets();
@@ -18,32 +16,46 @@ export default function RewardsScreen() {
   const [redeems, setRedeems] = useState<RedeemItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-    const [user, setUser] = useState<UserItem | string | null | undefined>(undefined);
-    useEffect(() => {
+  const [user, setUser] = useState<UserItem | string | null | undefined>(undefined);
+
+  // 👇 Replaced standard useEffect with useFocusEffect so user data reloads on focus
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+
       const loadUsers = async () => {
         try {
           const users = await fetchUsers();
+          if (!isActive) return;
+
           const matchedUser = users.find((u) => u.number === phone);
-  
+
           if (matchedUser) {
             setUser(matchedUser);
-            console.log('Matched user:', matchedUser);
+            console.log('Refreshed matched user:', matchedUser);
           } else {
             console.log('No user found with phone:', phone);
             setUser(token);
           }
         } catch (error) { 
+          if (!isActive) return;
           console.error('Error loading users:', error);
           setUser(token);
         }
       };
-  
+
       if (phone) {
         loadUsers();
       } else {
-        setUser(token); // Fallback to token if no phone
+        setUser(token);
       }
-    }, [phone, token]);
+
+      return () => {
+        isActive = false;
+      };
+    }, [phone, token])
+  );
+
   useEffect(() => {
     const loadRedeems = async () => {
       try {
@@ -62,91 +74,90 @@ export default function RewardsScreen() {
   }, []);
 
   return (
-          <SafeAreaView style={{flex:1,paddingBottom: Math.max(insets.bottom, verticalScale(4))}}>
-            <ImageBackground
-      source={require('../../assets/images/ss1.png')}
-      style={styles.background}
-      resizeMode="cover"
-    >
-      <ScrollView contentContainerStyle={styles.rewardsList} showsVerticalScrollIndicator={false}>
-        <View style={styles.container}>
-          {/* Header */}
-          <View style={styles.header}>
-            <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-              <Ionicons name="arrow-back" size={moderateScale(28)} color="white" />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Mall</Text>
-          </View>
-          {/* Points Badge */}
-
-          <View style={styles.pointsBadgeContainer}>
-            <View style={styles.pointsBadgeOuter}>
-              <View style={{
-                width: verticalScale(140),
-                height: verticalScale(140),
-                borderRadius: verticalScale(140) / 2,
-                backgroundColor: '#FFC4C6',
-                borderWidth: scale(2),
-                borderColor: '#660101', 
-                alignItems: 'center', 
-                justifyContent: 'center',
-                marginBottom: 0,
-              }}>
-                <View style={styles.pointsBadgeInner}>
-                <Text style={styles.pointsValue}>{typeof user === 'object' && user !== null && 'total_points' in user ? (user as UserItem).total_points : '0'}</Text>
-                  <Text style={styles.pointsLabel}>PTS</Text>
-                </View>
-              </View>
-              <View style={styles.pointsBadgeFooter}>
-                <Text style={styles.pointsFooterText}>YOUR POINTS</Text>
-              </View>
-            </View>
-          </View>
-
-          {/* Rewards List */}
-
-          {redeems.map((item, idx) => (
-            <View style={styles.rewardItem} key={idx}>
-              <View style={styles.imageContainer}>
-                {item.image ? (
-                  <Image source={item.image} style={styles.rewardImage} resizeMode="contain" />
-                ) : (
-                  <View style={styles.placeholderContainer}>
-                    <Ionicons name="image-outline" size={40} color="#999" />
-                  </View>
-                )}
-              </View>
-              <View style={styles.rewardInfo}>
-                <Text style={styles.rewardName}>{item.title}</Text>
-                <View style={{ alignItems: 'flex-start' }}>
-                  <Text style={styles.rewardPoints}>{item.points_required}</Text>
-                  <Text style={styles.pointsSub}>POINTS</Text>
-                </View>
-              </View>
-              <TouchableOpacity 
-                style={styles.redeemBtn} 
-                onPress={() => router.push({ 
-                  pathname: '/Mall', 
-                  params: { 
-                    userPoints:typeof user === 'object' && user !== null && 'total_points' in user ? (user as UserItem).total_points : '0',
-                    name: item.title, 
-                    points: item.points_required, 
-                    image: item.imageKey, 
-                    subtitle: item.subtitle || '', 
-                    description: item.description || ''
-                  } 
-                })}
-              >
-                <Text style={styles.redeemText}>Redeem</Text>
+    <SafeAreaView style={{flex:1,paddingBottom: Math.max(insets.bottom, verticalScale(4))}}>
+      <ImageBackground
+        source={require('../../assets/images/ss1.png')}
+        style={styles.background}
+        resizeMode="cover"
+      >
+        <ScrollView contentContainerStyle={styles.rewardsList} showsVerticalScrollIndicator={false}>
+          <View style={styles.container}>
+            {/* Header */}
+            <View style={styles.header}>
+              <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+                <Ionicons name="arrow-back" size={moderateScale(28)} color="white" />
               </TouchableOpacity>
+              <Text style={styles.headerTitle}>Mall</Text>
             </View>
-          ))}
+            {/* Points Badge */}
 
-        </View>
-      </ScrollView>
-    </ImageBackground>
-          </SafeAreaView>
-   
+            <View style={styles.pointsBadgeContainer}>
+              <View style={styles.pointsBadgeOuter}>
+                <View style={{
+                  width: verticalScale(140),
+                  height: verticalScale(140),
+                  borderRadius: verticalScale(140) / 2,
+                  backgroundColor: '#FFC4C6',
+                  borderWidth: scale(2),
+                  borderColor: '#660101', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  marginBottom: 0,
+                }}>
+                  <View style={styles.pointsBadgeInner}>
+                  <Text style={styles.pointsValue}>{typeof user === 'object' && user !== null && 'total_points' in user ? (user as UserItem).total_points : '0'}</Text>
+                    <Text style={styles.pointsLabel}>PTS</Text>
+                  </View>
+                </View>
+                <View style={styles.pointsBadgeFooter}>
+                  <Text style={styles.pointsFooterText}>YOUR POINTS</Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Rewards List */}
+
+            {redeems.map((item, idx) => (
+              <View style={styles.rewardItem} key={idx}>
+                <View style={styles.imageContainer}>
+                  {item.image ? (
+                    <Image source={item.image} style={styles.rewardImage} resizeMode="contain" />
+                  ) : (
+                    <View style={styles.placeholderContainer}>
+                      <Ionicons name="image-outline" size={40} color="#999" />
+                    </View>
+                  )}
+                </View>
+                <View style={styles.rewardInfo}>
+                  <Text style={styles.rewardName}>{item.title}</Text>
+                  <View style={{ alignItems: 'flex-start' }}>
+                    <Text style={styles.rewardPoints}>{item.points_required}</Text>
+                    <Text style={styles.pointsSub}>POINTS</Text>
+                  </View>
+                </View>
+                <TouchableOpacity 
+                  style={styles.redeemBtn} 
+                  onPress={() => router.push({ 
+                    pathname: '/Mall', 
+                    params: { 
+                      userPoints:typeof user === 'object' && user !== null && 'total_points' in user ? (user as UserItem).total_points : '0',
+                      name: item.title, 
+                      points: item.points_required, 
+                      image: item.imageKey, 
+                      subtitle: item.subtitle || '', 
+                      description: item.description || ''
+                    } 
+                  })}
+                >
+                  <Text style={styles.redeemText}>Redeem</Text>
+                </TouchableOpacity>
+              </View>
+            ))}
+
+          </View>
+        </ScrollView>
+      </ImageBackground>
+    </SafeAreaView>
   );
 }
 
@@ -162,7 +173,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-       flexDirection: 'row',
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-start',
     height: verticalScale(80),
@@ -203,7 +214,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 0,
-
   },
   pointsBadgeInner: {
     width: scale(150),
@@ -262,7 +272,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: scale(12),
     backgroundColor: '#f5f5f5',
-   borderRadius: 8,   
+    borderRadius: 8,   
   },
   placeholderContainer: {
     width: '100%',
@@ -311,4 +321,4 @@ const styles = StyleSheet.create({
     fontSize: moderateScale(14),
     fontFamily: 'PoppinsSemi',
   },
-}); 
+});

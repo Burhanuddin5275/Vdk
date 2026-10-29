@@ -1,15 +1,16 @@
 import { useAuth } from '@/hooks/useAuth';
-import { fetchOrders, type OrderStatus } from '@/services/orders';
+import { fetchOrders, orders, type OrderStatus } from '@/services/orders';
 import { colors } from '@/theme/colors';
-import { img_url } from '@/url/url';
+import { Api_url, img_url } from '@/url/url';
 import { Ionicons } from '@expo/vector-icons';
+import axios from 'axios';
 import { router } from 'expo-router';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Image, ImageBackground, Modal, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets, SafeAreaView} from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 
-const TABS = ['All', 'Active', 'Completed', 'Cancelled'];
+const TABS = ['All', 'Active', 'Completed', 'Cancelled', 'History'];
 
 interface OrderItem {
   id: string;
@@ -22,6 +23,7 @@ interface OrderItem {
 
 interface UserDetailObject {
   number: string;
+  total_points: number;
 }
 
 type UserDetail = string | UserDetailObject;
@@ -40,10 +42,11 @@ interface DisplayOrder {
 }
 
 export default function OrdersScreen() {
-  const [orders, setOrders] = useState<DisplayOrder[]>([]);
+  const [ordersState, setOrdersState] = useState<DisplayOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState('All');
+  const [userId, setUserId] = useState<string | null>(null);
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -51,67 +54,110 @@ export default function OrdersScreen() {
   const [currentViewDate, setCurrentViewDate] = useState(new Date());
   const insets = useSafeAreaInsets();
   const [tabLayouts, setTabLayouts] = useState<{ x: number; width: number }[]>([]);
-  const { phone } = useAuth();
+  const scrollViewRef = useRef<ScrollView>(null);
+  const { phone, token } = useAuth();
 
-  const loadOrders = useCallback(async (isRefreshing = false) => {
+  useEffect(() => {
+    const fetchUserId = async () => {
+      try {
+        const response = await axios.get(`${Api_url}api/app-user/list/`);
+        const users = response.data;
+        const matchedUser = users.find((u: any) => u.number === phone);
+
+        if (matchedUser) {
+          setUserId(matchedUser.id.toString());
+        } else {
+          setUserId(token);
+        }
+      } catch (error) {
+        console.error('Error fetching user ID:', error);
+        setUserId(token);
+      }
+    };
+
+    if (phone) {
+      fetchUserId();
+    } else {
+      setUserId(token);
+    }
+  }, [phone, token]);
+
+  const mapToDisplayOrder = (order: orders): DisplayOrder => {
+    const userDetailObj = typeof order.user_detail === 'object' && order.user_detail !== null 
+      ? order.user_detail 
+      : { number: typeof order.user_detail === 'string' ? order.user_detail : '', total_points: 0 };
+
+    const totalPoints = (userDetailObj as any).points ?? (userDetailObj as any).total_points ?? 0;
+
+    return {
+      id: order.id.toString(),
+      total: order.total_amount?.toString() || '0',
+      user_detail: {
+        number: userDetailObj.number || '',
+        total_points: totalPoints,
+      },
+      status: order.status,
+      type: order.type,
+      created_at: order.created_at || new Date().toISOString(),
+      items: order.items?.map((item: any) => ({
+        id: item.id?.toString() || item._id?.toString(),
+        name: item.name || 'Unknown Item',
+        price: item.price?.toString() || '0',
+        quantity: item.quantity || 1,
+        image: item.image,
+        pts: item.pts || (order as any).points_used || 0
+      })) || []
+    };
+  };
+
+  const loadOrders = useCallback(async (tabName: string, currentUserId: string | null, isRefreshing = false) => {
+    if (!currentUserId) return;
+
     try {
       if (!isRefreshing) setLoading(true);
-      const apiData = await fetchOrders(phone || undefined);
+      
+      let apiStatus = 'all';
+      if (tabName === 'Active') apiStatus = 'Active';
+      else if (tabName === 'Completed') apiStatus = 'completed';
+      else if (tabName === 'Cancelled') apiStatus = 'cancelled';
+      else if (tabName === 'History') apiStatus = 'History';
 
-      const userOrders: DisplayOrder[] = [];
+      const apiData = await fetchOrders(currentUserId, apiStatus);
+      const userOrders = apiData.map(mapToDisplayOrder);
 
-      apiData.forEach(order => {
-        const userDetail =
-          typeof order.user_detail === 'string'
-            ? order.user_detail
-            : (order.user_detail as UserDetailObject)?.number || '';
-
-        if (userDetail === phone) {
-          userOrders.push({
-            id: order.id.toString(),
-            total: (order.items.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0) - (order.points_discount || 0)).toFixed(2),
-            user_detail: userDetail,
-            status: order.status,
-            type: order.type,
-            created_at: order.created_at || new Date().toISOString(),
-            items: order.items || [],
-            points_discount: order.points_discount ?? 0,
-            discount_amount: order.discount_amount,
-            total_amount: order.total_amount,
-          });
-        }
-      });
-
-      setOrders(userOrders);
+      setOrdersState(userOrders);
     } catch (e) {
       console.log(e);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [phone]);
+  }, []);
+
+  const handleTabPress = (tab: string, index: number) => {
+    setActiveTab(tab);
+    const layout = tabLayouts[index];
+    if (layout && scrollViewRef.current) {
+      const leftOffset = Math.max(0, layout.x - scale(20));
+      scrollViewRef.current.scrollTo({ x: leftOffset, animated: true });
+    }
+  };
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    loadOrders(true);
-  }, [loadOrders]);
+    loadOrders(activeTab, userId, true);
+  }, [loadOrders, activeTab, userId]);
 
   useEffect(() => {
-    loadOrders();
-  }, [loadOrders]);
+    if (userId) {
+      loadOrders(activeTab, userId);
+    }
+  }, [loadOrders, activeTab, userId]);
 
-  const filterOrdersByTab = (orders: DisplayOrder[]) => {
-    if (activeTab === 'All') return orders;
-    if (activeTab === 'Active') return orders.filter(o => o.status === 'pending' || o.status === 'process' || o.status === 'on_the_way');
-    if (activeTab === 'Completed') return orders.filter(o => o.status === 'delivered');
-    if (activeTab === 'Cancelled') return orders.filter(o => o.status === 'cancelled' && o.type !== 'redeem');
-    return orders;
-  };
+  const filterOrdersByDate = (ordersList: DisplayOrder[]) => {
+    if (!startDate && !endDate) return ordersList;
 
-  const filterOrdersByDate = (orders: DisplayOrder[]) => {
-    if (!startDate && !endDate) return orders;
-
-    return orders.filter(order => {
+    return ordersList.filter(order => {
       const orderDate = new Date(order.created_at);
       orderDate.setHours(0, 0, 0, 0);
 
@@ -133,9 +179,9 @@ export default function OrdersScreen() {
     });
   };
 
-  const filteredOrders = filterOrdersByDate(filterOrdersByTab(orders));
+  const filteredOrders = filterOrdersByDate(ordersState);
 
-  if (loading) {
+  if (loading && !refreshing) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={colors.primary} />
@@ -158,40 +204,52 @@ export default function OrdersScreen() {
           <Text style={styles.headerTitle}>Orders</Text>
         </View>
 
-        {/* Tabs */}
-        <View style={styles.tabs}>
-          {TABS.map((tab, i) => (
-            <TouchableOpacity
-              key={tab}
-              onPress={() => setActiveTab(tab)}
-              style={styles.tabBtn}
-              onLayout={(event) => {
-                const { x, width } = event.nativeEvent.layout;
-                setTabLayouts((prev) => {
-                  const updated = [...prev];
-                  updated[i] = { x, width };
-                  return updated;
-                });
-              }}
-            >
-              <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
-                {tab}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-        <View style={styles.tabUnderline}>
-          {tabLayouts[TABS.indexOf(activeTab)] && (
-            <View
-              style={[
-                styles.underline,
-                {
-                  left: tabLayouts[TABS.indexOf(activeTab)].x,
-                  width: tabLayouts[TABS.indexOf(activeTab)].width,
-                },
-              ]}
-            />
-          )}
+        {/* Tabs and Underline Container */}
+        <View style={styles.tabsContainerWrapper}>
+          <ScrollView 
+            ref={scrollViewRef}
+            horizontal 
+            showsHorizontalScrollIndicator={false} 
+            contentContainerStyle={styles.tabsScrollContainer}
+            style={styles.tabsWrapper}
+          >
+            <View style={styles.tabsInnerContent}>
+              <View style={styles.tabs}>
+                {TABS.map((tab, i) => (
+                  <TouchableOpacity
+                    key={tab}
+                    onPress={() => handleTabPress(tab, i)}
+                    style={styles.tabBtn}
+                    onLayout={(event) => {
+                      const { x, width } = event.nativeEvent.layout;
+                      setTabLayouts((prev) => {
+                        const updated = [...prev];
+                        updated[i] = { x, width };
+                        return updated;
+                      });
+                    }}
+                  >
+                    <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
+                      {tab}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <View style={styles.tabUnderline}>
+                {tabLayouts[TABS.indexOf(activeTab)] && (
+                  <View
+                    style={[
+                      styles.underline,
+                      {
+                        left: tabLayouts[TABS.indexOf(activeTab)].x,
+                        width: tabLayouts[TABS.indexOf(activeTab)].width,
+                      },
+                    ]}
+                  />
+                )}
+              </View>
+            </View>
+          </ScrollView>
         </View>
 
         {/* Date Filter */}
@@ -449,14 +507,14 @@ export default function OrdersScreen() {
                 <View key={order.id} style={styles.orderCard}>
                   <View style={styles.imgPlaceholder}>
                     <Image
-                      source={require('../../assets/images/order.png')}
+                      source={order.items[0]?.image ? { uri: order.items[0].image } : require('../../assets/images/order.png')}
                       style={styles.img}
                       resizeMode="contain"
                     />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.orderNum}>Order #{order.id}</Text>
-                    <Text style={styles.orderPrice}>Rs. {order.total_amount}</Text>
+                    <Text style={styles.orderPrice}>Rs. {order.total}</Text>
                     <Text style={styles.orderDate}>
                       {new Date(order.created_at).toLocaleDateString()}
                     </Text>
@@ -522,17 +580,28 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     lineHeight: verticalScale(55),
   },
+  tabsContainerWrapper: {
+    marginHorizontal: scale(16),
+    marginBottom: verticalScale(12),
+  },
+  tabsWrapper: {
+    maxHeight: verticalScale(50),
+  },
+  tabsScrollContainer: {
+    paddingRight: scale(60),
+  },
+  tabsInnerContent: {
+    minWidth: '100%',
+  },
   tabs: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
     backgroundColor: 'transparent',
-    marginBottom: 0,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.white,
   },
   tabBtn: {
     paddingHorizontal: scale(16),
-    paddingVertical: 12,
+    paddingVertical: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   tabText: {
     color: '#fff',
@@ -546,13 +615,14 @@ const styles = StyleSheet.create({
   tabUnderline: {
     height: 2,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    marginBottom: 12,
+    width: '100%',
+    marginTop: 2,
   },
   underline: {
     position: 'absolute',
     height: 2,
     backgroundColor: '#fff',
-    bottom: -2,
+    bottom: 0,
   },
   dateRow: {
     flexDirection: 'row',
@@ -611,6 +681,7 @@ const styles = StyleSheet.create({
     marginRight: 14,
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
   },
   img: {
     width: scale(40),

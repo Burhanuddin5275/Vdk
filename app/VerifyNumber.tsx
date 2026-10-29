@@ -111,7 +111,7 @@ const VerifyNumber = () => {
       Alert.alert('Error', 'Phone number not found');
       return;
     }
-    const data = await fetch(`${Api_url}/api/app-users/resend_otp/`, {
+    const data = await fetch(`${Api_url}api/app-users/resend_otp/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

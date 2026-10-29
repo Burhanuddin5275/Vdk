@@ -51,7 +51,6 @@ export type RedeemOrderPayload = {
     number: string | null;
   };
   address: any;
-  shipping: any;
   status: string;
   product: {
     name?: string;

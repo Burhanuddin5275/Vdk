@@ -52,15 +52,15 @@ function toProduct(item: ApiOrders): orders {
   };
 }
 
-export async function fetchOrders(phone?: string): Promise<orders[]> {
+export async function fetchOrders(userId?: string, status?: string): Promise<orders[]> {
   try {
 
-    const response = await fetch(`${Api_url}api/orders/`);
+    const response = await fetch(`${Api_url}api/orders/?user_id=${userId}&status=${status}`);
     if (!response.ok) {
       throw new Error(`Failed to fetch orders: ${response.status}`);
     }
     const data = await response.json();
-    console.log("fetchOrders data:", data);
+    console.log("fetchOrders data:", JSON.stringify(data, null, 2));
     const items: ApiOrders[] = Array.isArray(data) ? data : (data?.results ?? data?.data ?? []);
     return items.map(toProduct).filter(Boolean);
   } catch (error) {
