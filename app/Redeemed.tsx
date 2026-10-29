@@ -94,25 +94,32 @@ const Redeemed = () => {
     }
     return order.status === 'delivered';
   });
-  const mapToDisplayOrder = (order: orders): DisplayOrder => {
-    const userDetail = typeof order.user_detail === 'string'
-      ? { number: order.user_detail, total_points: 0 }  // Default value if it's a string
-      : order.user_detail;
+  const mapToDisplayOrder = (order: any): DisplayOrder => {
+    // Extract points properly from user_detail object or order fallback
+    const userDetailObj = typeof order.user_detail === 'object' && order.user_detail !== null
+      ? order.user_detail
+      : { number: typeof order.user_detail === 'string' ? order.user_detail : '', total_points: 0 };
+
+    const totalPoints = userDetailObj.points ?? userDetailObj.total_points ?? 0;
+
     return {
-      id: order.id,
-      total: order.payments?.[0]?.amount?.toString() || '0', // Assuming total comes from payments
-      user_detail: userDetail,
+      id: order.id.toString(),
+      total: order.total_amount?.toString() || '0',
+      user_detail: {
+        number: userDetailObj.number || '',
+        total_points: totalPoints,
+      },
       status: order.status,
       type: order.type,
       created_at: order.created_at || new Date().toISOString(),
+      // Keep track of points used specifically for this redeem order
       items: order.items?.map((item: any) => ({
-        id: item.id || item._id,
+        id: item.id?.toString() || item._id?.toString(),
         name: item.name || 'Unknown Item',
         price: item.price?.toString() || '0',
         quantity: item.quantity || 1,
         image: item.image,
-        pts: item.pts || 0
-
+        pts: item.pts || order.points_used || 0
       })) || []
     };
   };
@@ -150,10 +157,10 @@ const Redeemed = () => {
           {/* Content based on active tab */}
           <ScrollView contentContainerStyle={styles.contentContainer}>
             {loading ? (
-            <View style={styles.emptyContainer}>
+              <View style={styles.emptyContainer}>
                 <Ionicons name="receipt-outline" size={48} color={colors.white} />
                 <Text style={styles.emptyText}>No {activeTab === 'process' ? 'active' : 'completed'} orders found</Text>
-              </View> 
+              </View>
             ) : error ? (
               <View style={styles.errorContainer}>
                 <Text style={styles.errorText}>{error}</Text>
@@ -183,15 +190,15 @@ const Redeemed = () => {
                       <Text style={styles.cardName} numberOfLines={1}>
                         {firstItem?.name || 'Redeemed Item'}
                       </Text>
-
                       <View>
                         <Text style={styles.cardPoints}>
-                          Pts: {order.items[0]?.pts || 0}
+                          Pts Spent: {order.items[0]?.pts || 0}
                         </Text>
 
                         <Text style={styles.cardTotalPoints}>
-                          Total: {typeof order.user_detail !== 'string' ? (order.user_detail.total_points) : '0'}
+                          Total User Points: {typeof order.user_detail !== 'string' ? order.user_detail.total_points : '0'}
                         </Text>
+
                         {activeTab === 'process' && (
                           <Text style={styles.cardTotalPoints}>
                             Available PTS: {typeof order.user_detail !== 'string' ? (order.user_detail.total_points - (order.items[0]?.pts || 0)) : '0'}

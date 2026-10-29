@@ -9,14 +9,13 @@ import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Alert, Dimensions, ImageBackground, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Dimensions, ImageBackground, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { Api_url } from '../url/url';
 
 const { width } = Dimensions.get('window');
 
-// Define the expected params type
 type MallParams = {
   name?: string;
   subtitle?: string;
@@ -41,12 +40,14 @@ const Mall = () => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
   const [AddressModal, setAddressModal] = useState(false);
-const handleAddressModalClose = () => {
-  setAddressModal(false);
-  router.push('/ShippingAddress'); 
-};
+  const [isUserLoading, setIsUserLoading] = useState(true); // 👈 Added loading state
 
-    const handleSuccessModalClose = () => {
+  const handleAddressModalClose = () => {
+    setAddressModal(false);
+    router.push('/ShippingAddress'); 
+  };
+
+  const handleSuccessModalClose = () => {
     setShowSuccessModal(false);
     router.replace({ 
       pathname: '/Redeemed', 
@@ -56,8 +57,10 @@ const handleAddressModalClose = () => {
       }
     });
   };
+
   useEffect(() => {
     const fetchUserData = async () => {
+      setIsUserLoading(true); // 👈 Set loading to true before fetching
       try {
         const response = await axios.get(`${Api_url}api/app-user/list/`);
         const users = response.data;
@@ -73,6 +76,8 @@ const handleAddressModalClose = () => {
       } catch (error) {
         console.error('Error fetching user data:', error);
         setUserId(token);
+      } finally {
+        setIsUserLoading(false); // 👈 Mark loading as finished
       }
     };
 
@@ -80,58 +85,58 @@ const handleAddressModalClose = () => {
       fetchUserData();
     } else {
       setUserId(token);
+      setIsUserLoading(false); // 👈 Mark loading as finished if no phone
     }
   }, [phone, token]);
 
-const CreateRedeem = async () => {
-  if (userpoint < points) {
-    Alert.alert("Insufficient Points", "You do not have enough points.");
-    return;
-  }
-
-  if (!selectedAddress) {
-    setAddressModal(true);
-    return;
-  }
-
-
-  try {
-    if (!token) {
-      throw new Error("Authentication token is missing. Please log in again.");
+  const CreateRedeem = async () => {
+    if (userpoint < points) {
+      Alert.alert("Insufficient Points", "You do not have enough points.");
+      return;
     }
 
-    const orderData = {
-      user_id: userId,
-      applied_points: points,
-      user_detail: { number: phone },
-      address: selectedAddress,
-      status: "pending",
-      product: [
-        {
-          name,
-          image,
-          description,
-          pts: points,
-        },
-      ],
-      created_at: new Date().toISOString(),
-    };
+    if (!selectedAddress) {
+      setAddressModal(true);
+      return;
+    }
 
-   const result = await createRedeemOrder(token, orderData);
-    console.log("Redeem success:", result);
-    setShowSuccessModal(true);
-    setOrderSuccess(true);
+    try {
+      if (!token) {
+        throw new Error("Authentication token is missing. Please log in again.");
+      }
 
-  } catch (error: any) {
-    Alert.alert("Error", error.message);
-    setOrderSuccess(false);
-    setShowSuccessModal(true);
-  }
-};
+      const orderData = {
+        user_id: userId,
+        applied_points: points,
+        user_detail: { number: phone },
+        address: selectedAddress,
+        status: "pending",
+        product: [
+          {
+            name,
+            image,
+            description,
+            pts: points,
+          },
+        ],
+        created_at: new Date().toISOString(),
+      };
+
+      const result = await createRedeemOrder(token, orderData);
+      console.log("Redeem success:", result);
+      setShowSuccessModal(true);
+      setOrderSuccess(true);
+
+    } catch (error: any) {
+      Alert.alert("Error", error.message);
+      setOrderSuccess(false);
+      setShowSuccessModal(true);
+    }
+  };
 
   return (
     <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
-            <AlertModal
+      <AlertModal
         visible={AddressModal}
         message="Address Required"
         subtitle="Please add an address before redeeming."
@@ -146,14 +151,11 @@ const CreateRedeem = async () => {
       >
         {/* Product Image and Header */}
         <View style={styles.imageHeaderWrap}>
-               <View style={styles.headerRow}>
-              <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-                <Ionicons name="arrow-back" size={28} color={colors.white} />
-              </TouchableOpacity>
-              {/* <TouchableOpacity style={styles.heartBtn}>
-                <Ionicons name="heart-outline" size={28} color={colors.white} />
-              </TouchableOpacity> */}
-            </View>
+          <View style={styles.headerRow}>
+            <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+              <Ionicons name="arrow-back" size={28} color={colors.white} />
+            </TouchableOpacity>
+          </View>
           <ImageBackground
             source={{ uri: image }}
             style={styles.productImg}
@@ -168,7 +170,7 @@ const CreateRedeem = async () => {
             )}
           </ImageBackground>
         </View>
-        <ScrollView >
+        <ScrollView>
           {/* Product Card */}
           <View style={styles.cardWrap}>
             <Text style={styles.category}>{subtitle}</Text>
@@ -190,16 +192,22 @@ const CreateRedeem = async () => {
             <Text style={styles.pointsValue}>{points.toLocaleString()} PTS</Text>
           </View>
           <TouchableOpacity
-            style={[styles.redeemBtn, { opacity: userpoint >= points ? 1 : 0.6 }]}
+            style={[
+              styles.redeemBtn, 
+              { opacity: (!isUserLoading && userId && userpoint >= points) ? 1 : 0.6 }
+            ]}
             onPress={CreateRedeem}
-            disabled={userpoint < points}
+            disabled={isUserLoading || !userId || userpoint < points}
           >
-            <Text style={styles.redeemText}>
-              {userpoint >= points
-                ? `Redeem `
-                : `Insufficient 
-      Points`}
-            </Text>
+            {isUserLoading ? (
+              <ActivityIndicator color={colors.white} />
+            ) : (
+              <Text style={styles.redeemText}>
+                {userpoint >= points
+                  ? `Redeem`
+                  : `Insufficient Points`}
+              </Text>
+            )}
           </TouchableOpacity>
         </View>
       </ImageBackground>
@@ -242,7 +250,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     height: verticalScale(50),
-
     justifyContent: 'space-between',
     paddingHorizontal: scale(18),
     marginTop: verticalScale(20),
@@ -259,10 +266,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   backBtn: {
-    borderRadius: 20,
-    padding: 6,
-  },
-  heartBtn: {
     borderRadius: 20,
     padding: 6,
   },
@@ -352,20 +355,20 @@ const styles = StyleSheet.create({
     fontFamily: 'PoppinsBold',
   },
   redeemBtn: {
+    width: scale(170),
     backgroundColor: colors.primary,
-    borderRadius: scale(26),
+    borderRadius: scale(15),
     paddingVertical: 6,
     paddingHorizontal: 32,
-    alignItems: 'center',
+    alignItems: 'center', 
     justifyContent: 'center',
   },
   redeemText: {
     color: colors.white,
     fontSize: moderateScale(16),
     fontFamily: 'PoppinsSemi',
+    textAlign: 'center',
   },
 });
 
 export default Mall;
-
-

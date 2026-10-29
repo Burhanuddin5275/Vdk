@@ -316,7 +316,7 @@ const OrderReview = () => {
                   setModalVisible(false);
                   setCurrentProduct(null);
                 }} style={styles.closeBtn}>
-                  <AntDesign name="closecircle" size={moderateScale(28)} color="#E53935" />
+                  <Ionicons name="close" size={24} color="#E53935" />
                 </TouchableOpacity>
               </View>
               {currentProduct && (
@@ -347,9 +347,9 @@ const OrderReview = () => {
                 {[1, 2, 3, 4, 5].map((star) => (
                   <TouchableOpacity key={star} onPress={() => setRating(star)}>
                     <AntDesign
-                      name={star <= rating ? 'star' : 'staro'}
-                      size={24}
-                      color="#FFC107"
+                      name="star"
+                      size={moderateScale(28)}
+                      color={star <= rating ? '#FFC107' : '#ccc'} 
                       style={{ marginRight: 2 }}
                     />
                   </TouchableOpacity>
