@@ -985,7 +985,7 @@ const styles = StyleSheet.create({
         fontSize: 16,
     },
     modalOverlay: {
-        ...StyleSheet.absoluteFillObject,
+        ...StyleSheet.absoluteFill,
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
         zIndex: 5,
     },

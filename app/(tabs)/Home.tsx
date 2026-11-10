@@ -144,7 +144,7 @@ export default function HomeScreen() {
   useEffect(() => {
     const loadPopup = async () => {
       try {
-        const data = await fetchDiscountPopup();
+        const data = await fetchDiscountPopup(); 
         console.log("API popup response:", data);
 
         const popupItem = Array.isArray(data) ? data[0] : data;

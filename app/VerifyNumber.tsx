@@ -3,12 +3,12 @@ import { otpVerify } from '@/services/user';
 import { Api_url } from '@/url/url';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, ImageBackground, Keyboard, Platform, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ActivityIndicator, Alert, ImageBackground, Keyboard, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { verticalScale } from 'react-native-size-matters';
 
 const OTP_LENGTH = 4;
-const RESEND_TIME = 30; // seconds
+const RESEND_TIME = 56; // seconds
 
 const VerifyNumber = () => {
   const { phone, email } = useLocalSearchParams<{ phone: string; email?: string }>();
@@ -117,12 +117,10 @@ const VerifyNumber = () => {
         'Content-Type': 'application/json',
         Accept: 'application/json',
       },
-      body: JSON.stringify({ number: phone }),
+      body: JSON.stringify({ number: phone, email: email }),
     });
     console.log("data", data)
     setTimer(RESEND_TIME);
-
-
   };
 
   return (
