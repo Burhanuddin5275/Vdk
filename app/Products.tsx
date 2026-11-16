@@ -354,11 +354,11 @@ const Products = () => {
 
                                     if (inWishlist) {
                                         await useWishlistStore.getState().removeFromWishlist(product.id);
+                                        console.log('Removed from wishlist:', product.id);
                                         setWishlistMessage('Removed from wishlist');
                                     } else {
                                         const selectedVariantLabel = selectedVariant?.label || '';
-
-                                        await useWishlistStore.getState().addToWishlist({
+                                        const wishlistItem = {
                                             id: product.id,
                                             name: product.name,
                                             regular_price: selectedVariant?.price ?? product.regular_price ?? 0,
@@ -371,7 +371,11 @@ const Products = () => {
                                                 price: selectedVariant.price,
                                                 sale_price: selectedVariant.sale_price
                                             } : undefined
-                                        });
+                                        };
+
+                                        console.log('Adding to wishlist:', JSON.stringify(wishlistItem, null, 2));
+                                        await useWishlistStore.getState().addToWishlist(wishlistItem);
+                                        console.log('Current wishlist items:', useWishlistStore.getState().items);
                                         setWishlistMessage('Added to wishlist');
                                     }
                                     setTimeout(() => setWishlistMessage(null), 2000);

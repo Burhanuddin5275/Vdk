@@ -1,6 +1,7 @@
 import { type AdsItem, fetchAds } from '@/services/ads';
+import { CategoryItem, fetchCategories } from '@/services/categories';
 import { Product } from '@/services/products';
-import { selectIsAuthenticated } from '@/store/authSlice';
+import { selectIsAuthenticated, selectPhone } from '@/store/authSlice';
 import { useAppSelector } from '@/store/hooks';
 import { colors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,7 +14,7 @@ import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { type BannerItem, fetchBanners } from '../services/banner';
 import { fetchProducts } from '../services/products';
 import { useWishlistStore } from './Wishlist';
-import { CategoryItem, fetchCategories } from '@/services/categories';
+
 const TABS = ['All'];
 
 const screenWidth = Dimensions.get('window').width;
@@ -21,7 +22,6 @@ const COLUMN_GAP = scale(12);
 const CARD_WIDTH = (screenWidth - COLUMN_GAP * 3) / 2;
 
 const Categories = () => {
-
   const router = useRouter();
   const { category } = useLocalSearchParams();
   const selectedCategory = category;
@@ -33,11 +33,61 @@ const Categories = () => {
   const scrollViewRef = useRef<ScrollView>(null);
   const insets = useSafeAreaInsets();
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
+  const phone = useAppSelector(selectPhone);
   const [Products, setProducts] = useState<any[]>([]);
   const [banner, setBanner] = useState<BannerItem[]>([]);
   const [ads, setAds] = useState<AdsItem[]>([]);
   const wishlistItems = useWishlistStore((state) => state.items);
-  const isInWishlist = (productId: string) => wishlistItems.some(item => item.id === productId);
+  const loadWishlist = useWishlistStore((state) => state.loadWishlist);
+
+  useEffect(() => {
+    if (phone) {
+      useWishlistStore.getState().setPhone(phone);
+      loadWishlist();
+    }
+  }, [phone, loadWishlist]);
+
+  const getFirstVariant = (product: any) => {
+    const rawVariants = product?.variants || [];
+    if (!Array.isArray(rawVariants) || rawVariants.length === 0) return null;
+
+    const v = rawVariants[0];
+
+    if (v?.attributes && typeof v.attributes === 'object') {
+      const attrObj = Array.isArray(v.attributes) ? v.attributes[0] : v.attributes;
+      const { points, description, regular_price, sale_price, price, options, ...rest } = attrObj || {};
+
+      const optionSource = options || rest;
+      const optionValues = Object.values(optionSource)
+        .map((val: any) => (typeof val === 'object' ? val?.name || val?.label || val?.value : val))
+        .filter(Boolean)
+        .map(String);
+
+      const label = optionValues.join(' - ') || v.label || v.name || 'Default';
+      const regPrice = Number(regular_price ?? price ?? v.regular_price ?? v.price ?? 0);
+      const sPrice = sale_price ?? v.sale_price;
+
+      return {
+        label,
+        price: regPrice,
+        ...(sPrice ? { sale_price: Number(sPrice) } : {}),
+      };
+    }
+
+    return {
+      label: v.label || v.name || v.pack || String(v.size || ''),
+      price: Number(v.regular_price ?? v.price ?? 0),
+      ...(v.sale_price ? { sale_price: Number(v.sale_price) } : {}),
+    };
+  };
+
+  const isInWishlist = (productId: string, variantLabel?: string) => {
+    return wishlistItems.some((item) => {
+      if (String(item.id) !== String(productId)) return false;
+      if (!variantLabel) return true;
+      return item.variant?.label === variantLabel;
+    });
+  };
 
   useFocusEffect(
     React.useCallback(() => {
@@ -66,6 +116,7 @@ const Categories = () => {
       };
     }, [])
   );
+
   const selectedCategoryObj = useMemo(() => {
     if (!categories.length || !selectedCategory) return undefined;
 
@@ -102,14 +153,12 @@ const Categories = () => {
     displayList = [...filtered];
   }
 
-  // ✅ SORT HERE
   displayList = displayList.sort((a, b) => {
     const posA = Number(a.position ?? 999);
     const posB = Number(b.position ?? 999);
 
     if (posA !== posB) return posA - posB;
 
-    // optional fallback (recommended)
     return (b.rating || 0) - (a.rating || 0);
   });
 
@@ -155,7 +204,7 @@ const Categories = () => {
           ad.category.toLowerCase() === String(selectedCategory).toLowerCase()
         );
         if (brandAds.length > 0) {
-          const ad = brandAds[adIndex % brandAds.length]; // cycle ads
+          const ad = brandAds[adIndex % brandAds.length];
           data.push({ type: "ad", brand: product.brand, data: ad });
           adIndex++;
         }
@@ -164,8 +213,6 @@ const Categories = () => {
 
     return data;
   }, [displayList, ads, selectedCategory]);
-
-
 
   const backgroundImage = categoryColor === "Green"
     ? require("../assets/images/ss2.png")
@@ -189,12 +236,12 @@ const Categories = () => {
 
     return Number(product?.points ?? product?.pts ?? 0);
   };
+
   const getDiscountPercent = (product: any) => {
     const variants = product?.variants;
 
     let maxDiscount = 0;
 
-    // CASE 1: Variants exist
     if (Array.isArray(variants) && variants.length > 0) {
       variants.forEach((v: any) => {
         const attrs = Array.isArray(v?.attributes)
@@ -223,7 +270,6 @@ const Categories = () => {
       return maxDiscount;
     }
 
-    // CASE 2: No variants
     const regular = Number(product?.regular_price ?? 0);
     const saleRaw = product?.sale_price;
     const sale = saleRaw !== "" && saleRaw != null ? Number(saleRaw) : 0;
@@ -234,8 +280,8 @@ const Categories = () => {
 
     return 0;
   };
+
   const getPrice = (product: any) => {
-    // 1. If variants exist
     const variants = product?.variants;
 
     if (Array.isArray(variants) && variants.length > 0) {
@@ -263,16 +309,15 @@ const Categories = () => {
       );
     }
 
-    // 2. If no variants → product level
     return Number(
       product?.regular_price ??
       product?.sale_price ??
       0
     );
   };
+
   const theme = {
     isGreen: categoryColor === "Green",
-
     tabBg: categoryColor === "Green" ? "#C3FFFA" : "#FFFFFF",
     tabActiveBg: categoryColor === "Green" ? "#0B3D0B" : "#E53935",
     tabText: categoryColor === "Green" ? "#0B3D0B" : "#444",
@@ -281,11 +326,12 @@ const Categories = () => {
 
   if (selectedCategory && !selectedCategoryObj) {
     return (
-      <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center',backgroundColor:  '#ffff' }}>
+      <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#ffff' }}>
         <ActivityIndicator size="large" color={colors.primary} />
-      </SafeAreaView> 
+      </SafeAreaView>
     );
   }
+
   return (
     <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
       <ImageBackground source={backgroundImage} style={styles.container} resizeMode="cover">
@@ -302,7 +348,6 @@ const Categories = () => {
           </View>
 
           <View style={styles.adSliderContainer}>
-            {/* Update the banner filtering logic in the return statement */}
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -315,12 +360,11 @@ const Categories = () => {
             >
               {banner
                 .filter(ad => {
-                  if (!selectedCategory) return true; // Show all banners if no category is selected
+                  if (!selectedCategory) return true;
 
                   const adCategory = ad.category?.toLowerCase();
                   const currentCategory = String(selectedCategory).toLowerCase();
 
-                  // Match exact category or handle plural/singular forms
                   return adCategory === currentCategory ||
                     adCategory === currentCategory + 's' ||
                     adCategory + 's' === currentCategory;
@@ -405,8 +449,8 @@ const Categories = () => {
                           brandTab === brand && styles.tabTextActive,
                           {
                             color: brandTab === brand
-                              ? (isGreenTheme ? "#0B3D0B" : colors.primaryDark) // active text (both white is fine)
-                              : (isGreenTheme ? "#0B3D0B" : colors.textSecondary), // inactive text
+                              ? (isGreenTheme ? "#0B3D0B" : colors.primaryDark)
+                              : (isGreenTheme ? "#0B3D0B" : colors.textSecondary),
                           },
                         ]}
                       >
@@ -426,8 +470,10 @@ const Categories = () => {
                 if ('id' in p && 'name' in p && 'regular_price' in p && 'img' in p &&
                   p.is_active) {
                   const prod = p as Exclude<Product, { banner: string }>;
+                  const firstVariantItem = getFirstVariant(prod);
+                  const variantLabel = firstVariantItem?.label;
                   const minPrice = getPrice(prod);
-                  const discount = getDiscountPercent(prod);
+
                   return (
                     <TouchableOpacity
                       key={prod.id}
@@ -456,13 +502,6 @@ const Categories = () => {
                         }
                         style={styles.productCard}
                       >
-                        {/* {discount > 0 && (
-                          <View style={styles.discountTag}>
-                            <Text style={styles.discountText}>
-                              {discount}% OFF
-                            </Text>
-                          </View>
-                        )} */}
                         {/* Wishlist Button */}
                         <TouchableOpacity
                           style={[
@@ -478,63 +517,45 @@ const Categories = () => {
                               return;
                             }
 
-                            if (isInWishlist(prod.id)) {
-                              await useWishlistStore.getState().removeFromWishlist(prod.id);
+                            if (phone) {
+                              useWishlistStore.getState().setPhone(phone);
+                            }
+
+                            if (isInWishlist(prod.id, variantLabel)) {
+                              await useWishlistStore.getState().removeFromWishlist(prod.id, variantLabel);
+                              console.log('Removed from wishlist:', { id: prod.id, variantLabel });
+                              console.log('Updated wishlist items:', JSON.stringify(useWishlistStore.getState().items, null, 2));
                               setWishlistMessage('Removed from wishlist');
                             } else {
-                              const processVariants = (): any[] => {
-                                const rawVariants = p.variants || [];
-                                if (!Array.isArray(rawVariants)) return [];
-
-                                return rawVariants.flatMap((v: any) => {
-                                  // Handle variants with attributes/options
-                                  if (v?.attributes) {
-                                    const attributes = Array.isArray(v.attributes) ? v.attributes : [v.attributes];
-                                    return attributes.flatMap((attr: any) => {
-                                      const options = attr?.options || {};
-                                      const size = options.Size || options.size || Object.values(options)[0];
-                                      if (!size) return [];
-
-                                      return {
-                                        label: String(size),
-                                        price: Number(attr.regular_price || attr.price || v.price || 0),
-                                        ...(attr.sale_price ? { sale_price: Number(attr.sale_price) } : {})
-                                      };
-                                    });
-                                  }
-                                  // Handle simple variants
-                                  return {
-                                    label: v.label || v.name || '',
-                                    price: Number(v.price || 0),
-                                    ...(v.sale_price ? { sale_price: Number(v.sale_price) } : {})
-                                  };
-                                });
-                              };
-
-                              const variants = processVariants();
-                              const firstVariant = variants[0];
-
-                              await useWishlistStore.getState().addToWishlist({
+                              const wishlistItem = {
                                 id: prod.id,
                                 name: prod.name,
-                                regular_price: firstVariant?.price ?? prod.regular_price,
-                                sale_price: firstVariant?.sale_price ?? prod.sale_price,
+                                regular_price: firstVariantItem?.price ?? prod.regular_price ?? 0,
+                                sale_price: firstVariantItem?.sale_price ?? prod.sale_price,
                                 image: prod.img,
-                                pack: firstVariant?.label || '',
+                                pack: firstVariantItem?.label || '',
                                 category: prod.Category,
-                                variant: firstVariant ? {
-                                  label: firstVariant.label,
-                                  price: firstVariant.price,
-                                  sale_price: firstVariant.sale_price
-                                } : undefined
-                              });
+                                variant: firstVariantItem
+                                  ? {
+                                      label: firstVariantItem.label,
+                                      price: firstVariantItem.price,
+                                      ...(firstVariantItem.sale_price !== undefined
+                                        ? { sale_price: firstVariantItem.sale_price }
+                                        : {}),
+                                    }
+                                  : undefined,
+                              };
+
+                              console.log('Adding to wishlist:', JSON.stringify(wishlistItem, null, 2));
+                              await useWishlistStore.getState().addToWishlist(wishlistItem);
+                              console.log('Updated wishlist items:', JSON.stringify(useWishlistStore.getState().items, null, 2));
                               setWishlistMessage('Added to wishlist');
                             }
                             setTimeout(() => setWishlistMessage(null), 2000);
                           }}
                         >
                           <Ionicons
-                            name={isInWishlist(prod.id) ? "heart" : "heart-outline"}
+                            name={isInWishlist(prod.id, variantLabel) ? "heart" : "heart-outline"}
                             size={moderateScale(20)}
                             color="#fff"
                           />
@@ -605,7 +626,7 @@ const Categories = () => {
                           </Text>
                           <Text style={{ fontSize: scale(10), fontFamily: 'InterRegular' }}>
                             Ratings
-                            <Text style={{ color: "#FFD600", }}>
+                            <Text style={{ color: "#FFD600" }}>
                               {"★".repeat(prod.rating)}
                             </Text>
                           </Text>
@@ -668,6 +689,7 @@ const Categories = () => {
             })}
           </View>
         </ScrollView>
+
         {/* Wishlist Snackbar */}
         {wishlistMessage && (
           <View style={{ position: "absolute", top: verticalScale(80), left: 0, right: 0, alignItems: "center", zIndex: 20 }}>
@@ -681,8 +703,6 @@ const Categories = () => {
   );
 };
 
-
-// styles must be defined before use
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -696,7 +716,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(18),
     marginTop: verticalScale(20),
   },
-
   cartBtn: {
     width: scale(40),
     height: scale(40),
@@ -752,7 +771,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(12),
     marginTop: verticalScale(8)
   },
- discountTag: {
+  discountTag: {
     position: 'absolute',
     top: verticalScale(10),
     left: scale(10),
@@ -762,7 +781,6 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(6),
     zIndex: 3,
   },
-
   discountText: {
     color: '#fff',
     fontSize: scale(10),
@@ -777,27 +795,23 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     elevation: 4,
   },
-
   priceLeft: {
     backgroundColor: '#E53935',
     width: scale(78),
     paddingVertical: verticalScale(4),
     justifyContent: 'center',
   },
-
   priceLeftText: {
     color: '#fff',
     fontSize: scale(10),
     textAlign: 'center',
     fontFamily: 'InterBold',
   },
-
   priceRight: {
     backgroundColor: '#fff',
     width: scale(79),
     justifyContent: 'center',
   },
-
   priceRightText: {
     color: '#E53935',
     fontSize: scale(12),
@@ -829,20 +843,12 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginBottom: 0,
   },
-  // cardRating: {
-  //   fontSize: moderateScale(12),
-  //   lineHeight: moderateScale(5),
-  //   color: colors.textSecondary,
-  //   fontFamily: 'InterRegular',
-  //   marginBottom: 0,
-  // },
   ptsBadge: {
     width: moderateScale(50),
     height: moderateScale(50),
     borderRadius: moderateScale(6),
     alignItems: 'center',
     justifyContent: 'center',
-
   },
   ptsText: {
     color: '#fff',
@@ -878,7 +884,6 @@ const styles = StyleSheet.create({
     marginBottom: verticalScale(30),
     position: 'relative',
   },
-
   adBannerProduct: {
     width: '100%',
     height: '100%',
@@ -903,6 +908,5 @@ const styles = StyleSheet.create({
     height: verticalScale(137)
   },
 });
-
 
 export default Categories;

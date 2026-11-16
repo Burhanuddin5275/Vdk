@@ -8,7 +8,6 @@ import {
   Alert,
   Image,
   ImageBackground,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -16,7 +15,7 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { moderateScale, verticalScale } from 'react-native-size-matters';
 import { numberVerify, registerUser } from '@/services/user';
 import * as SecureStore from 'expo-secure-store';
@@ -150,7 +149,10 @@ const Signup = () => {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
+      <SafeAreaView
+            edges={['top', 'bottom', 'left', 'right']}
+            style={{ flex: 1 }}
+          >
       <ImageBackground source={require('../assets/images/ss1.png')} style={styles.bg} resizeMode="cover">
         <ScrollView
           style={{ width: '100%' }}
@@ -325,7 +327,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, alignItems: 'center', justifyContent: 'flex-start', paddingTop: 70, paddingHorizontal: 24 },
   logo: { width: '100%' },
   welcome: { color: colors.white, fontSize: 26, fontFamily: 'Sigmar', textAlign: 'center', marginBottom: 32 },
-  inputWrap: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 16, paddingHorizontal: 12, paddingVertical: 5, marginBottom: 10, width: '100%', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 4, elevation: 2, position: 'relative' },
+  inputWrap: { flexDirection: 'row', alignItems: 'center', height: verticalScale(38),backgroundColor: '#fff', borderRadius: 16, paddingHorizontal: 12, paddingVertical: 5, marginBottom: 10, width: '100%', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 4, elevation: 2, position: 'relative' },
   passwordToggle: { position: 'absolute', right: 16, padding: 8 },
   checkboxContainer: {
     flexDirection: 'row',

@@ -195,8 +195,8 @@ const Address = () => {
                   style={styles.input}
                   value={street}
                   onChangeText={setStreet}
-                  placeholder=""
-                  placeholderTextColor="#fff"
+                  placeholder="Street name"
+                  placeholderTextColor="#f6c4c4"
                 />
 
                 <View style={styles.pickerContainer}>
@@ -247,6 +247,7 @@ const Address = () => {
                       value={postalCode}
                       onChangeText={setPostalCode}
                       placeholder="Postal Code"
+                      placeholderTextColor="#f6c4c4"
                       maxLength={5}
                       keyboardType="numeric"
                     />

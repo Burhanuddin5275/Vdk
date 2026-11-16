@@ -1,13 +1,13 @@
+import SuccessModal from '@/components/SuccessModal';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
-import SuccessModal from '@/components/SuccessModal';
 import { Alert, Dimensions, FlatList, Image, ImageBackground, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
+import { cancelOrder } from '../services/orders'; // <--- NEW IMPORT
 import { Api_url } from '../url/url';
 import TabLayout from './(tabs)/_layout';
-import { cancelOrder } from '../services/orders';     // <--- NEW IMPORT
 
 const bgImage = require('../assets/images/ss1.png');
 
@@ -109,11 +109,14 @@ const OrderTracker = () => {
   const totalItems = order?.items?.reduce((s, i) => s + (i.quantity || 1), 0) || 0;
   const itemsTotal = order?.items.reduce((s, i) => s + parseFloat(i.price || '0'), 0) || 0;
   const discountAmount = order?.discount_amount || 0;
-  const totalAmount = order?.total_amount || 0;
+  const totalAmount = order?.total || 0;
   const discount = order?.points_discount || 0;
   const finalTotal = itemsTotal - discount;
   return (
-    <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
+    <SafeAreaView
+        edges={['top', 'bottom', 'left', 'right']}
+        style={{ flex: 1 }}
+      >
       <SuccessModal
         visible={showSuccessModal}
         message="Your order has been cancelled successfully"

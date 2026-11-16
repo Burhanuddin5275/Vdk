@@ -1,15 +1,15 @@
 import SuccessModal from '@/components/SuccessModal';
 import { useAuth } from '@/hooks/useAuth';
 import { deleteAccountApi, fetchUsers, UserItem } from '@/services/user';
+import { useAddressStore } from '@/store/addressStore';
 import { colors } from '@/theme/colors';
-import { Api_url, img_url } from '@/url/url';
+import { Api_url } from '@/url/url';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Dimensions, Image, ImageBackground,  ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
+import { Dimensions, Image, ImageBackground, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
-import { useAddressStore } from '@/store/addressStore';
 const { width } = Dimensions.get('window');
 
 export default function Profile() {
@@ -92,7 +92,10 @@ const handleDeleteAccount = async () => {
     router.replace('/(tabs)/Home');
   };
   return (
-    <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
+     <SafeAreaView 
+  edges={['top', 'bottom', 'left', 'right']} 
+  style={{ flex: 1 }}
+>
       <ImageBackground
         source={require('../../assets/images/ss1.png')}
         style={styles.background}

@@ -1,19 +1,18 @@
 import { Button } from '@/components/Button';
 import { colors } from '@/theme/colors';
 import { useRouter } from 'expo-router';
-import React from 'react';
 import {
-    Dimensions,
-    Image,
-    ImageBackground,
-    StyleSheet,
-    Text,
-    View,
+  Dimensions,
+  Image,
+  ImageBackground,
+  StyleSheet,
+  Text,
+  View,
 } from 'react-native';
-import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-    moderateScale,
-    verticalScale
+  moderateScale,
+  verticalScale
 } from 'react-native-size-matters';
 
 const { width, height } = Dimensions.get('window');
@@ -23,7 +22,10 @@ export default function Splash() {
   const insets = useSafeAreaInsets();
 
   return (
-    <SafeAreaView style={{flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4))}}>
+   <SafeAreaView 
+  edges={['top', 'bottom', 'left', 'right']} 
+  style={{ flex: 1 }}
+>
       <ImageBackground
         source={require('../assets/images/ss1.png')}
         style={styles.background}

@@ -1,13 +1,12 @@
-import { fetchAbout, AboutItem } from '@/services/about'
+import { AboutItem, fetchAbout } from '@/services/about'
+import { colors } from '@/theme/colors'
 import { Ionicons } from '@expo/vector-icons'
 import { router } from 'expo-router'
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ActivityIndicator, ImageBackground, ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native'
+import RenderHTML, { HTMLContentModel, HTMLElementModel } from 'react-native-render-html'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters'
-import RenderHTML from 'react-native-render-html';
-import { colors } from '@/theme/colors'
-import { HTMLContentModel, HTMLElementModel } from 'react-native-render-html';
 
 const About = () => {
   const [about, setAbout] = useState<AboutItem | null>(null);
@@ -47,7 +46,10 @@ const cleanedHTML = about?.text
   .replace(/font-family:[^;]+;/g, "") || "";
 
   return (
-    <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
+    <SafeAreaView 
+  edges={['top', 'bottom', 'left', 'right']} 
+  style={{ flex: 1 }}
+>
       <ImageBackground
         source={require('../assets/images/ss1.png')}
         resizeMode="cover"

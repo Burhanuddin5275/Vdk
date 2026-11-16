@@ -275,7 +275,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, alignItems: 'center', justifyContent: 'flex-start', paddingTop: 70, paddingHorizontal: 24 },
   logo: { width: '100%' },
   welcome: { color: colors.white, fontSize: 26, fontFamily: 'Sigmar', textAlign: 'center', marginBottom: 32 },
-  inputWrap: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 16, paddingHorizontal: 12, paddingVertical: 5, marginBottom: 5, width: '100%', elevation: 2, position: 'relative' },
+  inputWrap: { flexDirection: 'row', alignItems: 'center', height: verticalScale(38),backgroundColor: '#fff', borderRadius: 16, paddingHorizontal: 12, paddingVertical: 5, marginBottom: 5, width: '100%', elevation: 2, position: 'relative' },
   passwordToggle: { position: 'absolute', right: 16, padding: 8 },
   flagWrap: { flexDirection: 'row', alignItems: 'center', marginRight: 8 },
   flag: { width: 32, height: 32, borderRadius: 16, marginRight: 4 },

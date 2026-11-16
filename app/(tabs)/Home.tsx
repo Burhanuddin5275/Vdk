@@ -7,20 +7,17 @@ import { colors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Dimensions, Image, ImageBackground, Modal,  ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useSafeAreaInsets, SafeAreaView, } from 'react-native-safe-area-context';
+import { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Animated, Dimensions, Easing, Image, ImageBackground, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { useWishlistStore } from '../../app/Wishlist';
 import { fetchAds, type AdsItem } from '../../services/ads';
 import { fetchBrands, type BrandItem } from '../../services/brands';
 import { fetchCategories, type CategoryItem } from '../../services/categories';
 import { fetchProducts } from '../../services/products';
-
-import { Api_url, img_url } from '@/url/url';
 import { DiscountPopupItem, fetchDiscountPopup } from '@/services/popup';
-import { Animated, Easing } from 'react-native';
-
+import { Api_url, img_url } from '@/url/url';
 
 type SalePopupProps = {
   visible: boolean;
@@ -55,7 +52,6 @@ const SalePopup = ({ visible, onClose, data, onNavigate }: SalePopupProps) => {
     }
   }, [visible]);
 
-  // ✅ SAFE IMAGE HANDLING
   const imageUri = data?.banner
     ? data.banner.startsWith("http")
       ? data.banner
@@ -140,11 +136,11 @@ export default function HomeScreen() {
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const [loading, setLoading] = useState(true);
   const insets = useSafeAreaInsets();
-  
+
   useEffect(() => {
     const loadPopup = async () => {
       try {
-        const data = await fetchDiscountPopup(); 
+        const data = await fetchDiscountPopup();
         console.log("API popup response:", data);
 
         const popupItem = Array.isArray(data) ? data[0] : data;
@@ -164,7 +160,6 @@ export default function HomeScreen() {
     loadPopup();
   }, []);
 
-  // Replaced useFocusEffect with standard useEffect to load data only once on mount
   useEffect(() => {
     let isActive = true;
 
@@ -210,7 +205,6 @@ export default function HomeScreen() {
 
         if (matchedUser) {
           setUser(matchedUser);
-
         } else {
           console.log('No user found with phone:', phone);
           if (phone) {
@@ -256,9 +250,43 @@ export default function HomeScreen() {
     initWishlistAndUser();
   }, [phone, token, loadWishlist]);
 
+  const getFirstVariant = (product: any) => {
+    const rawVariants = product?.variants || [];
+    if (!Array.isArray(rawVariants) || rawVariants.length === 0) return null;
+
+    const v = rawVariants[0];
+
+    if (v?.attributes && typeof v.attributes === 'object') {
+      const attrObj = Array.isArray(v.attributes) ? v.attributes[0] : v.attributes;
+      const { points, description, regular_price, sale_price, price, options, ...rest } = attrObj || {};
+
+      const optionSource = options || rest;
+      const optionValues = Object.values(optionSource)
+        .map((val: any) => (typeof val === 'object' ? val?.name || val?.label || val?.value : val))
+        .filter(Boolean)
+        .map(String);
+
+      const label = optionValues.join(' - ') || v.label || v.name || 'Default';
+      const regPrice = Number(regular_price ?? price ?? v.regular_price ?? v.price ?? 0);
+      const sPrice = sale_price ?? v.sale_price;
+
+      return {
+        label,
+        price: regPrice,
+        ...(sPrice ? { sale_price: Number(sPrice) } : {}),
+      };
+    }
+
+    return {
+      label: v.label || v.name || v.pack || String(v.size || ''),
+      price: Number(v.regular_price ?? v.price ?? 0),
+      ...(v.sale_price ? { sale_price: Number(v.sale_price) } : {}),
+    };
+  };
+
   const isInWishlist = (productId: string, variantLabel?: string) => {
     return wishlistItems.some(item => {
-      if (item.id !== productId) return false;
+      if (String(item.id) !== String(productId)) return false;
       if (!variantLabel) return true;
       return item.variant?.label === variantLabel;
     });
@@ -296,7 +324,7 @@ export default function HomeScreen() {
     );
     console.log("popup category:", data.category);
     console.log("categories:", apiCategories.map((c: any) => c.id));
-    console.log('match', matchedCategory)
+    console.log('match', matchedCategory);
     if (matchedCategory) {
       router.push({
         pathname: '/Categories',
@@ -320,7 +348,7 @@ export default function HomeScreen() {
       });
       return;
     }
-    
+
     const matchedProduct = apiProducts.find(
       (p: any) => Number(p.id) === Number(data.products)
     );
@@ -397,7 +425,10 @@ export default function HomeScreen() {
 
   return (
     <>
-      <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
+      <SafeAreaView
+        edges={['top', 'bottom', 'left', 'right']}
+        style={{ flex: 1 }}
+      >
         <SalePopup
           visible={showPopup}
           onClose={() => setShowPopup(false)}
@@ -415,9 +446,8 @@ export default function HomeScreen() {
                 <View style={{ width: scale(165), paddingLeft: scale(16) }}>
                   {heroContent.length > 0 ? (
                     <>
-                      <Text style={styles.hello}
-                        ellipsizeMode="tail"
-                      > Welcome
+                      <Text style={styles.hello} ellipsizeMode="tail">
+                        Welcome
                       </Text>
                       <Text
                         style={styles.subtext}
@@ -429,32 +459,25 @@ export default function HomeScreen() {
                           : 'Guest'}
                       </Text>
                     </>
-                  ) : (
-                    null
-                  )}
+                  ) : null}
 
                   {isAuthenticated ? (
-                    <>
-                      <View style={styles.rewardBox}>
-                        <Text style={styles.rewardLabel}>Reward</Text>
-                        <Text style={styles.rewardPoints}>
-                          {typeof user === 'object' && user !== null && 'total_points' in user
-                            ? (user as UserItem).total_points
-                            : '0'
-                          }
-                        </Text>
-                        <Text style={styles.rewardPts}>PTS</Text>
-                      </View>
-                    </>
+                    <View style={styles.rewardBox}>
+                      <Text style={styles.rewardLabel}>Reward</Text>
+                      <Text style={styles.rewardPoints}>
+                        {typeof user === 'object' && user !== null && 'total_points' in user
+                          ? (user as UserItem).total_points
+                          : '0'}
+                      </Text>
+                      <Text style={styles.rewardPts}>PTS</Text>
+                    </View>
                   ) : (
-                    <>
-                      <TouchableOpacity
-                        onPress={() => router.push('/Login')}
-                        style={styles.loginButton}
-                      >
-                        <Text style={styles.loginButtonText}>Login to see Points</Text>
-                      </TouchableOpacity>
-                    </>
+                    <TouchableOpacity
+                      onPress={() => router.push('/Login')}
+                      style={styles.loginButton}
+                    >
+                      <Text style={styles.loginButtonText}>Login to see Points</Text>
+                    </TouchableOpacity>
                   )}
                 </View>
                 <View style={{ flex: 1, alignItems: 'flex-end' }}>
@@ -568,7 +591,7 @@ export default function HomeScreen() {
               <Text style={styles.seeAll} onPress={() => { router.push('/BestSeller') }}>See All</Text>
             </View>
             <Text style={styles.bestSellerSubtext}>Find the top most popular items in DKT best sellers.</Text>
-            
+
             {/* Wishlist Snackbar */}
             {wishlistMessage && (
               <View style={{ position: 'absolute', top: verticalScale(800), left: 0, right: 0, alignItems: 'center', zIndex: 20 }}>
@@ -585,13 +608,15 @@ export default function HomeScreen() {
               style={{ marginTop: 10, marginBottom: 24, height: verticalScale(260) }}
               contentContainerStyle={{ paddingHorizontal: 16 }}
             >
-              {apiProducts.filter(p => p.is_active)
+              {apiProducts
+                .filter(p => p.is_active)
                 .sort((a, b) => (b.total_sold || 0) - (a.total_sold || 0))
                 .slice(0, 5)
                 .map((product) => {
-                  const firstVariant = (product.variants && product.variants.length > 0) ? product.variants[0] : null;
-                  const variantLabel = firstVariant?.label || firstVariant?.name;
+                  const firstVariantItem = getFirstVariant(product);
+                  const variantLabel = firstVariantItem?.label;
                   const minPrice = getPrice(product);
+
                   return (
                     <TouchableOpacity
                       key={product.id}
@@ -616,52 +641,32 @@ export default function HomeScreen() {
 
                             if (isInWishlist(product.id, variantLabel)) {
                               await removeFromWishlist(product.id, variantLabel);
+                              console.log('Removed from wishlist:', { id: product.id, variantLabel });
+                              console.log('Updated wishlist items:', JSON.stringify(useWishlistStore.getState().items, null, 2));
                               setWishlistMessage('Removed from wishlist');
                             } else {
-                              const processVariants = (): any[] => {
-                                const rawVariants = product.variants || [];
-                                if (!Array.isArray(rawVariants)) return [];
-
-                                return rawVariants.flatMap((v: any) => {
-                                  if (v?.attributes) {
-                                    const attributes = Array.isArray(v.attributes) ? v.attributes : [v.attributes];
-                                    return attributes.flatMap((attr: any) => {
-                                      const options = attr?.options || {};
-                                      const size = options.Size || options.size || Object.values(options)[0];
-                                      if (!size) return [];
-
-                                      return {
-                                        label: String(size),
-                                        price: Number(attr.regular_price || attr.price || v.price || 0),
-                                        ...(attr.sale_price ? { sale_price: Number(attr.sale_price) } : {})
-                                      };
-                                    });
-                                  }
-                                  return {
-                                    label: v.label || v.name || '',
-                                    price: Number(v.price || 0),
-                                    ...(v.sale_price ? { sale_price: Number(v.sale_price) } : {})
-                                  };
-                                });
-                              };
-
-                              const variants = processVariants();
-                              const firstVariantItem = variants[0];
-
-                              await addToWishlist({
+                              const wishlistItem = {
                                 id: product.id,
                                 name: product.name,
-                                regular_price: firstVariantItem?.price ?? product.regular_price,
+                                regular_price: firstVariantItem?.price ?? product.regular_price ?? 0,
                                 sale_price: firstVariantItem?.sale_price ?? product.sale_price,
                                 image: product.img,
                                 pack: firstVariantItem?.label || '',
-                                category: product.category,
-                                variant: firstVariantItem ? {
-                                  label: firstVariantItem.label,
-                                  price: firstVariantItem.price,
-                                  sale_price: firstVariantItem.sale_price
-                                } : undefined
-                              });
+                                category: product.Category,
+                                variant: firstVariantItem
+                                  ? {
+                                      label: firstVariantItem.label,
+                                      price: firstVariantItem.price,
+                                      ...(firstVariantItem.sale_price !== undefined
+                                        ? { sale_price: firstVariantItem.sale_price }
+                                        : {}),
+                                    }
+                                  : undefined,
+                              };
+
+                              console.log('Adding to wishlist:', JSON.stringify(wishlistItem, null, 2));
+                              await addToWishlist(wishlistItem);
+                              console.log('Updated wishlist items:', JSON.stringify(useWishlistStore.getState().items, null, 2));
                               setWishlistMessage('Added to wishlist');
                             }
                             setTimeout(() => setWishlistMessage(null), 2000);
@@ -677,8 +682,7 @@ export default function HomeScreen() {
                           source={product.img}
                           style={bestSellerStyles.productImg}
                         />
-                        <View
-                          style={bestSellerStyles.priceTag}>
+                        <View style={bestSellerStyles.priceTag}>
                           <View style={[bestSellerStyles.priceLeft]}>
                             <Text style={bestSellerStyles.priceLeftText}>Starting from</Text>
                           </View>
@@ -940,7 +944,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(10),
     paddingVertical: verticalScale(12),
     alignSelf: 'flex-start',
-    marginTop: verticalScale(14),    
+    marginTop: verticalScale(14),
     alignItems: 'center',
   },
   rewardLabel: {
@@ -955,10 +959,10 @@ const styles = StyleSheet.create({
     lineHeight: moderateScale(28),
     textAlign: 'center',
   },
-  rewardPts: {  
+  rewardPts: {
     fontSize: moderateScale(16),
     lineHeight: moderateScale(18),
-    color: "red", 
+    color: "red",
     fontFamily: 'PoppinsBold',
   },
   loginButton: {
@@ -1012,7 +1016,7 @@ const styles = StyleSheet.create({
   categoryLabel: {
     color: 'white',
     fontSize: moderateScale(12),
-    fontFamily: "Sigmar", 
+    fontFamily: "Sigmar",
     lineHeight: moderateScale(15),
     textAlign: 'center',
   },

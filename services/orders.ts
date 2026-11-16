@@ -1,4 +1,3 @@
-import axios from "axios";
 import { Api_url } from "../url/url";
 export type OrderStatus = 'pending' | 'process' | 'on_the_way' | 'delivered' | 'cancelled';
 
@@ -55,7 +54,7 @@ function toProduct(item: ApiOrders): orders {
 export async function fetchOrders(userId?: string, status?: string): Promise<orders[]> {
   try {
 
-    const response = await fetch(`${Api_url}api/orders/?user_id=${userId}&status=${status}`);
+    const response = await fetch(`${Api_url}api/orders/?user_id=${userId}`);
     if (!response.ok) {
       throw new Error(`Failed to fetch orders: ${response.status}`);
     }

@@ -4,26 +4,33 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
-import { FlatList, Image, ImageBackground, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { FlatList, Image, ImageBackground, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { create } from 'zustand';
 import { Colors } from '../constants/Colors';
-
 
 export type WishlistItem = {
   id: string;
   name: string;
   pack?: string;
-  regular_price: number;
-  sale_price?: number;
+  regular_price?: number | string | null;
+  sale_price?: number | string | null;
+  price?: number | string | null;
   image: any;
-  category?: string; // Add category to wishlist item
+  category?: string;
   variant?: {
-    price: number;
-    sale_price?: number;
+    price?: number | string | null;
+    sale_price?: number | string | null;
     label?: string;
+    name?: string;
+    attributes?: Record<string, string>;
   };
+  variants?: Array<{
+    price?: number | string | null;
+    sale_price?: number | string | null;
+    attributes?: Record<string, string>;
+  }>;
 };
 
 interface WishlistState {
@@ -44,6 +51,7 @@ export const useWishlistStore = create<WishlistState>((set, get) => ({
     if (!phone) return;
     set({ phone });
     const stored = await AsyncStorage.getItem(`wishlistItems_${phone}`);
+    console.log('Loaded wishlist items from storage:', stored);
     if (stored) set({ items: JSON.parse(stored) });
     else set({ items: [] });
   },
@@ -53,13 +61,13 @@ export const useWishlistStore = create<WishlistState>((set, get) => ({
 
     const current = get().items;
     const isExisting = current.some(i => {
-      if (i.id !== item.id) return false;
+      if (String(i.id) !== String(item.id)) return false;
       if (!i.variant && !item.variant) return true;
       if (!i.variant || !item.variant) return false;
       return i.variant.label === item.variant.label;
     });
 
-    if (isExisting) return; // Item with same variant already in wishlist
+    if (isExisting) return;
 
     const updated = [...current, item];
     set({ items: updated });
@@ -71,12 +79,9 @@ export const useWishlistStore = create<WishlistState>((set, get) => ({
 
     const current = get().items;
     const updated = current.filter(i => {
-      if (i.id !== id) return true; // Keep items with different IDs
-      // If no variant label is provided, we assume the intention is to remove the non-variant item or first match.
+      if (String(i.id) !== String(id)) return true;
       if (!variantLabel) return false;
-      // If the item in wishlist has no variant, it can't match a specific variant removal.
       if (!i.variant) return true;
-      // Keep the item if its variant label does not match the one to be removed.
       return i.variant.label !== variantLabel;
     });
 
@@ -99,37 +104,72 @@ const Wishlist: React.FC = () => {
       loadWishlist();
     }
   }, [phone]);
-  const renderItem = ({ item }: { item: WishlistItem }) => {
-    // Create a unique key for the item including variant info
-    const displayPrice = item.variant?.sale_price || item.variant?.price || item.sale_price || item.regular_price;
+useEffect(() => {
+  console.log('Current Wishlist screen data:', JSON.stringify(wishlistData, null, 2));
+}, [wishlistData]);
+ const renderItem = ({ item }: { item: WishlistItem }) => {
+  const firstVariant = item.variants?.[0];
 
-    return (
-      <View style={styles.card}>
-        <Image source={item.image} style={styles.productImg} resizeMode="contain" />
-        <View style={styles.infoWrap}>
-          <Text style={styles.productName}>{item.name}</Text>
-          {(() => {
-            const sizeLabel = item.variant?.label || (item as any).variant?.name || item.pack;
-            return sizeLabel ? (
-              <Text style={styles.productVariant}>{sizeLabel}</Text>
-            ) : null;
-          })()}
-
-          <Text style={styles.productPrice}>Pkr {displayPrice.toLocaleString()}</Text>
-        </View>
-        <TouchableOpacity
-          style={styles.removeBtn}
-          onPress={async () => await removeFromWishlist(item.id, item.variant?.label)}
-        >
-          <Text style={styles.removeText}>Remove</Text>
-        </TouchableOpacity>
-      </View>
-    );
+  const getValidPrice = (val: any) => {
+    const num = Number(val);
+    return !isNaN(num) && num > 0 ? num : null;
   };
-  const insets = useSafeAreaInsets();
+
+  let numericPrice = 0;
+
+  if (item.variant) {
+    // Has selected variant: use variant sale_price if > 0, else variant price
+    numericPrice =
+      getValidPrice(item.variant.sale_price) ??
+      getValidPrice(item.variant.price) ??
+      0;
+  } else if (firstVariant) {
+    // Has variants array: use first variant sale_price if > 0, else first variant price
+    numericPrice =
+      getValidPrice(firstVariant.sale_price) ??
+      getValidPrice(firstVariant.price) ??
+      0;
+  } else {
+    // No variant: use product sale_price if > 0, else regular_price
+    numericPrice =
+      getValidPrice(item.sale_price) ??
+      getValidPrice(item.regular_price) ??
+      getValidPrice(item.price) ??
+      0;
+  }
+
+  const sizeLabel =
+    item.variant?.label ||
+    item.variant?.name ||
+    item.variant?.attributes?.Sizes ||
+    firstVariant?.attributes?.Sizes ||
+    item.pack;
+
+  const imageSource =
+    typeof item.image === 'string' ? { uri: item.image } : item.image;
 
   return (
-    <SafeAreaView style={[styles.container, { paddingBottom: Math.max(insets.bottom, verticalScale(4)) }]}>
+    <View style={styles.card}>
+      <Image source={imageSource} style={styles.productImg} resizeMode="contain" />
+      <View style={styles.infoWrap}>
+        <Text style={styles.productName}>{item.name}</Text>
+        {sizeLabel ? (
+          <Text style={styles.productVariant}>{sizeLabel}</Text>
+        ) : null}
+
+        <Text style={styles.productPrice}>Rs {numericPrice.toLocaleString()}</Text>
+      </View>
+      <TouchableOpacity
+        style={styles.removeBtn}
+        onPress={async () => await removeFromWishlist(item.id, item.variant?.label)}
+      >
+        <Text style={styles.removeText}>Remove</Text>
+      </TouchableOpacity>
+    </View>
+  );
+};
+  return (
+    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={styles.container}>
       <ImageBackground source={require('../assets/images/wishlist.jpg')} style={{ flex: 1 }} resizeMode="cover">
         <View style={styles.header}>
           <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
@@ -140,14 +180,13 @@ const Wishlist: React.FC = () => {
         <FlatList
           data={wishlistData}
           renderItem={renderItem}
-          keyExtractor={item => item.id}
+          keyExtractor={(item, index) => `${item.id}-${item.variant?.label || index}`}
           contentContainerStyle={{ paddingBottom: 80 }}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
           showsVerticalScrollIndicator={false}
         />
       </ImageBackground>
     </SafeAreaView>
-
   );
 };
 

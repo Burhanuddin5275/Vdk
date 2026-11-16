@@ -1,17 +1,17 @@
+import AlertModal from '@/components/Alert';
 import { useAuth } from '@/hooks/useAuth';
+import { fetchUsers } from '@/services/user';
 import { useAddressStore } from '@/store/addressStore';
 import { useShippingStore } from '@/store/shippingStore';
-import { fetchUsers } from '@/services/user';
 import { Ionicons } from '@expo/vector-icons';
-import { router, useLocalSearchParams, useFocusEffect } from 'expo-router'; // 👈 Imported useFocusEffect
-import React, { useCallback, useState } from 'react'; // 👈 Imported useCallback
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router'; // 👈 Imported useFocusEffect
+import { useCallback, useState } from 'react'; // 👈 Imported useCallback
 import { Alert, Dimensions, FlatList, Image, ImageBackground, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { Button } from '../components/Button';
 import { IconSymbol } from '../components/ui/IconSymbol';
 import { colors } from '../theme/colors';
-import AlertModal from '@/components/Alert';
 
 const { width, height } = Dimensions.get('window');
 
@@ -134,7 +134,10 @@ const Checkout = () => {
     };
 
     return (
-        <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
+       <SafeAreaView
+        edges={['top', 'bottom', 'left', 'right']}
+        style={{ flex: 1 }}
+      >
             <ImageBackground
                 source={require('../assets/images/ss1.png')}
                 style={styles.bg}

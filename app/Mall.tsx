@@ -3,14 +3,13 @@ import SuccessModal from '@/components/SuccessModal';
 import { useAuth } from '@/hooks/useAuth';
 import { createRedeemOrder } from "@/services/redeem";
 import { useAddressStore } from '@/store/addressStore';
-import { useShippingStore } from '@/store/shippingStore';
 import { colors } from '@/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Dimensions, ImageBackground, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { Api_url } from '../url/url';
 
@@ -44,13 +43,13 @@ const Mall = () => {
 
   const handleAddressModalClose = () => {
     setAddressModal(false);
-    router.push('/ShippingAddress'); 
+    router.push('/ShippingAddress');
   };
 
   const handleSuccessModalClose = () => {
     setShowSuccessModal(false);
-    router.replace({ 
-      pathname: '/Redeemed', 
+    router.replace({
+      pathname: '/Redeemed',
       params: {
         showSuccess: 'true',
         orderSuccess: 'true'
@@ -135,7 +134,10 @@ const Mall = () => {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
+    <SafeAreaView
+      edges={['top', 'bottom', 'left', 'right']}
+      style={{ flex: 1 }}
+    >
       <AlertModal
         visible={AddressModal}
         message="Address Required"
@@ -143,7 +145,7 @@ const Mall = () => {
         autoCloseDelay={1000}
         onClose={handleAddressModalClose}
       />
-    
+
       <ImageBackground
         source={require('../assets/images/ss1.png')}
         style={styles.background}
@@ -193,7 +195,7 @@ const Mall = () => {
           </View>
           <TouchableOpacity
             style={[
-              styles.redeemBtn, 
+              styles.redeemBtn,
               { opacity: (!isUserLoading && userId && userpoint >= points) ? 1 : 0.6 }
             ]}
             onPress={CreateRedeem}
@@ -287,7 +289,7 @@ const styles = StyleSheet.create({
   title: {
     color: colors.white,
     fontSize: moderateScale(38),
-    lineHeight: moderateScale(40),
+    lineHeight: moderateScale(48),
     fontFamily: 'Sigmar',
     marginBottom: 12,
   },
@@ -342,7 +344,7 @@ const styles = StyleSheet.create({
     height: verticalScale(100)
   },
   pointsWrap: {
-    width:scale(150)
+    width: scale(150)
   },
   pointsLabel: {
     color: colors.primary,
@@ -360,7 +362,7 @@ const styles = StyleSheet.create({
     borderRadius: scale(15),
     paddingVertical: 6,
     paddingHorizontal: 32,
-    alignItems: 'center', 
+    alignItems: 'center',
     justifyContent: 'center',
   },
   redeemText: {

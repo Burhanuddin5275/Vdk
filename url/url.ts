@@ -1,4 +1,5 @@
-const FALLBACK_URL = "http://15.135.166.93:8000/";
+const FALLBACK_URL = "https://dktapp.dktpakistan.org/"
+
 
 let runtimeBaseUrl = FALLBACK_URL;
 

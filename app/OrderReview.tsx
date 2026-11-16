@@ -1,14 +1,14 @@
 import { useAuth } from '@/hooks/useAuth';
+import { createReview } from '@/services/orders';
 import { AntDesign, Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect } from 'react';
-import { Alert, Dimensions, FlatList, Image, ImageBackground, KeyboardAvoidingView, Modal, Platform, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Alert, Dimensions, FlatList, Image, ImageBackground, KeyboardAvoidingView, Modal, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { Api_url } from '../url/url';
 import TabLayout from './(tabs)/_layout';
-import { createReview } from '@/services/orders';
 const bgImage = require('../assets/images/ss1.png');
 
 interface OrderItem {
@@ -167,7 +167,7 @@ const OrderReview = () => {
   const totalItems = order?.items?.reduce((sum, item) => sum + (item.quantity || 1), 0) || 0;
   const itemsTotal = order?.items.reduce((s, i) => s + parseFloat(i.price || '0'), 0) || 0;
   const discountAmount = order?.discount_amount;
-  const totalAmount = order?.total_amount;
+  const totalAmount = order?.total;
   const discount = order?.points_discount || 0;
   const finalTotal = itemsTotal - discount;
   if (!order) {
@@ -179,7 +179,10 @@ const OrderReview = () => {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
+     <SafeAreaView
+        edges={['top', 'bottom', 'left', 'right']}
+        style={{ flex: 1 }}
+      >
       <ImageBackground source={bgImage} style={styles.background} resizeMode="cover">
         <View style={styles.container}>
           <View style={styles.header}>

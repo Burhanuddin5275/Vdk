@@ -2,14 +2,14 @@ import { Button } from '@/components/Button';
 import { selectPhone } from '@/store/authSlice';
 import { useAppSelector } from '@/store/hooks';
 import { colors } from '@/theme/colors';
+import { Api_url } from '@/url/url';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
-import { Alert, Image, ImageBackground, Modal, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useEffect, useState } from 'react';
+import { Alert, Image, ImageBackground, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { useCartStore } from '../../store/cartStore';
-import { Api_url } from '@/url/url';
 interface CartItem {
   id: string;
   name: string;
@@ -153,7 +153,10 @@ export default function CartScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
+    <SafeAreaView 
+  edges={['top', 'bottom', 'left', 'right']} 
+  style={{ flex: 1 }}
+>
       <ImageBackground
         source={require('../../assets/images/Cart.jpg')}
         style={styles.background}

@@ -5,12 +5,22 @@ import { Api_url, img_url } from '@/url/url';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import { router } from 'expo-router';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Image, ImageBackground, Modal, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useSafeAreaInsets, SafeAreaView} from 'react-native-safe-area-context';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  ImageBackground,
+  Modal,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 
-const TABS = ['All', 'Active', 'Completed', 'Cancelled', 'History'];
+const TABS = ['All', 'Active', 'Completed', 'Cancelled'];
 
 interface OrderItem {
   id: string;
@@ -32,7 +42,7 @@ interface DisplayOrder {
   id: string;
   total: string;
   user_detail: UserDetail;
-  status: OrderStatus;
+  status: OrderStatus | string;
   created_at: string;
   items: OrderItem[];
   type: string;
@@ -52,7 +62,6 @@ export default function OrdersScreen() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectingStartDate, setSelectingStartDate] = useState(true);
   const [currentViewDate, setCurrentViewDate] = useState(new Date());
-  const insets = useSafeAreaInsets();
   const [tabLayouts, setTabLayouts] = useState<{ x: number; width: number }[]>([]);
   const scrollViewRef = useRef<ScrollView>(null);
   const { phone, token } = useAuth();
@@ -83,11 +92,16 @@ export default function OrdersScreen() {
   }, [phone, token]);
 
   const mapToDisplayOrder = (order: orders): DisplayOrder => {
-    const userDetailObj = typeof order.user_detail === 'object' && order.user_detail !== null 
-      ? order.user_detail 
-      : { number: typeof order.user_detail === 'string' ? order.user_detail : '', total_points: 0 };
+    const userDetailObj =
+      typeof order.user_detail === 'object' && order.user_detail !== null
+        ? order.user_detail
+        : {
+          number: typeof order.user_detail === 'string' ? order.user_detail : '',
+          total_points: 0,
+        };
 
-    const totalPoints = (userDetailObj as any).points ?? (userDetailObj as any).total_points ?? 0;
+    const totalPoints =
+      (userDetailObj as any).points ?? (userDetailObj as any).total_points ?? 0;
 
     return {
       id: order.id.toString(),
@@ -99,40 +113,48 @@ export default function OrdersScreen() {
       status: order.status,
       type: order.type,
       created_at: order.created_at || new Date().toISOString(),
-      items: order.items?.map((item: any) => ({
-        id: item.id?.toString() || item._id?.toString(),
-        name: item.name || 'Unknown Item',
-        price: item.price?.toString() || '0',
-        quantity: item.quantity || 1,
-        image: item.image,
-        pts: item.pts || (order as any).points_used || 0
-      })) || []
+      items:
+        order.items?.map((item: any) => {
+          const rawImage = item.image || '';
+          const fullImageUrl = rawImage
+            ? rawImage.startsWith('http')
+              ? rawImage
+              : `${img_url}${rawImage}`
+            : '';
+
+          return {
+            id: item.id?.toString() || item._id?.toString(),
+            name: item.name || 'Unknown Item',
+            price: item.price?.toString() || '0',
+            quantity: item.quantity || 1,
+            image: fullImageUrl,
+            pts: item.pts || (order as any).points_used || 0,
+          };
+        }) || [],
     };
   };
 
-  const loadOrders = useCallback(async (tabName: string, currentUserId: string | null, isRefreshing = false) => {
-    if (!currentUserId) return;
+  // Always fetch 'all' orders once and filter locally by status
+  const loadOrders = useCallback(
+    async (currentUserId: string | null, isRefreshing = false) => {
+      if (!currentUserId) return;
 
-    try {
-      if (!isRefreshing) setLoading(true);
-      
-      let apiStatus = 'all';
-      if (tabName === 'Active') apiStatus = 'Active';
-      else if (tabName === 'Completed') apiStatus = 'completed';
-      else if (tabName === 'Cancelled') apiStatus = 'cancelled';
-      else if (tabName === 'History') apiStatus = 'History';
+      try {
+        if (!isRefreshing) setLoading(true);
 
-      const apiData = await fetchOrders(currentUserId, apiStatus);
-      const userOrders = apiData.map(mapToDisplayOrder);
+        const apiData = await fetchOrders(currentUserId, 'all');
+        const userOrders = apiData.map(mapToDisplayOrder);
 
-      setOrdersState(userOrders);
-    } catch (e) {
-      console.log(e);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, []);
+        setOrdersState(userOrders);
+      } catch (e) {
+        console.log(e);
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    },
+    []
+  );
 
   const handleTabPress = (tab: string, index: number) => {
     setActiveTab(tab);
@@ -145,19 +167,45 @@ export default function OrdersScreen() {
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    loadOrders(activeTab, userId, true);
-  }, [loadOrders, activeTab, userId]);
+    loadOrders(userId, true);
+  }, [loadOrders, userId]);
 
   useEffect(() => {
     if (userId) {
-      loadOrders(activeTab, userId);
+      loadOrders(userId);
     }
-  }, [loadOrders, activeTab, userId]);
+  }, [loadOrders, userId]);
 
-  const filterOrdersByDate = (ordersList: DisplayOrder[]) => {
-    if (!startDate && !endDate) return ordersList;
+  // Client-side Status + Date Filtering
+  const filteredOrders = useMemo(() => {
+    return ordersState.filter((order) => {
+      const normalizedStatus = (order.status || '').toLowerCase();
 
-    return ordersList.filter(order => {
+      // 1. Status Filter
+      let matchesStatus = true;
+      switch (activeTab) {
+        case 'Active':
+          matchesStatus = ['pending', 'process', 'on_the_way'].includes(
+            normalizedStatus
+          );
+          break;
+        case 'Completed':
+          matchesStatus = ['delivered', 'completed'].includes(normalizedStatus);
+          break;
+        case 'Cancelled':
+          matchesStatus = normalizedStatus === 'cancelled';
+          break;
+        case 'All':
+        default:
+          matchesStatus = true;
+          break;
+      }
+
+      if (!matchesStatus) return false;
+
+      // 2. Date Range Filter
+      if (!startDate && !endDate) return true;
+
       const orderDate = new Date(order.created_at);
       orderDate.setHours(0, 0, 0, 0);
 
@@ -177,9 +225,7 @@ export default function OrdersScreen() {
 
       return true;
     });
-  };
-
-  const filteredOrders = filterOrdersByDate(ordersState);
+  }, [ordersState, activeTab, startDate, endDate]);
 
   if (loading && !refreshing) {
     return (
@@ -190,7 +236,11 @@ export default function OrdersScreen() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
+
+    <SafeAreaView
+      edges={['top', 'bottom', 'left', 'right']}
+      style={{ flex: 1 }}
+    >
       <ImageBackground
         source={require('../../assets/images/ss1.png')}
         style={styles.container}
@@ -206,10 +256,10 @@ export default function OrdersScreen() {
 
         {/* Tabs and Underline Container */}
         <View style={styles.tabsContainerWrapper}>
-          <ScrollView 
+          <ScrollView
             ref={scrollViewRef}
-            horizontal 
-            showsHorizontalScrollIndicator={false} 
+            horizontal
+            showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.tabsScrollContainer}
             style={styles.tabsWrapper}
           >
@@ -229,7 +279,12 @@ export default function OrdersScreen() {
                       });
                     }}
                   >
-                    <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
+                    <Text
+                      style={[
+                        styles.tabText,
+                        activeTab === tab && styles.tabTextActive,
+                      ]}
+                    >
                       {tab}
                     </Text>
                   </TouchableOpacity>
@@ -309,7 +364,10 @@ export default function OrdersScreen() {
 
                 <View style={styles.calendarTitleContainer}>
                   <Text style={styles.calendarTitle}>
-                    {currentViewDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                    {currentViewDate.toLocaleDateString('en-US', {
+                      month: 'long',
+                      year: 'numeric',
+                    })}
                   </Text>
                   <Text style={styles.rangeIndicator}>
                     {selectingStartDate ? 'Select start date' : 'Select end date'}
@@ -323,7 +381,11 @@ export default function OrdersScreen() {
                     setCurrentViewDate(newDate);
                   }}
                 >
-                  <Ionicons name="chevron-forward" size={24} color={colors.primary} />
+                  <Ionicons
+                    name="chevron-forward"
+                    size={24}
+                    color={colors.primary}
+                  />
                 </TouchableOpacity>
               </View>
 
@@ -336,7 +398,9 @@ export default function OrdersScreen() {
 
                   const firstDay = new Date(year, month, 1);
                   const startCalendarDate = new Date(firstDay);
-                  startCalendarDate.setDate(startCalendarDate.getDate() - firstDay.getDay());
+                  startCalendarDate.setDate(
+                    startCalendarDate.getDate() - firstDay.getDay()
+                  );
 
                   const days = [];
                   const today = new Date();
@@ -346,10 +410,19 @@ export default function OrdersScreen() {
                     currentDay.setDate(startCalendarDate.getDate() + i);
 
                     const isCurrentMonth = currentDay.getMonth() === month;
-                    const isToday = currentDay.toDateString() === today.toDateString();
-                    const isStartDate = startDate && currentDay.toDateString() === startDate.toDateString();
-                    const isEndDate = endDate && currentDay.toDateString() === endDate.toDateString();
-                    const isInRange = startDate && endDate && currentDay >= startDate && currentDay <= endDate;
+                    const isToday =
+                      currentDay.toDateString() === today.toDateString();
+                    const isStartDate =
+                      startDate &&
+                      currentDay.toDateString() === startDate.toDateString();
+                    const isEndDate =
+                      endDate &&
+                      currentDay.toDateString() === endDate.toDateString();
+                    const isInRange =
+                      startDate &&
+                      endDate &&
+                      currentDay >= startDate &&
+                      currentDay <= endDate;
 
                     days.push(
                       <TouchableOpacity
@@ -358,8 +431,11 @@ export default function OrdersScreen() {
                           styles.calendarDay,
                           isToday && styles.todayDay,
                           (isStartDate || isEndDate) && styles.selectedDay,
-                          isInRange && !isStartDate && !isEndDate && styles.rangeDay,
-                          !isCurrentMonth && styles.otherMonthDay
+                          isInRange &&
+                          !isStartDate &&
+                          !isEndDate &&
+                          styles.rangeDay,
+                          !isCurrentMonth && styles.otherMonthDay,
                         ]}
                         onPress={() => {
                           const selectedDate = new Date(currentDay);
@@ -378,13 +454,18 @@ export default function OrdersScreen() {
                           }
                         }}
                       >
-                        <Text style={[
-                          styles.calendarDayText,
-                          isToday && styles.todayDayText,
-                          (isStartDate || isEndDate) && styles.selectedDayText,
-                          isInRange && !isStartDate && !isEndDate && styles.rangeDayText,
-                          !isCurrentMonth && styles.otherMonthDayText
-                        ]}>
+                        <Text
+                          style={[
+                            styles.calendarDayText,
+                            isToday && styles.todayDayText,
+                            (isStartDate || isEndDate) && styles.selectedDayText,
+                            isInRange &&
+                            !isStartDate &&
+                            !isEndDate &&
+                            styles.rangeDayText,
+                            !isCurrentMonth && styles.otherMonthDayText,
+                          ]}
+                        >
                           {currentDay.getDate()}
                         </Text>
                       </TouchableOpacity>
@@ -446,45 +527,43 @@ export default function OrdersScreen() {
           {filteredOrders.length > 0 ? (
             filteredOrders.map((order) => {
               const getButtonConfig = () => {
-                switch (order.status) {
+                switch ((order.status || '').toLowerCase()) {
                   case 'delivered':
+                  case 'completed':
                     return {
                       text: 'Review Order',
                       onPress: () => {
                         router.push({
                           pathname: '/OrderReview',
-                          params: { order: JSON.stringify(order) }
+                          params: { order: JSON.stringify(order) },
                         });
                       },
-                      style: styles.reviewBtn
+                      style: styles.reviewBtn,
                     };
                   case 'cancelled':
                     return {
                       text: 'Reorder',
                       onPress: () => {
-                        const itemsForCheckout = order.items.map(item => ({
+                        const itemsForCheckout = order.items.map((item) => ({
                           id: item.id,
                           name: item.name,
                           price: item.price,
                           quantity: item.quantity.toString(),
-                          image: item.image
-                            ? item.image.startsWith('http')
-                              ? item.image
-                              : `${img_url}${item.image}`
-                            : '',
-                          points: item.pts?.toString() || '0'
+                          image: item.image || '',
+                          points: item.pts?.toString() || '0',
                         }));
 
                         router.push({
                           pathname: '/Checkout',
                           params: {
                             items: JSON.stringify(itemsForCheckout),
-                            fromOrder: 'true'
-                          }
+                            fromOrder: 'true',
+                          },
                         });
                       },
-                      style: styles.reorderBtn
+                      style: styles.reorderBtn,
                     };
+                  case 'pending':
                   case 'process':
                   case 'on_the_way':
                   default:
@@ -493,10 +572,10 @@ export default function OrdersScreen() {
                       onPress: () => {
                         router.push({
                           pathname: '/OrderTracker',
-                          params: { order: JSON.stringify(order) }
+                          params: { order: JSON.stringify(order) },
                         });
                       },
-                      style: styles.trackBtn
+                      style: styles.trackBtn,
                     };
                 }
               };
@@ -506,10 +585,10 @@ export default function OrdersScreen() {
               return (
                 <View key={order.id} style={styles.orderCard}>
                   <View style={styles.imgPlaceholder}>
-                    <Image
-                      source={order.items[0]?.image ? { uri: order.items[0].image } : require('../../assets/images/order.png')}
-                      style={styles.img}
-                      resizeMode="contain"
+                    <Ionicons
+                      name="cube"
+                      size={moderateScale(40)}
+                      color={colors.black}
                     />
                   </View>
                   <View style={{ flex: 1 }}>
@@ -588,7 +667,7 @@ const styles = StyleSheet.create({
     maxHeight: verticalScale(50),
   },
   tabsScrollContainer: {
-    paddingRight: scale(60),
+    paddingRight: scale(1),
   },
   tabsInnerContent: {
     minWidth: '100%',
@@ -607,10 +686,10 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: moderateScale(14),
     fontFamily: 'PoppinsSemi',
-    opacity: 0.7
+    opacity: 0.7,
   },
   tabTextActive: {
-    opacity: 1
+    opacity: 1,
   },
   tabUnderline: {
     height: 2,
@@ -683,27 +762,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     overflow: 'hidden',
   },
-  img: {
-    width: scale(40),
-    height: scale(40),
-    resizeMode: 'contain',
-  },
   orderNum: {
     fontSize: moderateScale(14),
     fontFamily: 'Inter-SemiBold',
     color: colors.white,
-    marginBottom: 2
+    marginBottom: 2,
   },
   orderPrice: {
     fontFamily: 'Inter-Bold',
     fontSize: moderateScale(16),
     color: colors.white,
-    marginBottom: 4
+    marginBottom: 4,
   },
   orderDate: {
     fontSize: moderateScale(11),
     fontFamily: 'Inter-Regular',
-    color: 'rgba(255, 255, 255, 0.7)'
+    color: 'rgba(255, 255, 255, 0.7)',
   },
   actionBtn: {
     backgroundColor: 'white',
@@ -734,7 +808,7 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontFamily: 'PoppinsMedium',
     fontSize: moderateScale(12),
-    textAlign: 'center'
+    textAlign: 'center',
   },
   modalOverlay: {
     flex: 1,

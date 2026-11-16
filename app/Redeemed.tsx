@@ -1,13 +1,13 @@
+import { useAuth } from '@/hooks/useAuth';
+import { fetchOrders, type OrderStatus } from '@/services/orders';
 import { colors } from '@/theme/colors';
+import { img_url } from '@/url/url';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Dimensions, Image, ImageBackground, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
-import { fetchOrders, orders, type OrderStatus } from '@/services/orders';
-import { useAuth } from '@/hooks/useAuth';
-import { Api_url, img_url } from '@/url/url';
 const screenWidth = Dimensions.get('window').width;
 const COLUMN_GAP = scale(12);
 const CARD_WIDTH = (screenWidth - COLUMN_GAP * 3) / 2;
@@ -124,7 +124,10 @@ const Redeemed = () => {
     };
   };
   return (
-    <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
+    <SafeAreaView
+        edges={['top', 'bottom', 'left', 'right']}
+        style={{ flex: 1 }}
+      >
       <ImageBackground
         source={require('../assets/images/ss1.png')}
         style={styles.background}

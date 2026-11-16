@@ -4,8 +4,8 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import * as LocalAuthentication from 'expo-local-authentication';
 import * as SecureStore from 'expo-secure-store';
-import { Alert, Image, ImageBackground, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Alert, Image, ImageBackground, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { Api_url } from '../url/url';
 import { Ionicons } from '@expo/vector-icons';
@@ -191,7 +191,10 @@ const Login = () => {
   }, []);
 
   return (
-    <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
+     <SafeAreaView
+           edges={['top', 'bottom', 'left', 'right']}
+           style={{ flex: 1 }}
+         >
       <ImageBackground source={require('../assets/images/ss1.png')} style={styles.bg} resizeMode="cover">
         <ScrollView
           style={{ width: '100%' }}
@@ -308,6 +311,7 @@ const styles = StyleSheet.create({
     marginBottom: 25,
   },
   inputWrap: {
+    height: verticalScale(38),
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff',

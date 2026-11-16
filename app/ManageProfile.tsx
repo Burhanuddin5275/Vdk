@@ -1,16 +1,16 @@
+import SuccessModal from '@/components/SuccessModal';
+import { useAuth } from '@/hooks/useAuth';
+import { fetchUsers, updateUserProfile, UserItem } from '@/services/user';
 import { colors } from '@/theme/colors';
+import { img_url } from '@/url/url';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import React, { useEffect, useState } from 'react';
+import { useRouter } from 'expo-router';
+import * as SecureStore from 'expo-secure-store';
+import { useEffect, useState } from 'react';
 import { Dimensions, Image, ImageBackground, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
-import { fetchUsers, UserItem, updateUserProfile } from '@/services/user';
-import { useAuth } from '@/hooks/useAuth';
-import { img_url } from '@/url/url';
-import SuccessModal from '@/components/SuccessModal';
-import { useRouter } from 'expo-router';
-import * as SecureStore from 'expo-secure-store';
 const screenWidth = Dimensions.get('window').width;
 const COLUMN_GAP = scale(12);
 const CARD_WIDTH = (screenWidth - COLUMN_GAP * 3) / 2
@@ -182,7 +182,10 @@ const ManageProfile = () => {
   const router = useRouter();
 
   return (
-    <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
+    <SafeAreaView 
+  edges={['top', 'bottom', 'left', 'right']} 
+  style={{ flex: 1 }}
+>
       <ImageBackground
         source={require('../assets/images/ss1.png')}
         style={styles.background}

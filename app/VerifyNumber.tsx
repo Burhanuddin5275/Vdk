@@ -124,7 +124,10 @@ const VerifyNumber = () => {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, paddingBottom: Math.max(insets.bottom, verticalScale(4)) }}>
+      <SafeAreaView
+        edges={['top', 'bottom', 'left', 'right']}
+        style={{ flex: 1 }}
+      >
       <ImageBackground source={require('../assets/images/ss1.png')}
         style={styles.background}
         resizeMode="cover"
@@ -154,7 +157,6 @@ const VerifyNumber = () => {
                 onKeyPress={e => handleKeyPress(e, idx)}
                 keyboardType="number-pad"
                 maxLength={1}
-                returnKeyType="done"
                 textAlign="center"
                 autoFocus={idx === 0}
               />
